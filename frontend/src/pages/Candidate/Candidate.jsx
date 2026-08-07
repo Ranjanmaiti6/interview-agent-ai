@@ -19,7 +19,7 @@ export default function Candidate() {
 
   const startInterview = (id) => {
 
-    window.location.href = `/interview?id=${id}`;
+    window.location.href = `/candidate/${id}`;
 
   };
 
