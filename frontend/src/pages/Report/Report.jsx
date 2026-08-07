@@ -33,17 +33,11 @@ const report = {
 
   problemSolving: score.problemSolving,
 
-  strengths: [
-    "Retrieval-Augmented Generation",
-    "Prompt Engineering",
-    "Vector Databases"
-  ],
+  strengths:
+    state?.strengths || [],
 
-  gaps: [
-    "Model Context Protocol",
-    "Production Deployment",
-    "LLM Evaluation"
-  ]
+  gaps:
+    state?.gaps || [],
 };
 
   return (
@@ -101,9 +95,10 @@ const report = {
 
         </div>
 
-        <Recommendation
+<Recommendation
   overall={report.overall}
   candidateName={candidateName}
+  recommendation={state?.recommendation}
 />
 
       </div>

@@ -99,7 +99,10 @@ export default function Interview() {
         setTimeout(() => {
           navigate("/report", {
             state: {
-              score,
+              score: data.score,
+              strengths: data.strengths,
+              gaps: data.gaps,
+              recommendation: data.recommendation,
               candidateName,
             },
           });

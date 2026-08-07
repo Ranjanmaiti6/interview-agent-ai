@@ -38,20 +38,33 @@ async function generateQuestion(
       : "Your answer is a bit short. Try explaining your reasoning with more detail.";
 
   return {
-    feedback,
+  feedback,
 
-    nextQuestion:
-      questions[questionNumber + 1] ||
-      "Interview Completed",
+  nextQuestion:
+    questions[questionNumber + 1] ||
+    "Interview Completed",
 
-    score,
+  score,
 
-    topic: topic.topic,
+  strengths: [
+    "Retrieval-Augmented Generation",
+    "Prompt Engineering",
+    "Vector Databases",
+  ],
 
-    candidate: candidate.name,
+  gaps: [
+    "Model Context Protocol",
+    "Production Deployment",
+    "AI Evaluation",
+  ],
 
-    questionNumber: questionNumber + 1,
-  };
+  recommendation:
+    score.technical >= 8
+      ? "Recommended for AI Engineering Internship."
+      : "Needs more practice before technical interviews.",
+
+  questionNumber: questionNumber + 1,
+};
 }
 
 module.exports = {
