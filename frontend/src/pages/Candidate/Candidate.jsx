@@ -1,55 +1,78 @@
-import CandidateCard from "../../components/candidate/CandidateCard";
-import candidates from "../../data/candidates";
+const candidates = [
+  {
+    id: 1,
+    name: "Riya Sharma",
+    skills: "RAG, Prompt Engineering"
+  },
+  {
+    id: 2,
+    name: "Arjun Patel",
+    skills: "AI Agents, Deployment"
+  }
+];
 
 
 export default function Candidate(){
 
-  return (
+return (
 
-    <div className="min-h-screen bg-slate-950 p-8">
+<div className="p-10 bg-slate-950 min-h-screen">
 
-      <div className="max-w-7xl mx-auto">
-
-
-        <h1 className="
-          text-5xl
-          font-black
-          text-white
-        ">
-          Choose Candidate
-        </h1>
+<h1 className="text-white text-4xl font-bold mb-8">
+Choose Candidate
+</h1>
 
 
-        <p className="text-slate-400 mt-4">
-          Select a candidate profile to begin an adaptive AI interview.
-        </p>
+{
+candidates.map((candidate)=>(
+
+<div
+key={candidate.id}
+className="bg-slate-900 p-6 rounded-xl mb-5"
+>
+
+<h2 className="text-white text-2xl">
+{candidate.name}
+</h2>
 
 
-
-        <div className="
-          grid
-          md:grid-cols-2
-          lg:grid-cols-3
-          gap-8
-          mt-12
-        ">
-
-          {
-            candidates.map(candidate=>(
-              <CandidateCard
-                key={candidate.id}
-                candidate={candidate}
-              />
-            ))
-          }
+<p className="text-slate-400 mt-2">
+{candidate.skills}
+</p>
 
 
-        </div>
+<button
+
+onClick={()=>{
+window.location.href =
+`/interview?id=${candidate.id}`;
+}}
+
+className="
+mt-5
+bg-blue-600
+text-white
+px-5
+py-3
+rounded-xl
+"
+
+>
+
+Start Interview
+
+</button>
 
 
-      </div>
+</div>
 
-    </div>
+))
 
-  );
+}
+
+
+</div>
+
+);
+
 }

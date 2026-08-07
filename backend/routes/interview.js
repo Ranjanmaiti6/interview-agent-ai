@@ -2,35 +2,31 @@ const express = require("express");
 
 const router = express.Router();
 
-
 const {
- generateQuestion
+  generateQuestion
 } = require("../agent/interviewAgent");
 
 
 
-router.post("/answer",(req,res)=>{
+router.post("/answer", (req, res) => {
+
+  const {
+    answer,
+    questionNumber,
+    candidateId
+  } = req.body;
 
 
-    const {
-        answer,
-        questionNumber
-    } = req.body;
+  const response = generateQuestion(
+    answer,
+    questionNumber,
+    candidateId
+  );
 
 
-
-    const response = generateQuestion(
-        answer,
-        questionNumber
-    );
-
-
-
-    res.json(response);
-
+  res.json(response);
 
 });
-
 
 
 module.exports = router;

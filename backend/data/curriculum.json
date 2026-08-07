@@ -1,0 +1,43 @@
+[
+  {
+    "day":1,
+    "topic":"Introduction to AI Engineering",
+    "skills":[
+      "AI basics",
+      "LLM concepts"
+    ]
+  },
+  {
+    "day":5,
+    "topic":"Prompt Engineering",
+    "skills":[
+      "Prompt design",
+      "Few shot prompting"
+    ]
+  },
+  {
+    "day":10,
+    "topic":"Retrieval Augmented Generation",
+    "skills":[
+      "Embeddings",
+      "Vector Database",
+      "RAG pipeline"
+    ]
+  },
+  {
+    "day":15,
+    "topic":"AI Agents",
+    "skills":[
+      "Agent workflow",
+      "Tool usage"
+    ]
+  },
+  {
+    "day":20,
+    "topic":"Model Context Protocol",
+    "skills":[
+      "MCP servers",
+      "AI integrations"
+    ]
+  }
+]

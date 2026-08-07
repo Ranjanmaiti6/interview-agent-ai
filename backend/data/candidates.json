@@ -1,0 +1,28 @@
+[
+  {
+    "id":1,
+    "name":"Riya Sharma",
+    "completedDays":[1,5,10],
+    "strengths":[
+      "Prompt Engineering",
+      "RAG"
+    ],
+    "weaknesses":[
+      "Deployment",
+      "MCP"
+    ]
+  },
+
+  {
+    "id":2,
+    "name":"Arjun Patel",
+    "completedDays":[1,5,10,15,20],
+    "strengths":[
+      "Agents",
+      "Deployment"
+    ],
+    "weaknesses":[
+      "Evaluation"
+    ]
+  }
+]

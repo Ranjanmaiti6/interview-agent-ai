@@ -1,106 +1,153 @@
 import { useState } from "react";
+import { useSearchParams } from "react-router-dom";
 
 import InterviewHeader from "../../components/interview/InterviewHeader";
 import ChatMessage from "../../components/interview/ChatMessage";
 import InterviewInput from "../../components/interview/InterviewInput";
 
 
-export default function Interview() {
+export default function Interview(){
+  const [searchParams] = useSearchParams();
+
+const candidateId = searchParams.get("id");
 
 
-  const [questionNumber, setQuestionNumber] = useState(1);
-
-
-  const [messages, setMessages] = useState([
-    {
-      role: "ai",
-      text: "Welcome! Explain how you would design a RAG based AI application."
-    }
-  ]);
+const [questionNumber,setQuestionNumber] = useState(0);
 
 
 
-  const sendAnswer = (answer) => {
-
-
-    if(!answer.trim()) return;
-
-
-
-    setMessages(prev => [
-      ...prev,
-
-      {
-        role:"user",
-        text:answer
-      },
-
-
-      {
-        role:"ai",
-        text:"Good explanation. Can you tell me why you selected that vector database?"
-      }
-
-    ]);
+const [messages,setMessages] = useState([
+{
+role:"ai",
+text:"Explain how you would design a RAG based AI application."
+}
+]);
 
 
 
-    setQuestionNumber(prev => prev + 1);
-
-  };
+const sendAnswer = async(answer)=>{
 
 
+// show user answer
 
-  return (
-
-    <div className="
-      min-h-screen
-      bg-slate-950
-      flex
-      flex-col
-    ">
-
-
-      <InterviewHeader
-        questionNumber={questionNumber}
-        totalQuestions={8}
-      />
+setMessages(prev=>[
+...prev,
+{
+role:"user",
+text:answer
+}
+]);
 
 
 
-      <div className="
-        flex-1
-        max-w-4xl
-        w-full
-        mx-auto
-        p-6
-        space-y-6
-      ">
+// send to backend
+
+const response = await fetch(
+"http://localhost:5000/api/interview/answer",
+{
+method:"POST",
+
+headers:{
+"Content-Type":"application/json"
+},
+
+body:JSON.stringify({
+
+answer:answer,
+
+questionNumber:questionNumber,
+candidateId: candidateId
 
 
-        {
-          messages.map((message,index)=>(
+})
 
-            <ChatMessage
-              key={index}
-              {...message}
-            />
+}
 
-          ))
-        }
-
-
-      </div>
+);
 
 
 
-      <InterviewInput
-        onSend={sendAnswer}
-      />
+const data = await response.json();
 
 
-    </div>
 
-  );
+// show AI response
+
+setMessages(prev=>[
+...prev,
+{
+role:"ai",
+text:data.nextQuestion
+}
+]);
+
+
+
+setQuestionNumber(data.questionNumber);
+
+
+};
+
+
+
+return (
+
+<div className="
+min-h-screen
+bg-slate-950
+flex
+flex-col
+">
+
+
+<InterviewHeader
+
+questionNumber={questionNumber+1}
+
+totalQuestions={8}
+
+/>
+
+
+
+<div className="
+flex-1
+max-w-4xl
+w-full
+mx-auto
+p-6
+space-y-6
+">
+
+
+{
+messages.map((message,index)=>(
+
+<ChatMessage
+
+key={index}
+
+{...message}
+
+/>
+
+))
+}
+
+
+</div>
+
+
+<InterviewInput
+
+onSend={sendAnswer}
+
+/>
+
+
+</div>
+
+);
+
 
 }

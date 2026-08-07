@@ -5,19 +5,18 @@ export default function InterviewInput({
   onSend
 }) {
 
-
   const [answer,setAnswer] = useState("");
 
 
-
   const handleSend = () => {
+
+    if(!answer.trim()) return;
 
     onSend(answer);
 
     setAnswer("");
 
   };
-
 
 
   return (
@@ -27,7 +26,6 @@ export default function InterviewInput({
       border-slate-800
       p-5
     ">
-
 
       <div className="
         max-w-4xl
@@ -59,14 +57,12 @@ export default function InterviewInput({
         />
 
 
-
         <button
 
           onClick={handleSend}
 
           className="
           bg-blue-600
-          hover:bg-blue-700
           px-6
           rounded-xl
           text-white
@@ -74,18 +70,13 @@ export default function InterviewInput({
           "
 
         >
-
           Send
-
         </button>
-
 
 
       </div>
 
-
     </div>
 
   );
-
 }
