@@ -1,71 +1,54 @@
 const candidates = [
   {
     id: 1,
-    name: "Aarav Sharma",
+    name: "Riya Sharma",
     role: "AI Engineer",
-    college: "ABES Engineering College",
-    avatar: "https://i.pravatar.cc/150?img=11",
-    level: "Advanced",
-    completedDays: 27,
+    level: "Intermediate",
+    completedDays: 24,
     totalDays: 31,
     skills: [
       "RAG",
       "Prompt Engineering",
-      "LangChain",
-      "Vector DB",
-      "MCP"
+      "Vector Database"
     ],
     strengths: [
-      "Prompt Engineering",
-      "LangChain"
-    ],
-    weaknesses: [
-      "Model Context Protocol"
+      "LLM Applications",
+      "Agent Design"
     ]
   },
+
   {
     id: 2,
-    name: "Priya Verma",
-    role: "ML Developer",
-    college: "ABES Engineering College",
-    avatar: "https://i.pravatar.cc/150?img=32",
-    level: "Intermediate",
-    completedDays: 20,
+    name: "Arjun Patel",
+    role: "Machine Learning Engineer",
+    level: "Advanced",
+    completedDays: 29,
     totalDays: 31,
     skills: [
-      "Python",
-      "OpenAI",
-      "Embeddings",
-      "FastAPI"
+      "MCP",
+      "AI Agents",
+      "Deployment"
     ],
     strengths: [
-      "Python",
-      "Embeddings"
-    ],
-    weaknesses: [
-      "RAG"
+      "System Design",
+      "Production AI"
     ]
   },
+
   {
     id: 3,
-    name: "Rahul Patel",
-    role: "Software Engineer",
-    college: "ABES Engineering College",
-    avatar: "https://i.pravatar.cc/150?img=15",
+    name: "Neha Singh",
+    role: "AI Developer",
     level: "Beginner",
-    completedDays: 11,
+    completedDays: 12,
     totalDays: 31,
     skills: [
       "Python",
-      "Git",
-      "REST API"
+      "LLMs",
+      "Embeddings"
     ],
     strengths: [
-      "Python"
-    ],
-    weaknesses: [
-      "Prompt Engineering",
-      "RAG"
+      "Programming Basics"
     ]
   }
 ];
