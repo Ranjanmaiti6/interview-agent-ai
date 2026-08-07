@@ -1,32 +1,50 @@
 [
   {
-    "id": 1,
+    "day": 10,
     "topic": "RAG",
     "difficulty": "Easy",
-    "question": "Explain Retrieval Augmented Generation."
+    "question": "Explain Retrieval-Augmented Generation."
   },
   {
-    "id": 2,
+    "day": 10,
     "topic": "RAG",
     "difficulty": "Medium",
-    "question": "Why is chunking important in RAG?"
+    "question": "Why is chunking important?"
   },
   {
-    "id": 3,
+    "day": 5,
     "topic": "Prompt Engineering",
     "difficulty": "Easy",
     "question": "What is Few-shot Prompting?"
   },
   {
-    "id": 4,
-    "topic": "Agents",
-    "difficulty": "Hard",
-    "question": "Explain the ReAct pattern."
+    "day": 15,
+    "topic": "AI Agents",
+    "difficulty": "Medium",
+    "question": "Explain ReAct Agent."
   },
   {
-    "id": 5,
+    "day": 20,
     "topic": "MCP",
+    "difficulty": "Hard",
+    "question": "What problem does Model Context Protocol solve?"
+  },
+  {
+    "day": 25,
+    "topic": "Deployment",
     "difficulty": "Medium",
-    "question": "What problem does MCP solve?"
+    "question": "How would you deploy an LLM application?"
+  },
+  {
+    "day": 27,
+    "topic": "Evaluation",
+    "difficulty": "Hard",
+    "question": "How do you evaluate an AI system?"
+  },
+  {
+    "day": 31,
+    "topic": "Production",
+    "difficulty": "Hard",
+    "question": "Design an end-to-end AI system for production."
   }
 ]

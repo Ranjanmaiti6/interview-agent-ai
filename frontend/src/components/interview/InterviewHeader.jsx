@@ -1,34 +1,51 @@
 export default function InterviewHeader({
-  questionNumber = 1,
-  totalQuestions = 8,
+  questionNumber,
+  totalQuestions,
+  candidateName = "Riya Sharma",
+  topic = "RAG",
+  difficulty = "Medium",
 }) {
-  const progress =
-    (questionNumber / totalQuestions) * 100;
+  const progress = (questionNumber / totalQuestions) * 100;
 
   return (
-    <div className="border-b border-slate-800 p-6">
+    <div className="bg-slate-900 border-b border-slate-800 p-6">
 
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-5xl mx-auto">
 
-        <h1 className="text-white text-3xl font-bold">
-          AI Technical Interview
+        <h1 className="text-3xl font-bold text-white">
+          AI Interview
         </h1>
 
         <p className="text-slate-400 mt-2">
-          Question {questionNumber} of {totalQuestions}
-          {" "}• AI Engineering Track
+          Candidate: {candidateName}
         </p>
 
+        <div className="flex flex-wrap gap-6 mt-6 text-sm text-slate-300">
 
-        <div className="bg-slate-800 h-2 rounded-full mt-5">
+          <div>
+            <span className="font-semibold">Question:</span>{" "}
+            {questionNumber} / {totalQuestions}
+          </div>
 
+          <div>
+            <span className="font-semibold">Topic:</span>{" "}
+            {topic}
+          </div>
+
+          <div>
+            <span className="font-semibold">Difficulty:</span>{" "}
+            {difficulty}
+          </div>
+
+        </div>
+
+        <div className="w-full h-2 bg-slate-800 rounded-full mt-5">
           <div
-            className="bg-blue-500 h-2 rounded-full transition-all"
+            className="h-2 bg-blue-500 rounded-full transition-all duration-500"
             style={{
-              width:`${progress}%`
+              width: `${progress}%`,
             }}
           />
-
         </div>
 
       </div>
