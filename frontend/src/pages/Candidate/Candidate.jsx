@@ -2,77 +2,131 @@ const candidates = [
   {
     id: 1,
     name: "Riya Sharma",
-    skills: "RAG, Prompt Engineering"
+    skills: "RAG, Prompt Engineering",
+    progress: "Completed 10/31 days"
   },
   {
     id: 2,
     name: "Arjun Patel",
-    skills: "AI Agents, Deployment"
+    skills: "AI Agents, Deployment",
+    progress: "Completed 20/31 days"
   }
 ];
 
 
-export default function Candidate(){
-
-return (
-
-<div className="p-10 bg-slate-950 min-h-screen">
-
-<h1 className="text-white text-4xl font-bold mb-8">
-Choose Candidate
-</h1>
+export default function Candidate() {
 
 
-{
-candidates.map((candidate)=>(
+  const startInterview = (id) => {
 
-<div
-key={candidate.id}
-className="bg-slate-900 p-6 rounded-xl mb-5"
->
+    window.location.href = `/interview?id=${id}`;
 
-<h2 className="text-white text-2xl">
-{candidate.name}
-</h2>
+  };
 
 
-<p className="text-slate-400 mt-2">
-{candidate.skills}
-</p>
+  return (
+
+    <div className="
+      min-h-screen
+      bg-slate-950
+      p-10
+    ">
 
 
-<button
-
-onClick={()=>{
-window.location.href =
-`/interview?id=${candidate.id}`;
-}}
-
-className="
-mt-5
-bg-blue-600
-text-white
-px-5
-py-3
-rounded-xl
-"
-
->
-
-Start Interview
-
-</button>
+      <h1 className="
+        text-white
+        text-4xl
+        font-bold
+        mb-10
+      ">
+        Select Candidate
+      </h1>
 
 
-</div>
 
-))
+      <div className="
+        grid
+        md:grid-cols-2
+        gap-8
+      ">
 
-}
+
+        {
+          candidates.map((candidate)=>(
 
 
-</div>
+            <div
+              key={candidate.id}
+              className="
+              bg-slate-900
+              rounded-2xl
+              p-6
+              "
+            >
 
-);
+
+              <h2 className="
+                text-white
+                text-2xl
+                font-bold
+              ">
+                {candidate.name}
+              </h2>
+
+
+
+              <p className="
+                text-slate-400
+                mt-3
+              ">
+                {candidate.skills}
+              </p>
+
+
+              <p className="
+                text-slate-500
+                mt-2
+              ">
+                {candidate.progress}
+              </p>
+
+
+
+              <button
+
+                onClick={() =>
+                  startInterview(candidate.id)
+                }
+
+                className="
+                mt-6
+                bg-blue-600
+                text-white
+                px-5
+                py-3
+                rounded-xl
+                "
+
+              >
+
+                Start Interview
+
+              </button>
+
+
+
+            </div>
+
+
+          ))
+        }
+
+
+      </div>
+
+
+    </div>
+
+  );
 
 }

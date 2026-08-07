@@ -10,7 +10,7 @@ export default function Interview(){
   const [searchParams] = useSearchParams();
 
 const candidateId = searchParams.get("id");
-
+console.log(candidateId);git
 
 const [questionNumber,setQuestionNumber] = useState(0);
 
