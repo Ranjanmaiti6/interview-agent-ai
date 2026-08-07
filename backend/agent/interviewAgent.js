@@ -1,42 +1,92 @@
-const curriculum = require("../data/curriculum.json");
-const candidates = require("../data/candidates.json");
+const curriculum =
+require("../data/curriculum.json");
+
+const candidates =
+require("../data/candidates.json");
 
 
-function generateQuestion(
+const {
+askAI
+} = require("./aiService");
+
+
+
+async function generateQuestion(
 answer,
 questionNumber,
-candidateId = 1
+candidateId
 ){
+
 
 const candidate =
 candidates.find(
-c => c.id === candidateId
+c=>c.id == candidateId
 );
 
 
 
-let topic =
+const topic =
 curriculum[questionNumber]
 ||
 curriculum[0];
 
 
 
+const prompt = `
+
+You are interviewing a candidate.
+
+Candidate Name:
+${candidate.name}
+
+
+Candidate strengths:
+${candidate.strengths}
+
+
+Candidate weaknesses:
+${candidate.weaknesses}
+
+
+Current topic:
+${topic.topic}
+
+
+Candidate answer:
+${answer}
+
+
+Generate:
+
+1. Short feedback
+2. One difficult follow-up technical question
+
+
+Return only this format:
+
+Feedback:
+...
+
+Next Question:
+...
+
+`;
+
+
+
+const result = await askAI(prompt);
+
+
+
 return {
 
-feedback:
-`Based on your answer, let's explore ${topic.topic}`,
-
-nextQuestion:
-`Explain your understanding of ${topic.topic}. How have you applied it in your projects?`,
-
-candidate:
-candidate.name,
+response: result,
 
 questionNumber:
 questionNumber + 1
 
 };
+
 
 }
 

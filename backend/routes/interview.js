@@ -8,7 +8,7 @@ const {
 
 
 
-router.post("/answer", (req, res) => {
+router.post("/answer",async(req,res)=> {
 
   const {
     answer,
@@ -17,11 +17,11 @@ router.post("/answer", (req, res) => {
   } = req.body;
 
 
-  const response = generateQuestion(
-    answer,
-    questionNumber,
-    candidateId
-  );
+const response = await generateQuestion(
+answer,
+questionNumber,
+candidateId
+);
 
 
   res.json(response);
