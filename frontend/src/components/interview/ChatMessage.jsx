@@ -1,46 +1,33 @@
-export default function ChatMessage({
-  role,
-  text
-}) {
+import { Bot, User } from "lucide-react";
+
+export default function ChatMessage({ role, text }) {
+  const isAI = role === "ai";
 
   return (
-
     <div
-      className={
-        role === "ai"
-        ? "flex justify-start"
-        : "flex justify-end"
-      }
+      className={`flex ${
+        isAI ? "justify-start" : "justify-end"
+      }`}
     >
-
       <div
-        className={`
-          max-w-xl
-          p-5
-          rounded-2xl
-          ${
-            role==="ai"
-            ?
-            "bg-slate-800 text-white"
-            :
-            "bg-blue-600 text-white"
-          }
-        `}
+        className={`max-w-[75%] rounded-2xl p-5 flex gap-4 ${
+          isAI
+            ? "bg-slate-900 text-white"
+            : "bg-blue-600 text-white"
+        }`}
       >
+        <div className="mt-1">
+          {isAI ? (
+            <Bot size={22} />
+          ) : (
+            <User size={22} />
+          )}
+        </div>
 
-        <p className="text-sm opacity-70 mb-2">
-          {role==="ai" ? "AI Interviewer" : "You"}
-        </p>
-
-
-        <p>
+        <p className="leading-7 whitespace-pre-wrap">
           {text}
         </p>
-
-
       </div>
-
     </div>
-
   );
 }

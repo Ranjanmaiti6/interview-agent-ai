@@ -1,153 +1,152 @@
-import { useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useState, useEffect, useRef } from "react";
+import { useSearchParams, useNavigate } from "react-router-dom";
 
 import InterviewHeader from "../../components/Interview/InterviewHeader";
 import ChatMessage from "../../components/Interview/ChatMessage";
 import InterviewInput from "../../components/Interview/InterviewInput";
 
-
-export default function Interview(){
+export default function Interview() {
   const [searchParams] = useSearchParams();
-
-const candidateId = searchParams.get("id");
-console.log(candidateId);
-
-const [questionNumber,setQuestionNumber] = useState(0);
-
-
-
-const [messages,setMessages] = useState([
-{
-role:"ai",
-text:"Explain how you would design a RAG based AI application."
-}
-]);
-
-
-
-const sendAnswer = async(answer)=>{
-
-
-// show user answer
-
-setMessages(prev=>[
-...prev,
-{
-role:"user",
-text:answer
-}
-]);
-
-
-
-// send to backend
-
-const response = await fetch(
-"http://localhost:5000/api/interview/answer",
-{
-method:"POST",
-
-headers:{
-"Content-Type":"application/json"
-},
-
-body:JSON.stringify({
-
-answer:answer,
-
-questionNumber:questionNumber,
-candidateId: candidateId
-
-
-})
-
-}
-
-);
-
-
-
-const data = await response.json();
-
-
-
-// show AI response
-
-setMessages(prev=>[
-...prev,
-{
-role:"ai",
-text:data.nextQuestion
-}
-]);
-
-
-
-setQuestionNumber(data.questionNumber);
-
-
-};
-
-
-
-return (
-
-<div className="
-min-h-screen
-bg-slate-950
-flex
-flex-col
-">
-
-
-<InterviewHeader
-
-questionNumber={questionNumber+1}
-
-totalQuestions={8}
-
-/>
-
-
-
-<div className="
-flex-1
-max-w-4xl
-w-full
-mx-auto
-p-6
-space-y-6
-">
-
-
-{
-messages.map((message,index)=>(
-
-<ChatMessage
-
-key={index}
-
-{...message}
-
-/>
-
-))
-}
-
-
-</div>
-
-
-<InterviewInput
-
-onSend={sendAnswer}
-
-/>
-
-
-</div>
-
-);
-
-
+  const navigate = useNavigate();
+
+  const candidateId = searchParams.get("id");
+
+  const candidateName =
+    candidateId === "1" ? "Riya Sharma" : "Arjun Patel";
+
+  const totalQuestions = 8;
+
+  const [questionNumber, setQuestionNumber] = useState(1);
+
+  const [loading, setLoading] = useState(false);
+
+  const [messages, setMessages] = useState([
+    {
+      role: "ai",
+      text: "Welcome to your AI Technical Interview.\n\nLet's begin.\n\nExplain how Retrieval-Augmented Generation (RAG) works in an AI application."
+    }
+  ]);
+
+  const bottomRef = useRef(null);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({
+      behavior: "smooth"
+    });
+  }, [messages, loading]);
+
+  const sendAnswer = async (answer) => {
+    if (!answer.trim()) return;
+
+    // Add candidate answer
+    setMessages((prev) => [
+      ...prev,
+      {
+        role: "user",
+        text: answer
+      }
+    ]);
+
+    setLoading(true);
+
+    try {
+      const response = await fetch(
+        "http://localhost:5000/api/interview/answer",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            answer,
+            questionNumber: questionNumber - 1,
+            candidateId
+          })
+        }
+      );
+
+      const data = await response.json();
+
+      const aiReply =
+        data.nextQuestion ||
+        data.response ||
+        "Great answer. Let's continue.";
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "ai",
+          text: aiReply
+        }
+      ]);
+
+      if (questionNumber >= totalQuestions) {
+        setTimeout(() => {
+          navigate("/report");
+        }, 1500);
+      } else {
+        setQuestionNumber((prev) => prev + 1);
+      }
+    } catch (error) {
+      console.error(error);
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "ai",
+          text: "Unable to connect to the backend. Please make sure the backend server is running."
+        }
+      ]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-950 flex flex-col">
+
+      <InterviewHeader
+        questionNumber={questionNumber}
+        totalQuestions={totalQuestions}
+        candidateName={candidateName}
+        topic="AI Engineering"
+        difficulty={
+          questionNumber <= 2
+            ? "Easy"
+            : questionNumber <= 5
+            ? "Medium"
+            : "Hard"
+        }
+      />
+
+      <div className="flex-1 overflow-y-auto">
+
+        <div className="max-w-5xl mx-auto px-6 py-8 space-y-6">
+
+          {messages.map((message, index) => (
+            <ChatMessage
+              key={index}
+              role={message.role}
+              text={message.text}
+            />
+          ))}
+
+          {loading && (
+            <div className="flex">
+              <div className="bg-slate-800 rounded-xl px-5 py-3 text-blue-400 italic animate-pulse">
+                🤖 AI is thinking...
+              </div>
+            </div>
+          )}
+
+          <div ref={bottomRef}></div>
+
+        </div>
+
+      </div>
+
+      <InterviewInput onSend={sendAnswer} />
+
+    </div>
+  );
 }
