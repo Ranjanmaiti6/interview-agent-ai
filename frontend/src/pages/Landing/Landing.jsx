@@ -1,6 +1,7 @@
 import Navbar from "../../components/layout/Navbar";
 import Hero from "../../components/landing/Hero";
 import Features from "../../components/landing/Features";
+import Workflow from "../../components/landing/Workflow";
 
 export default function Landing() {
   return (
@@ -8,6 +9,7 @@ export default function Landing() {
       <Navbar />
       <Hero />
       <Features />
+      <Workflow />
     </>
   );
 }
