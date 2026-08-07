@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 
-import InterviewHeader from "../../components/Interview/InterviewHeader";
-import ChatMessage from "../../components/Interview/ChatMessage";
-import InterviewInput from "../../components/Interview/InterviewInput";
+import InterviewHeader from "../../components/interview/InterviewHeader";
+import ChatMessage from "../../components/interview/ChatMessage";
+import InterviewInput from "../../components/interview/InterviewInput";
 
 export default function Interview() {
   const [searchParams] = useSearchParams();
