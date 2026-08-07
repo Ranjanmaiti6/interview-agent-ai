@@ -1,20 +1,15 @@
-export default function WorkflowCard({
-  step,
-  title,
-  description,
-}) {
+export default function WorkflowCard({ number, title, description }) {
   return (
-    <div className="relative bg-slate-900 border border-slate-800 rounded-2xl p-6 hover:border-blue-500 transition-all duration-300">
-
-      <div className="w-12 h-12 rounded-full bg-blue-600 text-white flex items-center justify-center text-lg font-bold mb-5">
-        {step}
+    <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 hover:border-blue-500 transition-all">
+      <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold">
+        {number}
       </div>
 
-      <h3 className="text-white text-2xl font-bold">
+      <h3 className="text-white text-xl font-bold mt-5">
         {title}
       </h3>
 
-      <p className="text-slate-400 mt-3 leading-7">
+      <p className="text-slate-400 mt-3">
         {description}
       </p>
     </div>

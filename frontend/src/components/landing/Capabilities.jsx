@@ -1,89 +1,61 @@
-import {
-  Brain,
-  Network,
-  Radar,
-  Sparkles,
-  Bot,
-  Target,
-} from "lucide-react";
-
 import CapabilityCard from "./CapabilityCard";
 
 const capabilities = [
   {
-    icon: Brain,
-    title: "Adaptive Intelligence",
+    title: "Adaptive Difficulty",
     description:
-      "Questions become easier or harder based on candidate performance.",
-    color: "bg-blue-600",
+      "Questions become easier or harder based on candidate responses.",
+    color: "border-blue-500 bg-blue-500/10",
   },
   {
-    icon: Network,
     title: "Knowledge Graph",
     description:
-      "Tracks topic mastery across the AI curriculum to identify knowledge gaps.",
-    color: "bg-violet-600",
+      "Tracks concept mastery and identifies learning gaps.",
+    color: "border-purple-500 bg-purple-500/10",
   },
   {
-    icon: Radar,
-    title: "Skill Radar",
-    description:
-      "Live visualization of strengths and weaknesses throughout the interview.",
-    color: "bg-cyan-600",
-  },
-  {
-    icon: Sparkles,
     title: "Confidence Detection",
     description:
-      "Detects uncertainty from responses and adapts follow-up questions.",
-    color: "bg-pink-600",
+      "Detects hesitation and asks targeted follow-up questions.",
+    color: "border-green-500 bg-green-500/10",
   },
   {
-    icon: Bot,
-    title: "Smart Follow-Ups",
+    title: "Skill Radar",
     description:
-      "Every follow-up is generated using previous answers and interview context.",
-    color: "bg-green-600",
+      "Visualizes strengths and weaknesses across AI topics.",
+    color: "border-orange-500 bg-orange-500/10",
   },
   {
-    icon: Target,
+    title: "Career Roadmap",
+    description:
+      "Suggests learning paths based on interview performance.",
+    color: "border-pink-500 bg-pink-500/10",
+  },
+  {
     title: "Hiring Prediction",
     description:
-      "Provides readiness insights, strengths, and improvement roadmap.",
-    color: "bg-orange-600",
+      "Provides a readiness score and hiring recommendation.",
+    color: "border-cyan-500 bg-cyan-500/10",
   },
-];
-
+]; 
 export default function Capabilities() {
   return (
-    <section className="bg-slate-950 py-28 px-6">
+    <section className="bg-slate-900 py-24 px-6">
       <div className="max-w-7xl mx-auto">
-
-        <p className="uppercase tracking-[0.3em] text-blue-400 font-semibold">
-          AI Engine
-        </p>
-
-        <h2 className="text-5xl font-black text-white mt-4">
-          What Makes Our AI Different?
+        <h2 className="text-5xl font-black text-center text-white">
+          AI Capabilities
         </h2>
 
-        <p className="text-slate-400 mt-6 max-w-3xl text-lg">
-          Our Interview Agent doesn't ask random questions.
-          It understands your learning journey,
-          adapts in real time,
-          remembers context,
-          and evaluates you like a senior interviewer.
+        <p className="text-slate-400 text-center mt-4 max-w-3xl mx-auto">
+          Our AI Interview Agent goes beyond static Q&A by adapting to the
+          candidate's knowledge, confidence, and learning journey.
         </p>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mt-20">
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mt-16">
           {capabilities.map((item) => (
-            <CapabilityCard
-              key={item.title}
-              {...item}
-            />
+            <CapabilityCard key={item.title} {...item} />
           ))}
         </div>
-
       </div>
     </section>
   );
