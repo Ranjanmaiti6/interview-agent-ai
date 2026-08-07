@@ -2,7 +2,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 
 import Landing from "./pages/Landing/Landing";
 import Candidate from "./pages/Candidate/Candidate";
-import Interview from "./pages/Interview/Interview";
+import Interview from "./pages/interview/Interview";
 import Report from "./pages/Report/Report";
 import CandidateDashboard from "./pages/CandidateDashboard/CandidateDashboard";
 
