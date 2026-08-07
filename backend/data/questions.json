@@ -1,0 +1,32 @@
+[
+  {
+    "id": 1,
+    "topic": "RAG",
+    "difficulty": "Easy",
+    "question": "Explain Retrieval Augmented Generation."
+  },
+  {
+    "id": 2,
+    "topic": "RAG",
+    "difficulty": "Medium",
+    "question": "Why is chunking important in RAG?"
+  },
+  {
+    "id": 3,
+    "topic": "Prompt Engineering",
+    "difficulty": "Easy",
+    "question": "What is Few-shot Prompting?"
+  },
+  {
+    "id": 4,
+    "topic": "Agents",
+    "difficulty": "Hard",
+    "question": "Explain the ReAct pattern."
+  },
+  {
+    "id": 5,
+    "topic": "MCP",
+    "difficulty": "Medium",
+    "question": "What problem does MCP solve?"
+  }
+]
