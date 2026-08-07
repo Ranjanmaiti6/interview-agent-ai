@@ -6,11 +6,13 @@ import Capabilities from "../../components/landing/Capabilities";
 import Stats from "../../components/landing/Stats";
 import Testimonials from "../../components/landing/Testimonials";
 import CTA from "../../components/landing/CTA";
+import About from "../../components/about/About";
 export default function Landing() {
   return (
     <>
       <Navbar />
       <Hero />
+      <About />
       <Features />
       <Workflow />
       <Capabilities />
