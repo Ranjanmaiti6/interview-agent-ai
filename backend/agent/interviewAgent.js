@@ -1,97 +1,59 @@
-const curriculum =
-require("../data/curriculum.json");
+const curriculum = require("../data/curriculum.json");
+const candidates = require("../data/candidates.json");
 
-const candidates =
-require("../data/candidates.json");
-
-
-const {
-askAI
-} = require("./aiService");
-
-
+const questions = [
+  "Explain Retrieval-Augmented Generation (RAG).",
+  "Why is chunking important in RAG?",
+  "What is Few-shot Prompting?",
+  "Explain how AI Agents work.",
+  "What problem does MCP solve?",
+  "How would you deploy an LLM application?",
+  "How do you evaluate an AI system?",
+  "Design a production-ready AI architecture."
+];
 
 async function generateQuestion(
-answer,
-questionNumber,
-candidateId
-){
+  answer,
+  questionNumber,
+  candidateId
+) {
+  const candidate =
+    candidates.find(
+      (c) => c.id == candidateId
+    ) || candidates[0];
 
+  const topic =
+    curriculum[questionNumber] || curriculum[0];
 
-const candidate =
-candidates.find(
-c=>c.id == candidateId
-);
+  // Mock scoring (replace with AI later)
+  const score = {
+    technical: Math.floor(Math.random() * 3) + 7,
+    communication: Math.floor(Math.random() * 3) + 7,
+    problemSolving: Math.floor(Math.random() * 3) + 7,
+  };
 
+  const feedback =
+    answer.length > 40
+      ? "Good explanation. Your answer covered the main concepts clearly."
+      : "Your answer is a bit short. Try explaining your reasoning with more detail.";
 
+  return {
+    feedback,
 
-const topic =
-curriculum[questionNumber]
-||
-curriculum[0];
+    nextQuestion:
+      questions[questionNumber + 1] ||
+      "Interview Completed",
 
+    score,
 
+    topic: topic.topic,
 
-const prompt = `
+    candidate: candidate.name,
 
-You are interviewing a candidate.
-
-Candidate Name:
-${candidate.name}
-
-
-Candidate strengths:
-${candidate.strengths}
-
-
-Candidate weaknesses:
-${candidate.weaknesses}
-
-
-Current topic:
-${topic.topic}
-
-
-Candidate answer:
-${answer}
-
-
-Generate:
-
-1. Short feedback
-2. One difficult follow-up technical question
-
-
-Return only this format:
-
-Feedback:
-...
-
-Next Question:
-...
-
-`;
-
-
-
-const result = await askAI(prompt);
-
-
-
-return {
-
-response: result,
-
-questionNumber:
-questionNumber + 1
-
-};
-
-
+    questionNumber: questionNumber + 1,
+  };
 }
 
-
-
-module.exports={
-generateQuestion
+module.exports = {
+  generateQuestion,
 };

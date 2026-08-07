@@ -20,31 +20,37 @@ export default function Interview() {
 
   const [loading, setLoading] = useState(false);
 
+  // NEW
+  const [score, setScore] = useState({
+    technical: 0,
+    communication: 0,
+    problemSolving: 0,
+  });
+
   const [messages, setMessages] = useState([
     {
       role: "ai",
-      text: "Welcome to your AI Technical Interview.\n\nLet's begin.\n\nExplain how Retrieval-Augmented Generation (RAG) works in an AI application."
-    }
+      text: "Welcome to your AI Technical Interview.\n\nLet's begin.\n\nExplain how Retrieval-Augmented Generation (RAG) works in an AI application.",
+    },
   ]);
 
   const bottomRef = useRef(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({
-      behavior: "smooth"
+      behavior: "smooth",
     });
   }, [messages, loading]);
 
   const sendAnswer = async (answer) => {
     if (!answer.trim()) return;
 
-    // Add candidate answer
     setMessages((prev) => [
       ...prev,
       {
         role: "user",
-        text: answer
-      }
+        text: answer,
+      },
     ]);
 
     setLoading(true);
@@ -55,35 +61,49 @@ export default function Interview() {
         {
           method: "POST",
           headers: {
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
           },
           body: JSON.stringify({
             answer,
             questionNumber: questionNumber - 1,
-            candidateId
-          })
+            candidateId,
+          }),
         }
       );
 
       const data = await response.json();
 
-      const aiReply =
-        data.nextQuestion ||
-        data.response ||
-        "Great answer. Let's continue.";
+      // NEW
+      if (data.score) {
+        setScore(data.score);
+      }
 
+      // NEW
       setMessages((prev) => [
         ...prev,
         {
           role: "ai",
-          text: aiReply
-        }
+          text: `✅ Feedback\n\n${
+            data.feedback || "Good answer."
+          }`,
+        },
+        {
+          role: "ai",
+          text: `🎯 Next Question\n\n${
+            data.nextQuestion || "Let's continue."
+          }`,
+        },
       ]);
 
       if (questionNumber >= totalQuestions) {
         setTimeout(() => {
-          navigate("/report");
-        }, 1500);
+          navigate("/report", {
+            state: {
+              score,
+              candidateName,
+            },
+          });
+        }, 1200);
       } else {
         setQuestionNumber((prev) => prev + 1);
       }
@@ -94,8 +114,8 @@ export default function Interview() {
         ...prev,
         {
           role: "ai",
-          text: "Unable to connect to the backend. Please make sure the backend server is running."
-        }
+          text: "Unable to connect to backend.",
+        },
       ]);
     } finally {
       setLoading(false);

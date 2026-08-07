@@ -1,27 +1,50 @@
+import { useLocation } from "react-router-dom";
 import ScoreCard from "../../components/report/ScoreCard";
 import SkillCard from "../../components/report/SkillCard";
 import Recommendation from "../../components/report/Recommendation";
 
 export default function Report() {
 
-  const report = {
-    overall: 84,
-    technical: 88,
-    communication: 80,
-    problemSolving: 85,
+  const { state } = useLocation();
 
-    strengths: [
-      "Retrieval Augmented Generation",
-      "Prompt Engineering",
-      "Vector Databases"
-    ],
+    const score = state?.score || {
+      technical: 80,
+      communication: 80,
+      problemSolving: 80,
+    };
 
-    gaps: [
-      "Model Context Protocol",
-      "Production Deployment",
-      "LLM Evaluation"
-    ]
-  };
+    const candidateName =
+      state?.candidateName || "Candidate";
+
+    const overall = Math.round(
+      (
+        score.technical +
+        score.communication +
+        score.problemSolving
+      ) / 3
+    );
+
+const report = {
+  overall,
+
+  technical: score.technical,
+
+  communication: score.communication,
+
+  problemSolving: score.problemSolving,
+
+  strengths: [
+    "Retrieval-Augmented Generation",
+    "Prompt Engineering",
+    "Vector Databases"
+  ],
+
+  gaps: [
+    "Model Context Protocol",
+    "Production Deployment",
+    "LLM Evaluation"
+  ]
+};
 
   return (
 
@@ -32,6 +55,9 @@ export default function Report() {
         <h1 className="text-5xl font-black text-white">
           Interview Report
         </h1>
+        <p className="text-slate-400 mt-2">
+  Candidate: {candidateName}
+</p>
 
         <p className="text-slate-400 mt-3">
           Personalized AI Interview Analysis
@@ -39,25 +65,25 @@ export default function Report() {
 
         <div className="grid lg:grid-cols-4 gap-6 mt-12">
 
-          <ScoreCard
-            title="Overall Score"
-            value={report.overall}
-          />
+<ScoreCard
+  title="Overall Score"
+  value={report.overall}
+/>
 
-          <ScoreCard
-            title="Technical"
-            value={report.technical}
-          />
+<ScoreCard
+  title="Technical"
+  value={report.technical}
+/>
 
-          <ScoreCard
-            title="Communication"
-            value={report.communication}
-          />
+<ScoreCard
+  title="Communication"
+  value={report.communication}
+/>
 
-          <ScoreCard
-            title="Problem Solving"
-            value={report.problemSolving}
-          />
+<ScoreCard
+  title="Problem Solving"
+  value={report.problemSolving}
+/>
 
         </div>
 
@@ -75,7 +101,10 @@ export default function Report() {
 
         </div>
 
-        <Recommendation />
+        <Recommendation
+  overall={report.overall}
+  candidateName={candidateName}
+/>
 
       </div>
 
