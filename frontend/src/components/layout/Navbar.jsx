@@ -14,6 +14,7 @@ export default function Navbar() {
   return (
     <nav className="fixed top-0 left-0 w-full z-50 bg-slate-950/90 backdrop-blur border-b border-slate-800">
       <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+
         {/* Logo */}
         <Link
           to="/"
@@ -24,7 +25,9 @@ export default function Navbar() {
         </Link>
 
         {/* Desktop Navigation */}
-        <div className="hidden md:flex items-center gap-8">
+        <div className="hidden md:flex items-center gap-6">
+
+          {/* Landing page links */}
           {navLinks.map((item) => (
             <a
               key={item.name}
@@ -35,6 +38,23 @@ export default function Navbar() {
             </a>
           ))}
 
+          {/* Meetings */}
+          <Link
+            to="/meetings"
+            className="text-gray-300 hover:text-white transition"
+          >
+            Meetings
+          </Link>
+
+          {/* Results */}
+          <Link
+            to="/report"
+            className="text-gray-300 hover:text-white transition"
+          >
+            Results
+          </Link>
+
+          {/* Start Interview */}
           <Link
             to="/candidate"
             className="bg-blue-600 hover:bg-blue-700 transition px-5 py-2 rounded-lg text-white font-semibold"
@@ -47,6 +67,7 @@ export default function Navbar() {
         <button
           className="md:hidden text-white"
           onClick={() => setIsOpen(!isOpen)}
+          aria-label="Toggle menu"
         >
           {isOpen ? <X size={28} /> : <Menu size={28} />}
         </button>
@@ -55,7 +76,10 @@ export default function Navbar() {
       {/* Mobile Menu */}
       {isOpen && (
         <div className="md:hidden bg-slate-900 border-t border-slate-800">
+
           <div className="flex flex-col p-5 gap-5">
+
+            {/* Landing links */}
             {navLinks.map((item) => (
               <a
                 key={item.name}
@@ -67,13 +91,33 @@ export default function Navbar() {
               </a>
             ))}
 
+            {/* Meetings */}
+            <Link
+              to="/meetings"
+              onClick={() => setIsOpen(false)}
+              className="text-gray-300 hover:text-white"
+            >
+              Meetings
+            </Link>
+
+            {/* Results */}
+            <Link
+              to="/report"
+              onClick={() => setIsOpen(false)}
+              className="text-gray-300 hover:text-white"
+            >
+              Results
+            </Link>
+
+            {/* Start Interview */}
             <Link
               to="/candidate"
               onClick={() => setIsOpen(false)}
-              className="bg-blue-600 text-center rounded-lg py-3 text-white font-semibold"
+              className="bg-blue-600 hover:bg-blue-700 text-center rounded-lg py-3 text-white font-semibold"
             >
               Start Interview
             </Link>
+
           </div>
         </div>
       )}
