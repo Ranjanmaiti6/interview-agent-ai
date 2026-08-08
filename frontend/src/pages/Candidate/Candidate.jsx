@@ -1,22 +1,37 @@
 import { useNavigate } from "react-router-dom";
+import {
+  ArrowUpRight,
+  BrainCircuit,
+  CheckCircle2,
+  ChevronRight,
+  Clock3,
+  Sparkles,
+  Target,
+  Users,
+} from "lucide-react";
 
 const candidates = [
   {
     id: 1,
     name: "Riya Sharma",
     skills: "RAG, Prompt Engineering",
-    progress: "Completed 10/31 Days"
+    progress: "Completed 10/31 Days",
+    completed: 10,
+    total: 31,
+    status: "Active learner",
   },
   {
     id: 2,
     name: "Arjun Patel",
     skills: "AI Agents, Deployment",
-    progress: "Completed 20/31 Days"
-  }
+    progress: "Completed 20/31 Days",
+    completed: 20,
+    total: 31,
+    status: "Interview ready",
+  },
 ];
 
 export default function Candidate() {
-
   const navigate = useNavigate();
 
   const startInterview = (id) => {
@@ -24,46 +39,323 @@ export default function Candidate() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 p-10">
+    <div className="relative min-h-screen overflow-hidden bg-[#05070a] text-white">
+      {/* ========================================= */}
+      {/* Ambient background */}
+      {/* ========================================= */}
 
-      <h1 className="text-white text-5xl font-black mb-10">
-        Select Candidate
-      </h1>
+      <div className="pointer-events-none fixed inset-0">
+        <div className="absolute left-[15%] top-[-15%] h-[500px] w-[500px] rounded-full bg-blue-500/[0.055] blur-[150px]" />
 
-      <div className="grid md:grid-cols-2 gap-8">
+        <div className="absolute right-[-10%] top-[20%] h-[450px] w-[450px] rounded-full bg-cyan-500/[0.025] blur-[140px]" />
 
-        {candidates.map((candidate) => (
+        <div className="absolute bottom-[-15%] left-[30%] h-[500px] w-[500px] rounded-full bg-indigo-500/[0.025] blur-[150px]" />
 
-          <div
-            key={candidate.id}
-            className="bg-slate-900 rounded-2xl p-8 border border-slate-800 hover:border-blue-500 transition"
-          >
-
-            <h2 className="text-white text-3xl font-bold">
-              {candidate.name}
-            </h2>
-
-            <p className="text-slate-400 mt-4">
-              {candidate.skills}
-            </p>
-
-            <p className="text-slate-500 mt-2">
-              {candidate.progress}
-            </p>
-
-            <button
-              onClick={() => startInterview(candidate.id)}
-              className="mt-8 bg-blue-600 hover:bg-blue-700 transition px-6 py-3 rounded-xl text-white font-semibold"
-            >
-              View Dashboard
-            </button>
-
-          </div>
-
-        ))}
-
+        <div
+          className="absolute inset-0 opacity-[0.018]"
+          style={{
+            backgroundImage:
+              "radial-gradient(circle at 1px 1px, rgba(255,255,255,0.8) 1px, transparent 0)",
+            backgroundSize: "34px 34px",
+          }}
+        />
       </div>
 
+      {/* ========================================= */}
+      {/* Top line */}
+      {/* ========================================= */}
+
+      <div className="pointer-events-none absolute left-0 right-0 top-0 h-px bg-gradient-to-r from-transparent via-blue-400/30 to-transparent" />
+
+      {/* ========================================= */}
+      {/* Main */}
+      {/* ========================================= */}
+
+      <main className="relative z-10 mx-auto max-w-7xl px-6 py-10 lg:px-8 lg:py-14">
+        {/* ======================================= */}
+        {/* Header */}
+        {/* ======================================= */}
+
+        <div className="flex flex-col gap-8 border-b border-white/[0.07] pb-10 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <div className="inline-flex items-center gap-3">
+              <span className="h-px w-10 bg-blue-500" />
+
+              <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-blue-400">
+                Candidate Intelligence
+              </span>
+            </div>
+
+            <h1 className="mt-7 text-5xl font-semibold tracking-[-0.055em] text-white sm:text-6xl">
+              Select candidate.
+            </h1>
+
+            <p className="mt-5 max-w-2xl text-base leading-7 text-white/40">
+              Review each candidate's learning journey before entering their
+              adaptive AI interview.
+            </p>
+          </div>
+
+          {/* System status */}
+
+          <div className="flex items-center gap-3 self-start rounded-full border border-white/[0.07] bg-white/[0.025] px-4 py-2.5 lg:self-auto">
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-50" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
+            </span>
+
+            <span className="text-[9px] font-semibold uppercase tracking-[0.2em] text-white/40">
+              Interview system operational
+            </span>
+          </div>
+        </div>
+
+        {/* ======================================= */}
+        {/* Overview strip */}
+        {/* ======================================= */}
+
+        <div className="grid gap-px overflow-hidden border border-white/[0.07] bg-white/[0.07] sm:grid-cols-3">
+          <div className="bg-[#080b10]/90 p-5">
+            <div className="flex items-center gap-3">
+              <Users size={16} className="text-blue-300/70" />
+
+              <span className="text-[9px] font-semibold uppercase tracking-[0.2em] text-white/25">
+                Candidates
+              </span>
+            </div>
+
+            <p className="mt-3 text-2xl font-semibold text-white">
+              {candidates.length}
+            </p>
+          </div>
+
+          <div className="bg-[#080b10]/90 p-5">
+            <div className="flex items-center gap-3">
+              <BrainCircuit
+                size={16}
+                className="text-blue-300/70"
+              />
+
+              <span className="text-[9px] font-semibold uppercase tracking-[0.2em] text-white/25">
+                AI assessment
+              </span>
+            </div>
+
+            <p className="mt-3 text-sm font-semibold text-white/75">
+              Adaptive technical interview
+            </p>
+          </div>
+
+          <div className="bg-[#080b10]/90 p-5">
+            <div className="flex items-center gap-3">
+              <Sparkles
+                size={16}
+                className="text-blue-300/70"
+              />
+
+              <span className="text-[9px] font-semibold uppercase tracking-[0.2em] text-white/25">
+                Evaluation
+              </span>
+            </div>
+
+            <p className="mt-3 text-sm font-semibold text-white/75">
+              Context-aware results
+            </p>
+          </div>
+        </div>
+
+        {/* ======================================= */}
+        {/* Candidate cards */}
+        {/* ======================================= */}
+
+        <div className="mt-8 grid gap-5 lg:grid-cols-2">
+          {candidates.map((candidate) => {
+            const progress =
+              (candidate.completed / candidate.total) * 100;
+
+            const isReady = candidate.id === 2;
+
+            return (
+              <article
+                key={candidate.id}
+                className="group relative overflow-hidden rounded-[26px] border border-white/[0.07] bg-white/[0.018] shadow-[0_30px_100px_rgba(0,0,0,0.25)] backdrop-blur-xl transition-all duration-500 hover:-translate-y-1 hover:border-blue-400/[0.18] hover:bg-white/[0.025]"
+              >
+                {/* Hover glow */}
+
+                <div className="pointer-events-none absolute -right-28 -top-28 h-72 w-72 rounded-full bg-blue-500/[0.08] opacity-0 blur-[90px] transition-opacity duration-700 group-hover:opacity-100" />
+
+                {/* Top accent */}
+
+                <div className="absolute left-0 right-0 top-0 h-px bg-gradient-to-r from-transparent via-blue-400/0 to-transparent transition-all duration-700 group-hover:via-blue-400/40" />
+
+                <div className="relative p-7 sm:p-8">
+                  {/* Card top */}
+
+                  <div className="flex items-start justify-between gap-5">
+                    <div className="flex items-center gap-4">
+                      <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-blue-300/10 bg-blue-500/[0.07] shadow-[0_0_35px_rgba(59,130,246,0.08)]">
+                        <span className="text-lg font-semibold tracking-tight text-blue-200">
+                          {candidate.name
+                            .split(" ")
+                            .map((part) => part[0])
+                            .join("")}
+                        </span>
+                      </div>
+
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h2 className="text-xl font-semibold tracking-[-0.025em] text-white">
+                            {candidate.name}
+                          </h2>
+
+                          {isReady && (
+                            <CheckCircle2
+                              size={15}
+                              className="text-emerald-400"
+                            />
+                          )}
+                        </div>
+
+                        <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/25">
+                          Candidate #{String(candidate.id).padStart(2, "0")}
+                        </p>
+                      </div>
+                    </div>
+
+                    <span
+                      className={`hidden rounded-full border px-3 py-1.5 text-[9px] font-semibold uppercase tracking-[0.16em] sm:inline-flex ${
+                        isReady
+                          ? "border-emerald-400/15 bg-emerald-400/[0.05] text-emerald-300/70"
+                          : "border-blue-400/15 bg-blue-400/[0.05] text-blue-300/70"
+                      }`}
+                    >
+                      {candidate.status}
+                    </span>
+                  </div>
+
+                  {/* Skills */}
+
+                  <div className="mt-8">
+                    <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-white/25">
+                      Core strengths
+                    </p>
+
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {candidate.skills.split(",").map((skill) => (
+                        <span
+                          key={skill}
+                          className="rounded-lg border border-white/[0.07] bg-white/[0.025] px-3 py-2 text-xs text-white/55"
+                        >
+                          {skill.trim()}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Learning progress */}
+
+                  <div className="mt-8 rounded-2xl border border-white/[0.06] bg-black/20 p-5">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Target
+                          size={14}
+                          className="text-blue-300/70"
+                        />
+
+                        <span className="text-[9px] font-semibold uppercase tracking-[0.18em] text-white/30">
+                          Learning progress
+                        </span>
+                      </div>
+
+                      <span className="font-mono text-xs text-white/45">
+                        {Math.round(progress)}%
+                      </span>
+                    </div>
+
+                    <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-white/[0.06]">
+                      <div
+                        className="h-full rounded-full bg-gradient-to-r from-blue-600 via-blue-400 to-cyan-300 transition-all duration-700"
+                        style={{
+                          width: `${progress}%`,
+                        }}
+                      />
+                    </div>
+
+                    <div className="mt-3 flex items-center justify-between">
+                      <span className="flex items-center gap-2 text-[10px] text-white/25">
+                        <Clock3 size={12} />
+                        {candidate.completed} / {candidate.total} days
+                      </span>
+
+                      <span className="text-[10px] text-white/25">
+                        {candidate.progress}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Interview CTA */}
+
+                  <button
+                    type="button"
+                    onClick={() => startInterview(candidate.id)}
+                    className="group/button relative mt-7 flex w-full items-center justify-between overflow-hidden rounded-xl border border-blue-400/20 bg-blue-500/[0.08] px-5 py-4 text-left transition-all duration-300 hover:border-blue-400/40 hover:bg-blue-500/[0.14]"
+                  >
+                    <div className="relative z-10">
+                      <p className="text-sm font-semibold text-white">
+                        View candidate dashboard
+                      </p>
+
+                      <p className="mt-1 text-[10px] uppercase tracking-[0.15em] text-white/25">
+                        Review profile & interview readiness
+                      </p>
+                    </div>
+
+                    <div className="relative z-10 flex h-9 w-9 items-center justify-center rounded-lg border border-white/[0.08] bg-white/[0.04]">
+                      <ArrowUpRight
+                        size={16}
+                        className="text-blue-300 transition-transform duration-300 group-hover/button:-translate-y-0.5 group-hover/button:translate-x-0.5"
+                      />
+                    </div>
+
+                    <span className="absolute inset-0 -translate-x-full bg-white/[0.035] skew-x-[-20deg] transition-transform duration-500 group-hover/button:translate-x-full" />
+                  </button>
+                </div>
+
+                {/* Bottom metadata */}
+
+                <div className="flex items-center justify-between border-t border-white/[0.06] px-7 py-4 sm:px-8">
+                  <span className="flex items-center gap-2 text-[9px] font-semibold uppercase tracking-[0.18em] text-white/20">
+                    <span className="h-1.5 w-1.5 rounded-full bg-blue-400/70" />
+                    Adaptive AI
+                  </span>
+
+                  <span className="flex items-center gap-1 text-[9px] uppercase tracking-[0.15em] text-white/20 transition-colors group-hover:text-white/40">
+                    Open profile
+                    <ChevronRight size={12} />
+                  </span>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+
+        {/* ======================================= */}
+        {/* Bottom system note */}
+        {/* ======================================= */}
+
+        <div className="mt-10 flex flex-col gap-4 border-t border-white/[0.06] pt-6 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-xs leading-6 text-white/25">
+            Candidate context is used to personalize the technical interview
+            and generate relevant follow-up questions.
+          </p>
+
+          <div className="flex items-center gap-2 text-[9px] font-semibold uppercase tracking-[0.18em] text-white/20">
+            <span className="h-px w-8 bg-white/[0.08]" />
+            Candidate intelligence
+            <span className="h-px w-8 bg-white/[0.08]" />
+          </div>
+        </div>
+      </main>
     </div>
   );
 }
