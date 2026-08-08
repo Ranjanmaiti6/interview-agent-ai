@@ -1,41 +1,91 @@
+require("dotenv").config();
+
 const express = require("express");
 const cors = require("cors");
-require("dotenv").config();
+const path = require("path");
+
+
+// ==========================================
+// Routes
+// ==========================================
+
+const interviewRoute =
+  require("./routes/interview");
+
+const employeeRoute =
+  require("./routes/employee");
+
+const meetingsRoute =
+  require("./routes/meetings");
+
+const authRoute =
+  require("./routes/auth");
+
+
+// ==========================================
+// App
+// ==========================================
 
 const app = express();
 
-const PORT = process.env.PORT || 5001;
+const PORT =
+  process.env.PORT || 5001;
+
+
+// ==========================================
+// Allowed Frontend Origins
+// ==========================================
+
+const allowedOrigins = [
+
+  // Local development
+  "http://localhost:5173",
+  "http://127.0.0.1:5173",
+
+  "http://localhost:5174",
+  "http://127.0.0.1:5174",
+
+  // Production
+  "https://interview-agent-ai-frontend.vercel.app",
+];
 
 
 // ==========================================
 // CORS
 // ==========================================
 
-const allowedOrigins = [
-  "http://localhost:5173",
-  "http://localhost:5174",
-  "https://interview-agent-ai-frontend.vercel.app",
-];
-
 app.use(
   cors({
-    origin: function (origin, callback) {
 
-      // Allow requests from curl/Postman/server-side requests
+    origin: (origin, callback) => {
+
+      // Allow requests with no origin
+      // Postman, curl, server-to-server, etc.
       if (!origin) {
         return callback(null, true);
       }
 
-      if (allowedOrigins.includes(origin)) {
+
+      if (
+        allowedOrigins.includes(origin)
+      ) {
         return callback(null, true);
       }
 
-      console.log("CORS blocked:", origin);
+
+      console.log(
+        "CORS blocked origin:",
+        origin
+      );
+
 
       return callback(
-        new Error(`CORS blocked origin: ${origin}`)
+        new Error(
+          `CORS blocked for origin: ${origin}`
+        )
       );
     },
+
 
     methods: [
       "GET",
@@ -45,93 +95,255 @@ app.use(
       "OPTIONS",
     ],
 
+
     allowedHeaders: [
       "Content-Type",
       "Authorization",
     ],
 
-    credentials: false,
+
+    credentials: true,
   })
 );
 
 
 // ==========================================
-// Middleware
+// Body Middleware
 // ==========================================
-
-app.use(express.json());
-
-
-// ==========================================
-// Health check
-// ==========================================
-
-app.get("/", (req, res) => {
-  res.json({
-    success: true,
-    message: "Interview Agent AI backend is running",
-    environment: process.env.NODE_ENV || "development",
-  });
-});
-
-
-// ==========================================
-// Interview routes
-// ==========================================
-
-const interviewRoutes =
-  require("./routes/interview");
 
 app.use(
-  "/api/interview",
-  interviewRoutes
+  express.json()
+);
+
+app.use(
+  express.urlencoded({
+    extended: true,
+  })
 );
 
 
 // ==========================================
-// 404 handler
+// Uploaded Files
 // ==========================================
 
-app.use((req, res) => {
-  res.status(404).json({
-    success: false,
-    message: "Route not found",
-    path: req.originalUrl,
-  });
-});
+app.use(
+  "/uploads",
+  express.static(
+    path.join(
+      __dirname,
+      "uploads"
+    )
+  )
+);
 
 
 // ==========================================
-// Error handler
+// API ROUTES
 // ==========================================
 
-app.use((err, req, res, next) => {
 
-  console.error("Backend error:", err);
+// ------------------------------------------
+// Authentication
+// ------------------------------------------
 
-  if (
-    err.message &&
-    err.message.startsWith("CORS blocked")
-  ) {
-    return res.status(403).json({
-      success: false,
-      message: err.message,
+app.use(
+  "/api/auth",
+  authRoute
+);
+
+
+// ------------------------------------------
+// AI Interview
+// ------------------------------------------
+
+app.use(
+  "/api/interview",
+  interviewRoute
+);
+
+
+// ------------------------------------------
+// Employee Requests
+// ------------------------------------------
+
+app.use(
+  "/api/employee",
+  employeeRoute
+);
+
+
+// ------------------------------------------
+// Meetings
+// ------------------------------------------
+
+app.use(
+  "/api/meetings",
+  meetingsRoute
+);
+
+
+// ==========================================
+// Health Check
+// ==========================================
+
+app.get(
+  "/",
+  (req, res) => {
+
+    res.json({
+
+      success: true,
+
+      message:
+        "AI Interview Agent Backend Running 🚀",
+
+      port: PORT,
+
+      services: {
+
+        auth:
+          "/api/auth",
+
+        interview:
+          "/api/interview",
+
+        employee:
+          "/api/employee",
+
+        meetings:
+          "/api/meetings",
+
+        myMeetings:
+          "/api/meetings/my",
+
+        uploads:
+          "/uploads",
+      },
     });
   }
-
-  res.status(500).json({
-    success: false,
-    message: "Internal server error",
-  });
-});
+);
 
 
 // ==========================================
-// Start server
+// API Test
 // ==========================================
 
-app.listen(PORT, "0.0.0.0", () => {
-  console.log(
-    `Server running on port ${PORT}`
-  );
-});
+app.get(
+  "/api/test",
+  (req, res) => {
+
+    res.json({
+
+      success: true,
+
+      message:
+        "API is working correctly.",
+
+    });
+  }
+);
+
+
+// ==========================================
+// 404 Handler
+// ==========================================
+
+app.use(
+  (req, res) => {
+
+    console.log(
+      "404:",
+      req.method,
+      req.originalUrl
+    );
+
+
+    res.status(404).json({
+
+      success: false,
+
+      message:
+        "API endpoint not found.",
+
+      path:
+        req.originalUrl,
+
+    });
+  }
+);
+
+
+// ==========================================
+// Global Error Handler
+// ==========================================
+
+app.use(
+  (
+    error,
+    req,
+    res,
+    next
+  ) => {
+
+    console.error(
+      "Server error:",
+      error
+    );
+
+
+    res.status(
+      error.status || 500
+    ).json({
+
+      success: false,
+
+      message:
+        error.message ||
+        "Internal server error.",
+
+    });
+  }
+);
+
+
+// ==========================================
+// Start Server
+// ==========================================
+
+app.listen(
+  PORT,
+  () => {
+
+    console.log(
+      "=========================================="
+    );
+
+    console.log(
+      "AI Interview Agent Backend"
+    );
+
+    console.log(
+      `Server running on port ${PORT}`
+    );
+
+    console.log(
+      `Local: http://localhost:${PORT}`
+    );
+
+    console.log(
+      `Uploads: http://localhost:${PORT}/uploads`
+    );
+
+    console.log(
+      `Meetings: http://localhost:${PORT}/api/meetings`
+    );
+
+    console.log(
+      `My Meetings: http://localhost:${PORT}/api/meetings/my`
+    );
+
+    console.log(
+      "=========================================="
+    );
+  }
+);

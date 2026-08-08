@@ -9,6 +9,7 @@ const db = require("../database");
 
 const router = express.Router();
 
+
 // ==========================================
 // Create meetings table
 // ==========================================
@@ -27,9 +28,11 @@ db.exec(`
   )
 `);
 
+
 // ==========================================
-// Create meeting
+// CREATE MEETING
 // Admin only
+// POST /api/meetings
 // ==========================================
 
 router.post(
@@ -45,6 +48,11 @@ router.post(
         meetingUrl,
       } = req.body;
 
+
+      // ========================================
+      // Validation
+      // ========================================
+
       if (
         !title ||
         !employeeEmail ||
@@ -57,10 +65,17 @@ router.post(
         });
       }
 
-      const id = Date.now().toString();
+
+      const id =
+        Date.now().toString();
 
       const createdAt =
         new Date().toISOString();
+
+
+      // ========================================
+      // Insert meeting
+      // ========================================
 
       db.prepare(`
         INSERT INTO meetings (
@@ -86,10 +101,13 @@ router.post(
       `).run({
         id,
 
-        title: title.trim(),
+        title:
+          title.trim(),
 
         employeeEmail:
-          employeeEmail.trim().toLowerCase(),
+          employeeEmail
+            .trim()
+            .toLowerCase(),
 
         scheduledAt,
 
@@ -102,6 +120,11 @@ router.post(
         createdAt,
       });
 
+
+      // ========================================
+      // Get created meeting
+      // ========================================
+
       const meeting =
         db.prepare(`
           SELECT *
@@ -109,14 +132,18 @@ router.post(
           WHERE id = ?
         `).get(id);
 
+
       return res.status(201).json({
         success: true,
+
         message:
           "Meeting created successfully.",
+
         meeting,
       });
 
     } catch (error) {
+
       console.error(
         "Create meeting error:",
         error
@@ -124,6 +151,7 @@ router.post(
 
       return res.status(500).json({
         success: false,
+
         message:
           "Unable to create meeting.",
       });
@@ -131,9 +159,11 @@ router.post(
   }
 );
 
+
 // ==========================================
-// Get all meetings
+// GET ALL MEETINGS
 // Admin only
+// GET /api/meetings
 // ==========================================
 
 router.get(
@@ -142,6 +172,7 @@ router.get(
   requireRole("admin"),
   (req, res) => {
     try {
+
       const meetings =
         db.prepare(`
           SELECT *
@@ -149,12 +180,15 @@ router.get(
           ORDER BY scheduled_at ASC
         `).all();
 
+
       return res.json({
         success: true,
+
         meetings,
       });
 
     } catch (error) {
+
       console.error(
         "Get meetings error:",
         error
@@ -162,6 +196,7 @@ router.get(
 
       return res.status(500).json({
         success: false,
+
         message:
           "Unable to load meetings.",
       });
@@ -169,8 +204,11 @@ router.get(
   }
 );
 
+
 // ==========================================
-// Employee meetings
+// GET MY MEETINGS
+// Employee only
+// GET /api/meetings/my
 // ==========================================
 
 router.get(
@@ -179,22 +217,44 @@ router.get(
   requireRole("employee"),
   (req, res) => {
     try {
+
+      const employeeEmail =
+        String(
+          req.user.email || ""
+        )
+          .trim()
+          .toLowerCase();
+
+
+      if (!employeeEmail) {
+        return res.status(400).json({
+          success: false,
+
+          message:
+            "Employee email is missing from authentication.",
+        });
+      }
+
+
       const meetings =
         db.prepare(`
           SELECT *
           FROM meetings
-          WHERE employee_email = ?
+          WHERE LOWER(employee_email) = ?
           ORDER BY scheduled_at ASC
         `).all(
-          req.user.email.toLowerCase()
+          employeeEmail
         );
+
 
       return res.json({
         success: true,
+
         meetings,
       });
 
     } catch (error) {
+
       console.error(
         "Get employee meetings error:",
         error
@@ -202,6 +262,7 @@ router.get(
 
       return res.status(500).json({
         success: false,
+
         message:
           "Unable to load your meetings.",
       });
@@ -209,9 +270,71 @@ router.get(
   }
 );
 
+
 // ==========================================
-// Update meeting
+// GET SINGLE MEETING
 // Admin only
+// GET /api/meetings/:id
+// ==========================================
+
+router.get(
+  "/:id",
+  authenticateToken,
+  requireRole("admin"),
+  (req, res) => {
+    try {
+
+      const {
+        id,
+      } = req.params;
+
+
+      const meeting =
+        db.prepare(`
+          SELECT *
+          FROM meetings
+          WHERE id = ?
+        `).get(id);
+
+
+      if (!meeting) {
+        return res.status(404).json({
+          success: false,
+
+          message:
+            "Meeting not found.",
+        });
+      }
+
+
+      return res.json({
+        success: true,
+
+        meeting,
+      });
+
+    } catch (error) {
+
+      console.error(
+        "Get single meeting error:",
+        error
+      );
+
+      return res.status(500).json({
+        success: false,
+
+        message:
+          "Unable to load meeting.",
+      });
+    }
+  }
+);
+
+
+// ==========================================
+// UPDATE MEETING
+// Admin only
+// PUT /api/meetings/:id
 // ==========================================
 
 router.put(
@@ -220,7 +343,11 @@ router.put(
   requireRole("admin"),
   (req, res) => {
     try {
-      const { id } = req.params;
+
+      const {
+        id,
+      } = req.params;
+
 
       const {
         title,
@@ -230,6 +357,7 @@ router.put(
         meetingUrl,
       } = req.body;
 
+
       const existing =
         db.prepare(`
           SELECT *
@@ -237,16 +365,20 @@ router.put(
           WHERE id = ?
         `).get(id);
 
+
       if (!existing) {
         return res.status(404).json({
           success: false,
+
           message:
             "Meeting not found.",
         });
       }
 
+
       const updatedAt =
         new Date().toISOString();
+
 
       db.prepare(`
         UPDATE meetings
@@ -259,7 +391,10 @@ router.put(
           updated_at = ?
         WHERE id = ?
       `).run(
-        title || existing.title,
+
+        title
+          ? title.trim()
+          : existing.title,
 
         employeeEmail
           ? employeeEmail
@@ -270,7 +405,8 @@ router.put(
         scheduledAt ||
           existing.scheduled_at,
 
-        status || existing.status,
+        status ||
+          existing.status,
 
         meetingUrl !== undefined
           ? meetingUrl
@@ -281,6 +417,7 @@ router.put(
         id
       );
 
+
       const meeting =
         db.prepare(`
           SELECT *
@@ -288,14 +425,18 @@ router.put(
           WHERE id = ?
         `).get(id);
 
+
       return res.json({
         success: true,
+
         message:
           "Meeting updated successfully.",
+
         meeting,
       });
 
     } catch (error) {
+
       console.error(
         "Update meeting error:",
         error
@@ -303,6 +444,7 @@ router.put(
 
       return res.status(500).json({
         success: false,
+
         message:
           "Unable to update meeting.",
       });
@@ -310,9 +452,11 @@ router.put(
   }
 );
 
+
 // ==========================================
-// Delete meeting
+// DELETE MEETING
 // Admin only
+// DELETE /api/meetings/:id
 // ==========================================
 
 router.delete(
@@ -321,7 +465,11 @@ router.delete(
   requireRole("admin"),
   (req, res) => {
     try {
-      const { id } = req.params;
+
+      const {
+        id,
+      } = req.params;
+
 
       const result =
         db.prepare(`
@@ -329,21 +477,26 @@ router.delete(
           WHERE id = ?
         `).run(id);
 
+
       if (result.changes === 0) {
         return res.status(404).json({
           success: false,
+
           message:
             "Meeting not found.",
         });
       }
 
+
       return res.json({
         success: true,
+
         message:
           "Meeting deleted successfully.",
       });
 
     } catch (error) {
+
       console.error(
         "Delete meeting error:",
         error
@@ -351,11 +504,13 @@ router.delete(
 
       return res.status(500).json({
         success: false,
+
         message:
           "Unable to delete meeting.",
       });
     }
   }
 );
+
 
 module.exports = router;
