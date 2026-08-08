@@ -1,68 +1,92 @@
-import { Link } from "react-router-dom";
-import { ArrowRight } from "lucide-react";
+import { ArrowUpRight, Sparkles } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 export default function CTA() {
-  return (
-    <section className="bg-slate-950 py-24 px-6">
-      <div className="max-w-6xl mx-auto">
-        <div className="rounded-3xl border border-slate-800 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 p-12 text-center shadow-2xl">
+  const navigate = useNavigate();
 
-          <span className="inline-block bg-white/20 text-white px-4 py-2 rounded-full text-sm font-semibold">
-            🚀 Ready to Begin?
+  return (
+    <section
+      id="cta"
+      className="relative overflow-hidden bg-slate-950 px-6 py-28 md:py-40"
+    >
+      {/* Cinematic background */}
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute left-1/2 top-1/2 h-[600px] w-[600px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-blue-500/[0.055] blur-[160px]" />
+
+        <div
+          className="absolute inset-0 opacity-[0.035]"
+          style={{
+            backgroundImage:
+              "linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)",
+            backgroundSize: "80px 80px",
+            maskImage:
+              "radial-gradient(circle at center, black 0%, transparent 70%)",
+          }}
+        />
+      </div>
+
+      <div className="relative mx-auto max-w-5xl text-center">
+        <div className="mx-auto flex w-fit items-center gap-2 border border-blue-500/20 bg-blue-500/[0.05] px-4 py-2">
+          <Sparkles
+            size={13}
+            className="text-blue-400"
+          />
+
+          <span className="text-[10px] font-bold uppercase tracking-[0.25em] text-blue-400">
+            Ready when you are
+          </span>
+        </div>
+
+        <h2 className="mt-10 text-5xl font-black leading-[0.92] tracking-[-0.055em] text-white sm:text-6xl md:text-8xl">
+          Build better
+          <span className="block text-slate-600">
+            interviews.
+          </span>
+        </h2>
+
+        <p className="mx-auto mt-8 max-w-2xl text-base leading-8 text-slate-400 md:text-lg">
+          Move from static question banks to intelligent, contextual technical
+          interviews designed around the candidate.
+        </p>
+
+        <div className="mt-12 flex flex-col items-center justify-center gap-4 sm:flex-row">
+          <button
+            type="button"
+            onClick={() => navigate("/login?role=employee")}
+            className="group flex min-h-14 items-center justify-center gap-3 bg-white px-7 text-sm font-bold text-slate-950 transition-all duration-300 hover:-translate-y-1 hover:bg-slate-200"
+          >
+            Start Interview
+
+            <ArrowUpRight
+              size={17}
+              className="transition-transform duration-300 group-hover:-translate-y-1 group-hover:translate-x-1"
+            />
+          </button>
+
+          <button
+            type="button"
+            onClick={() => navigate("/login?role=admin")}
+            className="group flex min-h-14 items-center justify-center gap-3 border border-slate-700 px-7 text-sm font-bold text-slate-200 transition-all duration-300 hover:-translate-y-1 hover:border-slate-500 hover:bg-slate-900"
+          >
+            Admin Portal
+
+            <ArrowUpRight
+              size={17}
+              className="text-slate-600 transition-all duration-300 group-hover:-translate-y-1 group-hover:translate-x-1 group-hover:text-blue-400"
+            />
+          </button>
+        </div>
+
+        <div className="mx-auto mt-20 flex max-w-xl items-center justify-center gap-5">
+          <span className="h-px flex-1 bg-slate-800" />
+
+          <span className="font-mono text-[9px] uppercase tracking-[0.25em] text-slate-700">
+            AI Interview Agent
           </span>
 
-          <h2 className="text-5xl font-black text-white mt-6">
-            Your Next AI Interview Starts Here
-          </h2>
-
-          <p className="text-blue-100 text-lg max-w-3xl mx-auto mt-6 leading-8">
-            Experience an AI interviewer that understands your learning journey,
-            asks intelligent follow-up questions, evaluates your technical
-            knowledge, and provides detailed personalized feedback.
-          </p>
-
-          <div className="flex flex-col sm:flex-row justify-center gap-5 mt-10">
-            <Link
-              to="/candidate"
-              className="bg-white text-blue-700 font-bold px-8 py-4 rounded-xl hover:scale-105 transition duration-300 flex items-center justify-center gap-2"
-            >
-              Start Mock Interview
-              <ArrowRight size={20} />
-            </Link>
-
-            <a
-              href="#features"
-              className="border border-white text-white font-semibold px-8 py-4 rounded-xl hover:bg-white hover:text-blue-700 transition duration-300"
-            >
-              Explore Features
-            </a>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-14">
-            <div>
-              <h3 className="text-3xl font-black text-white">8+</h3>
-              <p className="text-blue-100 mt-2">
-                Adaptive Interview Questions
-              </p>
-            </div>
-
-            <div>
-              <h3 className="text-3xl font-black text-white">31</h3>
-              <p className="text-blue-100 mt-2">
-                AI Cohort Topics Covered
-              </p>
-            </div>
-
-            <div>
-              <h3 className="text-3xl font-black text-white">100%</h3>
-              <p className="text-blue-100 mt-2">
-                Personalized Feedback Report
-              </p>
-            </div>
-          </div>
-
+          <span className="h-px flex-1 bg-slate-800" />
         </div>
       </div>
     </section>
   );
-} 
+}
