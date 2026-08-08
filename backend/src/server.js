@@ -3,13 +3,17 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 
-const interviewRoutes = require("./routes/interview");
+const interviewRoute = require("../routes/interview");
 
 const app = express();
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001;
 
+
+// ==============================
 // CORS
+// ==============================
+
 app.use(
   cors({
     origin: "http://localhost:5173",
@@ -18,22 +22,39 @@ app.use(
   })
 );
 
-// Handle browser preflight requests
-app.options("*", cors());
 
-// JSON body parser
+// ==============================
+// Middleware
+// ==============================
+
 app.use(express.json());
 
-// Health check
+
+// ==============================
+// Interview Routes
+// ==============================
+
+app.use(
+  "/api/interview",
+  interviewRoute
+);
+
+
+// ==============================
+// Health Check
+// ==============================
+
 app.get("/", (req, res) => {
   res.json({
     success: true,
-    message: "AI Interview Agent API Running 🚀",
+    message: "AI Interview Agent Backend Running 🚀",
   });
 });
 
-// Interview API
-app.use("/api/interview", interviewRoutes);
+
+// ==============================
+// Start Server
+// ==============================
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);

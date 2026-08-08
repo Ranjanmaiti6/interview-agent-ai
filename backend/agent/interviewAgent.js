@@ -1,133 +1,218 @@
-const express = require("express");
-
-const router = express.Router();
+const curriculum = require("../data/curriculum.json");
+const candidates = require("../data/candidates.json");
 
 const {
-  generateQuestion,
-} = require("../agent/interviewAgent");
+  addMessage,
+  getConversation,
+  clearConversation,
+} = require("./interviewMemory");
+
+const {
+  evaluateAnswer,
+} = require("./aiService");
 
 
-// ------------------------------------
-// POST /api/interview/answer
-// ------------------------------------
+const questions = [
+  "Explain Retrieval-Augmented Generation (RAG).",
 
-router.post("/answer", async (req, res) => {
-  try {
+  "Why is chunking important in RAG?",
 
-    const {
-      answer,
-      questionNumber,
-      candidateId,
-    } = req.body;
+  "What is Few-shot Prompting?",
 
+  "Explain how AI Agents work.",
 
-    // Validate answer
-    if (!answer || !answer.trim()) {
-      return res.status(400).json({
-        success: false,
-        error: "Answer is required",
-      });
-    }
+  "What problem does Model Context Protocol (MCP) solve?",
+
+  "How would you deploy an LLM application?",
+
+  "How do you evaluate an AI system?",
+
+  "Design a production-ready AI architecture.",
+];
 
 
-    // Validate question number
-    if (
-      questionNumber === undefined ||
-      questionNumber === null
-    ) {
-      return res.status(400).json({
-        success: false,
-        error: "Question number is required",
-      });
-    }
+// ==========================================
+// Generate Next Interview Question
+// ==========================================
+
+async function generateQuestion(
+  answer,
+  questionNumber,
+  candidateId
+) {
+
+  const candidate =
+    candidates.find(
+      (candidate) =>
+        candidate.id == candidateId
+    ) || candidates[0];
 
 
-    // Validate candidate
-    if (!candidateId) {
-      return res.status(400).json({
-        success: false,
-        error: "Candidate ID is required",
-      });
-    }
+  const topic =
+    curriculum[questionNumber] ||
+    curriculum[0];
 
 
-    console.log(
-      "Interview answer received:",
-      {
-        candidateId,
-        questionNumber,
-      }
-    );
+  // ------------------------------------------
+  // Save candidate answer
+  // ------------------------------------------
+
+  addMessage(
+    candidateId,
+    "user",
+    answer
+  );
 
 
-    // Generate AI evaluation + next question
-    const response =
-      await generateQuestion(
-        answer,
-        Number(questionNumber),
-        candidateId
-      );
+  // ------------------------------------------
+  // Get conversation memory
+  // ------------------------------------------
+
+  const conversation =
+    getConversation(candidateId);
 
 
-    // Send response to frontend
-    return res.status(200).json({
-      success: true,
+  // ------------------------------------------
+  // Evaluate answer
+  // ------------------------------------------
 
-      candidate:
-        response.candidate,
+  const evaluation =
+    await evaluateAnswer({
+      candidate,
 
       topic:
-        response.topic,
+        topic.topic ||
+        topic.name ||
+        "AI Engineering",
 
-      feedback:
-        response.feedback,
+      question:
+        questions[questionNumber],
 
-      nextQuestion:
-        response.nextQuestion,
+      answer,
 
-      score:
-        response.score,
-
-      strengths:
-        response.strengths,
-
-      gaps:
-        response.gaps,
-
-      recommendation:
-        response.recommendation,
-
-      conversation:
-        response.conversation,
-
-      questionNumber:
-        response.questionNumber,
+      conversation,
     });
 
 
-  } catch (error) {
+  // ------------------------------------------
+  // Save AI feedback
+  // ------------------------------------------
 
-    console.error(
-      "Interview API error:",
-      error
-    );
+  addMessage(
+    candidateId,
+    "assistant",
+    evaluation.feedback
+  );
 
 
-    return res.status(500).json({
-      success: false,
+  // ------------------------------------------
+  // Next question
+  // ------------------------------------------
 
-      error:
-        "Failed to process interview answer.",
+  const nextQuestion =
+    questions[questionNumber + 1] ||
+    "Interview Completed";
 
-      message:
-        error.message,
-    });
+
+  // ------------------------------------------
+  // Score
+  // ------------------------------------------
+
+  const score =
+    evaluation.score || {
+      technical: 7,
+      communication: 7,
+      problemSolving: 7,
+    };
+
+
+  // ------------------------------------------
+  // Recommendation
+  // ------------------------------------------
+
+  const average =
+    (
+      score.technical +
+      score.communication +
+      score.problemSolving
+    ) / 3;
+
+
+  let recommendation;
+
+
+  if (average >= 8.5) {
+
+    recommendation =
+      "Excellent performance. Recommended for an AI Engineering Internship.";
+
+  } else if (average >= 7) {
+
+    recommendation =
+      "Good performance. Strong fundamentals with room for improvement.";
+
+  } else {
+
+    recommendation =
+      "Needs more practice before technical interviews.";
   }
-});
 
 
-// ------------------------------------
-// Export router
-// ------------------------------------
+  // ------------------------------------------
+  // Get current conversation
+  // ------------------------------------------
 
-module.exports = router;
+  const currentConversation =
+    getConversation(candidateId);
+
+
+  // ------------------------------------------
+  // Clear memory after final question
+  // ------------------------------------------
+
+  if (questionNumber >= 7) {
+    clearConversation(candidateId);
+  }
+
+
+  // ------------------------------------------
+  // Return result
+  // ------------------------------------------
+
+  return {
+
+    candidate:
+      candidate.name,
+
+    topic:
+      topic.topic ||
+      topic.name ||
+      "AI Engineering",
+
+    feedback:
+      evaluation.feedback,
+
+    nextQuestion,
+
+    score,
+
+    strengths:
+      evaluation.strengths || [],
+
+    gaps:
+      evaluation.gaps || [],
+
+    recommendation,
+
+    conversation:
+      currentConversation,
+
+    questionNumber:
+      questionNumber + 1,
+  };
+}
+
+
+module.exports = {
+  generateQuestion,
+};
