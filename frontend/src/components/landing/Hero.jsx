@@ -5,6 +5,7 @@ import {
   BrainCircuit,
   Database,
   Sparkles,
+  Activity,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
@@ -39,8 +40,8 @@ export default function Hero() {
       2;
 
     setPointer({
-      x,
-      y,
+      x: Math.max(-1, Math.min(1, x)),
+      y: Math.max(-1, Math.min(1, y)),
     });
   };
 
@@ -52,12 +53,6 @@ export default function Hero() {
   };
 
   useEffect(() => {
-    const element = heroRef.current;
-
-    if (!element) {
-      return;
-    }
-
     const handleDeviceOrientation = (
       event
     ) => {
@@ -98,15 +93,15 @@ export default function Hero() {
   }, []);
 
   const coreTransform = `
-    perspective(1100px)
+    perspective(1200px)
     rotateX(${pointer.y * -5}deg)
     rotateY(${pointer.x * 7}deg)
   `;
 
   const innerTransform = `
     translate3d(
-      ${pointer.x * 10}px,
-      ${pointer.y * 10}px,
+      ${pointer.x * 12}px,
+      ${pointer.y * 12}px,
       0
     )
   `;
@@ -125,55 +120,66 @@ export default function Hero() {
       "
     >
       {/* ========================================= */}
-      {/* Background atmosphere */}
+      {/* Background */}
       {/* ========================================= */}
 
-      <div className="absolute inset-0 pointer-events-none">
+      <div className="pointer-events-none absolute inset-0">
         <div
           className="
             absolute
             left-1/2
-            top-[32%]
+            top-[30%]
+            h-[600px]
+            w-[600px]
             -translate-x-1/2
-            w-[620px]
-            h-[620px]
+            -translate-y-1/2
             rounded-full
-            bg-blue-500/[0.055]
-            blur-[130px]
+            bg-blue-500/[0.045]
+            blur-[150px]
           "
         />
 
         <div
           className="
             absolute
-            right-[-180px]
-            top-[18%]
-            w-[420px]
-            h-[420px]
+            right-[-220px]
+            top-[12%]
+            h-[500px]
+            w-[500px]
             rounded-full
             bg-cyan-400/[0.025]
-            blur-[120px]
+            blur-[150px]
           "
         />
 
         <div
           className="
             absolute
-            left-[-180px]
-            bottom-[-120px]
-            w-[440px]
-            h-[440px]
+            bottom-[-220px]
+            left-[-220px]
+            h-[500px]
+            w-[500px]
             rounded-full
             bg-indigo-500/[0.025]
-            blur-[120px]
+            blur-[150px]
           "
         />
 
-        <div className="absolute inset-0 hero-grid opacity-40" />
+        <div className="hero-grid absolute inset-0 opacity-30" />
+
+        {/* Fine radial vignette */}
+
+        <div
+          className="
+            absolute
+            inset-0
+            bg-[radial-gradient(circle_at_center,transparent_20%,#05070a_85%)]
+          "
+        />
       </div>
 
       {/* ========================================= */}
-      {/* Top ambient line */}
+      {/* Top cinematic line */}
       {/* ========================================= */}
 
       <div
@@ -182,6 +188,7 @@ export default function Hero() {
           left-0
           right-0
           top-0
+          z-20
           h-px
           bg-gradient-to-r
           from-transparent
@@ -191,7 +198,7 @@ export default function Hero() {
       />
 
       {/* ========================================= */}
-      {/* Main content */}
+      {/* Main */}
       {/* ========================================= */}
 
       <div
@@ -199,11 +206,11 @@ export default function Hero() {
           relative
           z-10
           mx-auto
-          max-w-7xl
           min-h-screen
+          max-w-7xl
           px-6
+          pb-20
           pt-32
-          pb-16
           lg:px-8
           lg:pt-36
         "
@@ -215,11 +222,11 @@ export default function Hero() {
             items-center
             gap-14
             lg:grid-cols-[1.02fr_0.98fr]
-            lg:gap-8
+            lg:gap-4
           "
         >
           {/* ========================================= */}
-          {/* Left */}
+          {/* Left Content */}
           {/* ========================================= */}
 
           <div className="relative z-20 max-w-3xl">
@@ -227,9 +234,10 @@ export default function Hero() {
 
             <div
               className="
+                hero-fade-up
                 inline-flex
                 items-center
-                gap-2.5
+                gap-3
                 rounded-full
                 border
                 border-white/[0.09]
@@ -237,27 +245,37 @@ export default function Hero() {
                 px-3.5
                 py-2
                 backdrop-blur-md
-                hero-fade-up
               "
             >
               <span
                 className="
+                  relative
                   flex
                   h-2
                   w-2
                   rounded-full
                   bg-blue-400
-                  shadow-[0_0_14px_rgba(96,165,250,0.75)]
+                  shadow-[0_0_16px_rgba(96,165,250,0.9)]
                 "
-              />
+              >
+                <span
+                  className="
+                    absolute
+                    inset-0
+                    animate-ping
+                    rounded-full
+                    bg-blue-400/60
+                  "
+                />
+              </span>
 
               <span
                 className="
-                  text-[10px]
+                  text-[9px]
                   font-semibold
                   uppercase
-                  tracking-[0.22em]
-                  text-white/55
+                  tracking-[0.25em]
+                  text-white/50
                 "
               >
                 AI Powered Interview Platform
@@ -268,28 +286,29 @@ export default function Hero() {
 
             <h1
               className="
-                mt-8
-                max-w-4xl
-                text-[clamp(3.5rem,8vw,7.4rem)]
-                font-semibold
-                leading-[0.88]
-                tracking-[-0.065em]
                 hero-fade-up
                 hero-fade-up-delay-1
+                mt-8
+                max-w-4xl
+                text-[clamp(3.4rem,8vw,7.5rem)]
+                font-semibold
+                leading-[0.86]
+                tracking-[-0.07em]
               "
             >
-              Master the
               <span className="block">
-                <span className="text-white">
-                  AI Engineering
-                </span>
+                Master the
+              </span>
+
+              <span className="block text-white">
+                AI Engineering
               </span>
 
               <span
                 className="
                   block
                   bg-gradient-to-r
-                  from-blue-300
+                  from-blue-200
                   via-blue-400
                   to-white
                   bg-clip-text
@@ -304,15 +323,15 @@ export default function Hero() {
 
             <p
               className="
-                mt-8
-                max-w-xl
-                text-[16px]
-                leading-7
-                text-white/48
-                sm:text-[17px]
-                sm:leading-8
                 hero-fade-up
                 hero-fade-up-delay-2
+                mt-8
+                max-w-xl
+                text-[15px]
+                leading-7
+                text-white/45
+                sm:text-[17px]
+                sm:leading-8
               "
             >
               Experience adaptive technical
@@ -326,47 +345,68 @@ export default function Hero() {
 
             <div
               className="
+                hero-fade-up
+                hero-fade-up-delay-3
                 mt-9
                 flex
                 flex-col
                 gap-3
                 sm:flex-row
-                hero-fade-up
-                hero-fade-up-delay-3
               "
             >
               <Link
                 to="/candidate"
                 className="
                   group
+                  relative
                   inline-flex
+                  min-h-14
                   items-center
                   justify-center
                   gap-2.5
+                  overflow-hidden
                   rounded-xl
+                  border
+                  border-blue-300/20
                   bg-blue-500
-                  px-6
-                  py-3.5
+                  px-7
                   text-sm
                   font-semibold
                   text-white
-                  shadow-[0_12px_45px_rgba(37,99,235,0.22)]
+                  shadow-[0_15px_50px_rgba(37,99,235,0.20)]
                   transition-all
                   duration-300
                   hover:-translate-y-1
                   hover:bg-blue-400
-                  hover:shadow-[0_18px_55px_rgba(37,99,235,0.34)]
+                  hover:shadow-[0_20px_60px_rgba(37,99,235,0.32)]
                 "
               >
-                Start Interview
+                <span className="relative z-10">
+                  Start Interview
+                </span>
 
                 <ArrowUpRight
                   size={17}
                   className="
+                    relative
+                    z-10
                     transition-transform
                     duration-300
-                    group-hover:translate-x-0.5
                     group-hover:-translate-y-0.5
+                    group-hover:translate-x-0.5
+                  "
+                />
+
+                <span
+                  className="
+                    absolute
+                    inset-0
+                    -translate-x-full
+                    skew-x-[-20deg]
+                    bg-white/[0.12]
+                    transition-transform
+                    duration-500
+                    group-hover:translate-x-full
                   "
                 />
               </Link>
@@ -376,24 +416,24 @@ export default function Hero() {
                 className="
                   group
                   inline-flex
+                  min-h-14
                   items-center
                   justify-center
                   gap-2
                   rounded-xl
                   border
-                  border-white/[0.11]
-                  bg-white/[0.025]
-                  px-6
-                  py-3.5
+                  border-white/[0.10]
+                  bg-white/[0.02]
+                  px-7
                   text-sm
                   font-medium
-                  text-white/70
+                  text-white/60
                   backdrop-blur-md
                   transition-all
                   duration-300
                   hover:-translate-y-1
-                  hover:border-white/[0.18]
-                  hover:bg-white/[0.055]
+                  hover:border-white/[0.17]
+                  hover:bg-white/[0.045]
                   hover:text-white
                 "
               >
@@ -410,165 +450,214 @@ export default function Hero() {
               </a>
             </div>
 
-            {/* Trust line */}
+            {/* System capabilities */}
 
             <div
               className="
+                hero-fade-up
+                hero-fade-up-delay-4
                 mt-12
                 flex
                 flex-wrap
                 items-center
-                gap-x-6
+                gap-x-5
                 gap-y-3
-                text-[11px]
-                uppercase
-                tracking-[0.16em]
-                text-white/30
-                hero-fade-up
-                hero-fade-up-delay-4
               "
             >
-              <span className="flex items-center gap-2">
+              <div className="flex items-center gap-2">
                 <BrainCircuit
                   size={14}
+                  strokeWidth={1.4}
                   className="text-blue-400/70"
                 />
-                Adaptive AI
-              </span>
+
+                <span
+                  className="
+                    text-[9px]
+                    uppercase
+                    tracking-[0.19em]
+                    text-white/30
+                  "
+                >
+                  Adaptive AI
+                </span>
+              </div>
 
               <span className="h-3 w-px bg-white/10" />
 
-              <span className="flex items-center gap-2">
+              <div className="flex items-center gap-2">
                 <Database
                   size={13}
+                  strokeWidth={1.4}
                   className="text-blue-400/70"
                 />
-                Interview Memory
-              </span>
+
+                <span
+                  className="
+                    text-[9px]
+                    uppercase
+                    tracking-[0.19em]
+                    text-white/30
+                  "
+                >
+                  Interview Memory
+                </span>
+              </div>
 
               <span className="h-3 w-px bg-white/10" />
 
-              <span className="flex items-center gap-2">
+              <div className="flex items-center gap-2">
                 <Sparkles
                   size={13}
+                  strokeWidth={1.4}
                   className="text-blue-400/70"
                 />
-                AI Evaluation
-              </span>
+
+                <span
+                  className="
+                    text-[9px]
+                    uppercase
+                    tracking-[0.19em]
+                    text-white/30
+                  "
+                >
+                  AI Evaluation
+                </span>
+              </div>
             </div>
           </div>
 
           {/* ========================================= */}
-          {/* Right visual */}
+          {/* 3D Visual */}
           {/* ========================================= */}
 
           <div
             className="
               relative
               flex
-              min-h-[420px]
+              min-h-[430px]
               items-center
               justify-center
               lg:min-h-[650px]
             "
           >
-            {/* Outer atmosphere */}
+            {/* Ambient light */}
 
             <div
               className="
                 absolute
-                h-[390px]
-                w-[390px]
+                h-[340px]
+                w-[340px]
                 rounded-full
-                bg-blue-500/[0.035]
-                blur-[90px]
+                bg-blue-500/[0.04]
+                blur-[100px]
                 sm:h-[500px]
                 sm:w-[500px]
               "
             />
 
-            {/* Technical frame */}
+            {/* Outer technical circle */}
 
             <div
               className="
                 absolute
-                h-[330px]
-                w-[330px]
+                h-[360px]
+                w-[360px]
                 rounded-full
                 border
-                border-white/[0.055]
-                sm:h-[470px]
-                sm:w-[470px]
+                border-white/[0.045]
+                sm:h-[510px]
+                sm:w-[510px]
               "
               style={{
-                transform: `translate(
-                  ${pointer.x * -5}px,
-                  ${pointer.y * -5}px
-                )`,
+                transform: `
+                  translate(
+                    ${pointer.x * -5}px,
+                    ${pointer.y * -5}px
+                  )
+                `,
               }}
             />
 
+            {/* Secondary circle */}
+
             <div
               className="
                 absolute
-                h-[270px]
-                w-[270px]
+                h-[305px]
+                w-[305px]
                 rounded-full
                 border
-                border-blue-400/[0.08]
+                border-blue-400/[0.07]
+                sm:h-[440px]
+                sm:w-[440px]
+              "
+              style={{
+                transform: `
+                  translate(
+                    ${pointer.x * 5}px,
+                    ${pointer.y * 5}px
+                  )
+                `,
+              }}
+            />
+
+            {/* Main 3D core */}
+
+            <div
+              className="
+                hero-core
+                relative
+                h-[285px]
+                w-[285px]
                 sm:h-[390px]
                 sm:w-[390px]
-              "
-              style={{
-                transform: `translate(
-                  ${pointer.x * 5}px,
-                  ${pointer.y * 5}px
-                )`,
-              }}
-            />
-
-            {/* Main core */}
-
-            <div
-              className="
-                relative
-                h-[280px]
-                w-[280px]
-                sm:h-[380px]
-                sm:w-[380px]
-                hero-core
               "
               style={{
                 transform: coreTransform,
               }}
             >
-              {/* Back ring */}
+              {/* Outer rotating ring */}
 
               <div
                 className="
-                  absolute
-                  inset-[8%]
-                  rounded-full
-                  border
-                  border-white/[0.07]
                   hero-ring-slow
+                  absolute
+                  inset-[3%]
+                  rounded-full
+                  border
+                  border-white/[0.055]
                 "
               />
 
-              {/* Main ring */}
+              {/* Main rotating ring */}
 
               <div
                 className="
+                  hero-ring
                   absolute
-                  inset-[17%]
+                  inset-[12%]
                   rounded-full
                   border
-                  border-blue-400/[0.20]
-                  hero-ring
+                  border-blue-400/[0.18]
                 "
               />
 
-              {/* Counter ring */}
+              {/* Dashed orbital ring */}
+
+              <div
+                className="
+                  hero-ring-reverse
+                  absolute
+                  inset-[21%]
+                  rounded-full
+                  border
+                  border-dashed
+                  border-blue-300/[0.12]
+                "
+              />
+
+              {/* Inner ring */}
 
               <div
                 className="
@@ -576,40 +665,44 @@ export default function Hero() {
                   inset-[27%]
                   rounded-full
                   border
-                  border-white/[0.08]
-                  hero-ring-reverse
+                  border-white/[0.07]
                 "
               />
 
-              {/* Central glass disc */}
+              {/* Central glass core */}
 
               <div
                 className="
                   absolute
                   inset-[31%]
-                  rounded-full
-                  border
-                  border-blue-300/20
-                  bg-[#0a1018]/80
-                  shadow-[0_0_80px_rgba(37,99,235,0.16),inset_0_0_45px_rgba(96,165,250,0.06)]
-                  backdrop-blur-xl
                   flex
                   items-center
                   justify-center
+                  rounded-full
+                  border
+                  border-blue-300/20
+                  bg-[#08101a]/85
+                  shadow-[0_0_100px_rgba(37,99,235,0.13),inset_0_0_50px_rgba(96,165,250,0.06)]
+                  backdrop-blur-2xl
                 "
                 style={{
                   transform: innerTransform,
                 }}
               >
+                {/* Inner light */}
+
                 <div
                   className="
                     absolute
-                    inset-[13%]
+                    inset-[12%]
                     rounded-full
                     border
                     border-blue-300/10
+                    shadow-[inset_0_0_25px_rgba(96,165,250,0.05)]
                   "
                 />
+
+                {/* Core icon */}
 
                 <div
                   className="
@@ -623,62 +716,95 @@ export default function Hero() {
                     border
                     border-blue-300/20
                     bg-blue-500/[0.07]
-                    shadow-[0_0_35px_rgba(59,130,246,0.18)]
+                    shadow-[0_0_40px_rgba(59,130,246,0.16)]
                   "
                 >
                   <BrainCircuit
                     size={31}
-                    strokeWidth={1.35}
+                    strokeWidth={1.25}
                     className="
-                      text-blue-300
                       hero-brain-pulse
+                      text-blue-300
                     "
                   />
-              </div>
+                </div>
               </div>
 
               {/* Orbiting light */}
 
               <span
                 className="
+                  hero-orbit-dot
                   absolute
                   left-1/2
-                  top-[7%]
+                  top-[1%]
                   h-2
                   w-2
                   -translate-x-1/2
                   rounded-full
                   bg-blue-300
-                  shadow-[0_0_20px_rgba(147,197,253,0.9)]
-                  hero-orbit-dot
+                  shadow-[0_0_22px_rgba(147,197,253,1)]
                 "
               />
 
-              {/* Secondary orbit dot */}
+              {/* Second orbiting light */}
 
               <span
                 className="
+                  hero-orbit-dot-reverse
                   absolute
-                  bottom-[16%]
-                  right-[13%]
+                  bottom-[12%]
+                  right-[8%]
                   h-1.5
                   w-1.5
                   rounded-full
                   bg-white/70
-                  shadow-[0_0_14px_rgba(255,255,255,0.7)]
-                  hero-orbit-dot-reverse
+                  shadow-[0_0_16px_rgba(255,255,255,0.8)]
                 "
               />
 
-              {/* Data points */}
+              {/* Data nodes */}
 
-              <span className="absolute left-[13%] top-[30%] h-1 w-1 rounded-full bg-blue-300/70 hero-data-1" />
+              <span
+                className="
+                  hero-data-1
+                  absolute
+                  left-[9%]
+                  top-[29%]
+                  h-1
+                  w-1
+                  rounded-full
+                  bg-blue-300/70
+                "
+              />
 
-              <span className="absolute right-[14%] top-[42%] h-1 w-1 rounded-full bg-blue-300/50 hero-data-2" />
+              <span
+                className="
+                  hero-data-2
+                  absolute
+                  right-[11%]
+                  top-[42%]
+                  h-1
+                  w-1
+                  rounded-full
+                  bg-blue-300/60
+                "
+              />
 
-              <span className="absolute left-[28%] bottom-[13%] h-1 w-1 rounded-full bg-white/40 hero-data-3" />
+              <span
+                className="
+                  hero-data-3
+                  absolute
+                  bottom-[12%]
+                  left-[25%]
+                  h-1
+                  w-1
+                  rounded-full
+                  bg-white/40
+                "
+              />
 
-              {/* Central signal */}
+              {/* Crosshair */}
 
               <div
                 className="
@@ -711,110 +837,125 @@ export default function Hero() {
                   to-transparent
                 "
               />
+
+              {/* Small technical marks */}
+
+              <span className="absolute left-[18%] top-[18%] h-2 w-px rotate-45 bg-blue-300/20" />
+
+              <span className="absolute right-[18%] bottom-[18%] h-2 w-px -rotate-45 bg-blue-300/20" />
             </div>
 
-            {/* Floating information labels */}
+            {/* ========================================= */}
+            {/* Floating Data Cards */}
+            {/* ========================================= */}
 
             <div
               className="
+                hero-float-a
                 absolute
-                left-[4%]
-                top-[19%]
+                left-[1%]
+                top-[18%]
                 hidden
                 rounded-xl
                 border
                 border-white/[0.08]
-                bg-[#090d13]/80
-                px-3.5
+                bg-[#080c12]/80
+                px-4
                 py-3
                 backdrop-blur-xl
                 sm:block
-                hero-float-a
               "
             >
               <div className="flex items-center gap-2">
                 <span className="h-1.5 w-1.5 rounded-full bg-blue-400 shadow-[0_0_10px_rgba(96,165,250,0.9)]" />
 
-                <span className="text-[9px] font-semibold uppercase tracking-[0.18em] text-white/45">
+                <span className="text-[8px] font-semibold uppercase tracking-[0.2em] text-white/35">
                   Adaptive
                 </span>
               </div>
 
-              <p className="mt-1.5 text-xs text-white/75">
+              <p className="mt-2 text-xs text-white/70">
                 Question engine
               </p>
             </div>
 
             <div
               className="
+                hero-float-b
                 absolute
-                right-[3%]
-                top-[31%]
+                right-[0%]
+                top-[29%]
                 hidden
                 rounded-xl
                 border
                 border-white/[0.08]
-                bg-[#090d13]/80
-                px-3.5
+                bg-[#080c12]/80
+                px-4
                 py-3
                 backdrop-blur-xl
                 sm:block
-                hero-float-b
               "
             >
               <div className="flex items-center gap-2">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.7)]" />
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.8)]" />
 
-                <span className="text-[9px] font-semibold uppercase tracking-[0.18em] text-white/45">
+                <span className="text-[8px] font-semibold uppercase tracking-[0.2em] text-white/35">
                   Live
                 </span>
               </div>
 
-              <p className="mt-1.5 text-xs text-white/75">
+              <p className="mt-2 text-xs text-white/70">
                 AI evaluation
               </p>
             </div>
 
             <div
               className="
+                hero-float-c
                 absolute
-                bottom-[15%]
-                left-[9%]
+                bottom-[14%]
+                left-[6%]
                 hidden
                 rounded-xl
                 border
                 border-white/[0.08]
-                bg-[#090d13]/80
-                px-3.5
+                bg-[#080c12]/80
+                px-4
                 py-3
                 backdrop-blur-xl
                 sm:block
-                hero-float-c
               "
             >
-              <p className="text-[9px] font-semibold uppercase tracking-[0.18em] text-white/35">
-                Context
-              </p>
+              <div className="flex items-center gap-2">
+                <Activity
+                  size={11}
+                  className="text-blue-400/60"
+                />
 
-              <p className="mt-1.5 text-xs text-white/70">
+                <span className="text-[8px] font-semibold uppercase tracking-[0.2em] text-white/30">
+                  Context
+                </span>
+              </div>
+
+              <p className="mt-2 text-xs text-white/65">
                 Interview memory
               </p>
             </div>
 
-            {/* Bottom technical marker */}
+            {/* Technical label */}
 
             <div
               className="
                 absolute
-                bottom-[4%]
-                right-[7%]
+                bottom-[5%]
+                right-[5%]
                 hidden
                 items-center
                 gap-3
-                text-[9px]
+                text-[8px]
                 uppercase
-                tracking-[0.2em]
-                text-white/25
+                tracking-[0.22em]
+                text-white/20
                 sm:flex
               "
             >
@@ -826,7 +967,7 @@ export default function Hero() {
       </div>
 
       {/* ========================================= */}
-      {/* Scroll indicator */}
+      {/* Scroll Indicator */}
       {/* ========================================= */}
 
       <a
@@ -840,18 +981,20 @@ export default function Hero() {
           -translate-x-1/2
           items-center
           gap-3
-          text-[9px]
+          text-[8px]
           font-medium
           uppercase
-          tracking-[0.25em]
-          text-white/25
+          tracking-[0.28em]
+          text-white/20
           transition-colors
           duration-300
           hover:text-white/60
           md:flex
         "
       >
-        <span>Scroll to explore</span>
+        <span>
+          Scroll to explore
+        </span>
 
         <span
           className="
@@ -867,11 +1010,11 @@ export default function Hero() {
         >
           <span
             className="
+              hero-scroll-dot
               h-1
               w-1
               rounded-full
               bg-blue-300/70
-              hero-scroll-dot
             "
           />
         </span>

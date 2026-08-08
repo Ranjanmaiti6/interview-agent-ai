@@ -19,12 +19,14 @@ export default function Navbar() {
 
   useEffect(() => {
     const handleScroll = () => {
-      setScrolled(window.scrollY > 24);
+      setScrolled(window.scrollY > 32);
     };
 
     handleScroll();
 
-    window.addEventListener("scroll", handleScroll);
+    window.addEventListener("scroll", handleScroll, {
+      passive: true,
+    });
 
     return () => {
       window.removeEventListener(
@@ -54,420 +56,608 @@ export default function Navbar() {
     };
   }, []);
 
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [isOpen]);
+
   const closeMenu = () => {
     setIsOpen(false);
   };
 
+  const handleAnchorClick = () => {
+    closeMenu();
+  };
+
   return (
-    <nav
-      className={`
-        fixed top-0 left-0 right-0 z-50
-        transition-all duration-500
-        ${
-          scrolled
-            ? "pt-3"
-            : "pt-5"
-        }
-      `}
-    >
-      <div
+    <>
+      <nav
         className={`
-          mx-auto
-          max-w-7xl
-          px-4 sm:px-6
-          transition-all duration-500
+          fixed
+          left-0
+          right-0
+          top-0
+          z-50
+          px-3
+          sm:px-5
+          transition-all
+          duration-500
+          ${
+            scrolled
+              ? "pt-3"
+              : "pt-5"
+          }
         `}
       >
         <div
-          className={`
-            flex items-center justify-between
-            h-[68px]
-            px-4 sm:px-5
-            rounded-2xl
-            border
-            transition-all duration-500
-            ${
-              scrolled
-                ? "bg-[#090b0f]/90 border-white/[0.10] shadow-[0_18px_60px_rgba(0,0,0,0.35)] backdrop-blur-2xl"
-                : "bg-[#090b0f]/55 border-white/[0.07] backdrop-blur-xl"
-            }
-          `}
+          className="
+            mx-auto
+            max-w-7xl
+          "
         >
-          {/* ========================================= */}
-          {/* Brand */}
-          {/* ========================================= */}
-
-          <Link
-            to="/"
-            onClick={closeMenu}
-            className="group flex items-center gap-3 shrink-0"
+          <div
+            className={`
+              relative
+              flex
+              h-[66px]
+              items-center
+              justify-between
+              overflow-hidden
+              border
+              px-3
+              sm:px-5
+              transition-all
+              duration-500
+              ${
+                scrolled
+                  ? "rounded-2xl border-white/[0.11] bg-[#07090d]/90 shadow-[0_20px_70px_rgba(0,0,0,0.45)] backdrop-blur-2xl"
+                  : "rounded-2xl border-white/[0.07] bg-[#07090d]/55 backdrop-blur-xl"
+              }
+            `}
           >
-            <span
+            {/* Ambient navbar light */}
+
+            <div
               className="
+                pointer-events-none
+                absolute
+                left-1/2
+                top-0
+                h-px
+                w-1/2
+                -translate-x-1/2
+                bg-gradient-to-r
+                from-transparent
+                via-blue-400/30
+                to-transparent
+              "
+            />
+
+            {/* ========================================= */}
+            {/* Brand */}
+            {/* ========================================= */}
+
+            <Link
+              to="/"
+              onClick={closeMenu}
+              className="
+                group
                 relative
-                flex items-center justify-center
-                w-10 h-10
-                rounded-xl
-                border border-white/10
-                bg-white/[0.045]
-                overflow-hidden
+                z-10
+                flex
+                shrink-0
+                items-center
+                gap-3
               "
             >
               <span
                 className="
-                  absolute inset-0
-                  bg-blue-500/10
-                  opacity-0
-                  group-hover:opacity-100
-                  transition-opacity duration-500
-                "
-              />
-
-              <BrainCircuit
-                size={22}
-                strokeWidth={1.7}
-                className="
-                  relative z-10
-                  text-blue-400
-                  group-hover:text-blue-300
-                  group-hover:scale-110
-                  transition-all duration-300
-                "
-              />
-            </span>
-
-            <span className="text-white font-semibold tracking-[-0.02em] text-[17px]">
-              Interview
-              <span className="text-blue-400">
-                AI
-              </span>
-            </span>
-          </Link>
-
-          {/* ========================================= */}
-          {/* Desktop Navigation */}
-          {/* ========================================= */}
-
-          <div className="hidden md:flex items-center gap-1">
-            {navLinks.map((item) => (
-              <a
-                key={item.name}
-                href={item.href}
-                className="
-                  group
                   relative
-                  px-4 py-2
-                  text-[13px]
-                  text-white/55
-                  hover:text-white
-                  tracking-wide
-                  transition-colors duration-300
+                  flex
+                  h-10
+                  w-10
+                  items-center
+                  justify-center
+                  overflow-hidden
+                  rounded-xl
+                  border
+                  border-white/[0.10]
+                  bg-white/[0.035]
+                  transition-all
+                  duration-500
+                  group-hover:border-blue-400/30
+                  group-hover:bg-blue-500/[0.06]
                 "
               >
-                {item.name}
+                <span
+                  className="
+                    absolute
+                    inset-0
+                    bg-blue-500/[0.08]
+                    opacity-0
+                    transition-opacity
+                    duration-500
+                    group-hover:opacity-100
+                  "
+                />
 
                 <span
                   className="
                     absolute
-                    left-4 right-4 bottom-0
+                    left-1/2
+                    top-0
                     h-px
-                    bg-blue-400
-                    scale-x-0
-                    origin-left
-                    group-hover:scale-x-100
-                    transition-transform duration-300
+                    w-0
+                    -translate-x-1/2
+                    bg-blue-300
+                    transition-all
+                    duration-500
+                    group-hover:w-1/2
                   "
                 />
-              </a>
-            ))}
 
-            <Link
-              to="/meetings"
-              className="
-                group
-                relative
-                px-4 py-2
-                text-[13px]
-                text-white/55
-                hover:text-white
-                tracking-wide
-                transition-colors duration-300
-              "
-            >
-              Meetings
-
-              <span
-                className="
-                  absolute
-                  left-4 right-4 bottom-0
-                  h-px
-                  bg-blue-400
-                  scale-x-0
-                  origin-left
-                  group-hover:scale-x-100
-                  transition-transform duration-300
-                "
-              />
-            </Link>
-
-            <Link
-              to="/report"
-              className="
-                group
-                relative
-                px-4 py-2
-                text-[13px]
-                text-white/55
-                hover:text-white
-                tracking-wide
-                transition-colors duration-300
-              "
-            >
-              Results
-
-              <span
-                className="
-                  absolute
-                  left-4 right-4 bottom-0
-                  h-px
-                  bg-blue-400
-                  scale-x-0
-                  origin-left
-                  group-hover:scale-x-100
-                  transition-transform duration-300
-                "
-              />
-            </Link>
-          </div>
-
-          {/* ========================================= */}
-          {/* Desktop Actions */}
-          {/* ========================================= */}
-
-          <div className="hidden md:flex items-center gap-3">
-            <Link
-              to="/login?role=employee"
-              className="
-                px-4 py-2
-                text-[13px]
-                font-medium
-                text-white/65
-                hover:text-white
-                transition-colors duration-300
-              "
-            >
-              Login
-            </Link>
-
-            <Link
-              to="/candidate"
-              className="
-                group
-                relative
-                inline-flex
-                items-center
-                gap-2
-                overflow-hidden
-                rounded-xl
-                border border-blue-400/30
-                bg-blue-500
-                px-4 py-2.5
-                text-[13px]
-                font-semibold
-                text-white
-                shadow-[0_8px_30px_rgba(37,99,235,0.20)]
-                transition-all duration-300
-                hover:bg-blue-400
-                hover:shadow-[0_10px_38px_rgba(37,99,235,0.32)]
-                hover:-translate-y-0.5
-              "
-            >
-              <span className="relative z-10">
-                Start Interview
+                <BrainCircuit
+                  size={21}
+                  strokeWidth={1.5}
+                  className="
+                    relative
+                    z-10
+                    text-blue-400
+                    transition-all
+                    duration-500
+                    group-hover:scale-110
+                    group-hover:text-blue-300
+                  "
+                />
               </span>
 
-              <ArrowUpRight
-                size={15}
-                className="
-                  relative z-10
-                  transition-transform duration-300
-                  group-hover:translate-x-0.5
-                  group-hover:-translate-y-0.5
-                "
-              />
-
               <span
                 className="
-                  absolute
-                  inset-0
-                  -translate-x-full
-                  bg-white/10
-                  skew-x-[-20deg]
-                  transition-transform duration-500
-                  group-hover:translate-x-full
-                "
-              />
-            </Link>
-          </div>
-
-          {/* ========================================= */}
-          {/* Mobile Menu Button */}
-          {/* ========================================= */}
-
-          <button
-            type="button"
-            onClick={() =>
-              setIsOpen((value) => !value)
-            }
-            className="
-              md:hidden
-              flex items-center justify-center
-              w-10 h-10
-              rounded-xl
-              border border-white/10
-              bg-white/[0.04]
-              text-white
-              hover:bg-white/[0.08]
-              transition-all duration-300
-            "
-            aria-label={
-              isOpen
-                ? "Close menu"
-                : "Open menu"
-            }
-            aria-expanded={isOpen}
-          >
-            {isOpen ? (
-              <X size={21} />
-            ) : (
-              <Menu size={21} />
-            )}
-          </button>
-        </div>
-
-        {/* ========================================= */}
-        {/* Mobile Navigation */}
-        {/* ========================================= */}
-
-        <div
-          className={`
-            md:hidden
-            overflow-hidden
-            transition-all duration-500
-            ${
-              isOpen
-                ? "max-h-[520px] opacity-100 mt-2"
-                : "max-h-0 opacity-0 mt-0"
-            }
-          `}
-        >
-          <div
-            className="
-              rounded-2xl
-              border border-white/[0.08]
-              bg-[#090b0f]/95
-              backdrop-blur-2xl
-              p-3
-              shadow-[0_24px_80px_rgba(0,0,0,0.45)]
-            "
-          >
-            {navLinks.map((item) => (
-              <a
-                key={item.name}
-                href={item.href}
-                onClick={closeMenu}
-                className="
-                  flex items-center
-                  px-4 py-3.5
-                  rounded-xl
-                  text-sm
-                  text-white/65
-                  hover:text-white
-                  hover:bg-white/[0.045]
-                  transition-all duration-300
+                  text-[16px]
+                  font-semibold
+                  tracking-[-0.025em]
+                  text-white
+                  sm:text-[17px]
                 "
               >
-                {item.name}
-              </a>
-            ))}
-
-            <Link
-              to="/meetings"
-              onClick={closeMenu}
-              className="
-                flex items-center
-                px-4 py-3.5
-                rounded-xl
-                text-sm
-                text-white/65
-                hover:text-white
-                hover:bg-white/[0.045]
-                transition-all duration-300
-              "
-            >
-              Meetings
+                Interview
+                <span className="text-blue-400">
+                  AI
+                </span>
+              </span>
             </Link>
 
-            <Link
-              to="/report"
-              onClick={closeMenu}
-              className="
-                flex items-center
-                px-4 py-3.5
-                rounded-xl
-                text-sm
-                text-white/65
-                hover:text-white
-                hover:bg-white/[0.045]
-                transition-all duration-300
-              "
-            >
-              Results
-            </Link>
+            {/* ========================================= */}
+            {/* Desktop Navigation */}
+            {/* ========================================= */}
 
-            <div className="my-2 h-px bg-white/[0.07]" />
+            <div className="hidden items-center md:flex">
+              <div
+                className="
+                  flex
+                  items-center
+                  gap-0.5
+                  rounded-xl
+                  border
+                  border-white/[0.045]
+                  bg-white/[0.018]
+                  p-1
+                "
+              >
+                {navLinks.map((item) => (
+                  <a
+                    key={item.name}
+                    href={item.href}
+                    onClick={handleAnchorClick}
+                    className="
+                      group
+                      relative
+                      rounded-lg
+                      px-4
+                      py-2.5
+                      text-[12px]
+                      font-medium
+                      tracking-[0.02em]
+                      text-white/45
+                      transition-all
+                      duration-300
+                      hover:bg-white/[0.045]
+                      hover:text-white
+                    "
+                  >
+                    {item.name}
 
-            <Link
-              to="/login?role=employee"
-              onClick={closeMenu}
-              className="
-                flex items-center
-                px-4 py-3.5
-                rounded-xl
-                text-sm
-                text-white/65
-                hover:text-white
-                hover:bg-white/[0.045]
-                transition-all duration-300
-              "
-            >
-              Login
-            </Link>
+                    <span
+                      className="
+                        absolute
+                        bottom-1
+                        left-1/2
+                        h-px
+                        w-0
+                        -translate-x-1/2
+                        bg-blue-400
+                        transition-all
+                        duration-300
+                        group-hover:w-4
+                      "
+                    />
+                  </a>
+                ))}
 
-            <Link
-              to="/candidate"
-              onClick={closeMenu}
+                <Link
+                  to="/meetings"
+                  className="
+                    group
+                    relative
+                    rounded-lg
+                    px-4
+                    py-2.5
+                    text-[12px]
+                    font-medium
+                    tracking-[0.02em]
+                    text-white/45
+                    transition-all
+                    duration-300
+                    hover:bg-white/[0.045]
+                    hover:text-white
+                  "
+                >
+                  Meetings
+
+                  <span
+                    className="
+                      absolute
+                      bottom-1
+                      left-1/2
+                      h-px
+                      w-0
+                      -translate-x-1/2
+                      bg-blue-400
+                      transition-all
+                      duration-300
+                      group-hover:w-4
+                    "
+                  />
+                </Link>
+
+                <Link
+                  to="/report"
+                  className="
+                    group
+                    relative
+                    rounded-lg
+                    px-4
+                    py-2.5
+                    text-[12px]
+                    font-medium
+                    tracking-[0.02em]
+                    text-white/45
+                    transition-all
+                    duration-300
+                    hover:bg-white/[0.045]
+                    hover:text-white
+                  "
+                >
+                  Results
+
+                  <span
+                    className="
+                      absolute
+                      bottom-1
+                      left-1/2
+                      h-px
+                      w-0
+                      -translate-x-1/2
+                      bg-blue-400
+                      transition-all
+                      duration-300
+                      group-hover:w-4
+                    "
+                  />
+                </Link>
+              </div>
+            </div>
+
+            {/* ========================================= */}
+            {/* Desktop Actions */}
+            {/* ========================================= */}
+
+            <div className="hidden items-center gap-2 md:flex">
+              <Link
+                to="/login?role=employee"
+                className="
+                  rounded-lg
+                  px-3
+                  py-2.5
+                  text-[12px]
+                  font-medium
+                  tracking-wide
+                  text-white/45
+                  transition-colors
+                  duration-300
+                  hover:text-white
+                "
+              >
+                Login
+              </Link>
+
+              <Link
+                to="/candidate"
+                className="
+                  group
+                  relative
+                  inline-flex
+                  items-center
+                  gap-2
+                  overflow-hidden
+                  rounded-xl
+                  border
+                  border-blue-300/20
+                  bg-blue-500
+                  px-4
+                  py-2.5
+                  text-[12px]
+                  font-semibold
+                  text-white
+                  shadow-[0_8px_30px_rgba(37,99,235,0.18)]
+                  transition-all
+                  duration-300
+                  hover:-translate-y-0.5
+                  hover:bg-blue-400
+                  hover:shadow-[0_12px_42px_rgba(37,99,235,0.30)]
+                "
+              >
+                <span className="relative z-10">
+                  Start Interview
+                </span>
+
+                <ArrowUpRight
+                  size={14}
+                  className="
+                    relative
+                    z-10
+                    transition-transform
+                    duration-300
+                    group-hover:-translate-y-0.5
+                    group-hover:translate-x-0.5
+                  "
+                />
+
+                <span
+                  className="
+                    absolute
+                    inset-0
+                    -translate-x-full
+                    skew-x-[-20deg]
+                    bg-white/[0.12]
+                    transition-transform
+                    duration-500
+                    group-hover:translate-x-full
+                  "
+                />
+              </Link>
+            </div>
+
+            {/* ========================================= */}
+            {/* Mobile Button */}
+            {/* ========================================= */}
+
+            <button
+              type="button"
+              onClick={() =>
+                setIsOpen((value) => !value)
+              }
               className="
-                flex items-center justify-center
-                gap-2
-                mt-2
+                relative
+                z-10
+                flex
+                h-10
+                w-10
+                items-center
+                justify-center
                 rounded-xl
-                bg-blue-500
-                px-4 py-3.5
-                text-sm
-                font-semibold
+                border
+                border-white/[0.09]
+                bg-white/[0.035]
                 text-white
-                transition-all duration-300
-                hover:bg-blue-400
+                transition-all
+                duration-300
+                hover:border-white/[0.16]
+                hover:bg-white/[0.07]
+                md:hidden
+              "
+              aria-label={
+                isOpen
+                  ? "Close menu"
+                  : "Open menu"
+              }
+              aria-expanded={isOpen}
+            >
+              {isOpen ? (
+                <X size={20} strokeWidth={1.5} />
+              ) : (
+                <Menu
+                  size={20}
+                  strokeWidth={1.5}
+                />
+              )}
+            </button>
+          </div>
+
+          {/* ========================================= */}
+          {/* Mobile Navigation */}
+          {/* ========================================= */}
+
+          <div
+            className={`
+              overflow-hidden
+              transition-all
+              duration-500
+              md:hidden
+              ${
+                isOpen
+                  ? "mt-2 max-h-[560px] opacity-100"
+                  : "mt-0 max-h-0 opacity-0"
+              }
+            `}
+          >
+            <div
+              className="
+                overflow-hidden
+                rounded-2xl
+                border
+                border-white/[0.09]
+                bg-[#07090d]/95
+                p-2
+                shadow-[0_25px_90px_rgba(0,0,0,0.55)]
+                backdrop-blur-2xl
               "
             >
-              Start Interview
+              <div className="px-3 pb-2 pt-3">
+                <span
+                  className="
+                    font-mono
+                    text-[9px]
+                    uppercase
+                    tracking-[0.25em]
+                    text-white/20
+                  "
+                >
+                  Navigation
+                </span>
+              </div>
 
-              <ArrowUpRight size={16} />
-            </Link>
+              {navLinks.map((item) => (
+                <a
+                  key={item.name}
+                  href={item.href}
+                  onClick={handleAnchorClick}
+                  className="
+                    flex
+                    items-center
+                    rounded-xl
+                    px-4
+                    py-3.5
+                    text-sm
+                    text-white/55
+                    transition-all
+                    duration-300
+                    hover:bg-white/[0.045]
+                    hover:text-white
+                  "
+                >
+                  {item.name}
+                </a>
+              ))}
+
+              <Link
+                to="/meetings"
+                onClick={closeMenu}
+                className="
+                  flex
+                  items-center
+                  rounded-xl
+                  px-4
+                  py-3.5
+                  text-sm
+                  text-white/55
+                  transition-all
+                  duration-300
+                  hover:bg-white/[0.045]
+                  hover:text-white
+                "
+              >
+                Meetings
+              </Link>
+
+              <Link
+                to="/report"
+                onClick={closeMenu}
+                className="
+                  flex
+                  items-center
+                  rounded-xl
+                  px-4
+                  py-3.5
+                  text-sm
+                  text-white/55
+                  transition-all
+                  duration-300
+                  hover:bg-white/[0.045]
+                  hover:text-white
+                "
+              >
+                Results
+              </Link>
+
+              <div className="my-2 h-px bg-white/[0.07]" />
+
+              <Link
+                to="/login?role=employee"
+                onClick={closeMenu}
+                className="
+                  flex
+                  items-center
+                  rounded-xl
+                  px-4
+                  py-3.5
+                  text-sm
+                  text-white/55
+                  transition-all
+                  duration-300
+                  hover:bg-white/[0.045]
+                  hover:text-white
+                "
+              >
+                Login
+              </Link>
+
+              <Link
+                to="/candidate"
+                onClick={closeMenu}
+                className="
+                  group
+                  mt-2
+                  flex
+                  items-center
+                  justify-center
+                  gap-2
+                  rounded-xl
+                  bg-blue-500
+                  px-4
+                  py-3.5
+                  text-sm
+                  font-semibold
+                  text-white
+                  shadow-[0_10px_35px_rgba(37,99,235,0.18)]
+                  transition-all
+                  duration-300
+                  hover:bg-blue-400
+                "
+              >
+                Start Interview
+
+                <ArrowUpRight
+                  size={16}
+                  className="
+                    transition-transform
+                    duration-300
+                    group-hover:-translate-y-0.5
+                    group-hover:translate-x-0.5
+                  "
+                />
+              </Link>
+            </div>
           </div>
         </div>
-      </div>
-    </nav>
+      </nav>
+    </>
   );
 }
