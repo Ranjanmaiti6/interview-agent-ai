@@ -1,216 +1,219 @@
 import { useEffect, useState } from "react";
-import {
-  useNavigate,
-  useParams,
-} from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 const API_URL =
   import.meta.env.VITE_API_URL ||
   "http://localhost:5001";
 
-export default function MeetingRoom() {
-  const { id } = useParams();
+export default function Meetings() {
   const navigate = useNavigate();
 
-  const [meeting, setMeeting] = useState(null);
+  const [meetings, setMeetings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [joining, setJoining] = useState(false);
 
   // ==========================================
-  // Load meeting
+  // Get logged-in user
+  // ==========================================
+
+  const getUser = () => {
+    try {
+      return JSON.parse(
+        localStorage.getItem("user") || "{}"
+      );
+    } catch {
+      return {};
+    }
+  };
+
+  const user = getUser();
+
+  // ==========================================
+  // Load meetings
+  // ==========================================
+
+  const loadMeetings = async () => {
+    try {
+      setLoading(true);
+      setError("");
+
+      const token =
+        localStorage.getItem("token");
+
+      if (!token) {
+        navigate("/login");
+        return;
+      }
+
+      // Admin gets all meetings.
+      // Employee gets only their meetings.
+      const endpoint =
+        user.role === "employee"
+          ? "/api/meetings/my"
+          : "/api/meetings";
+
+      console.log(
+        "Loading meetings:",
+        `${API_URL}${endpoint}`
+      );
+
+      const response = await fetch(
+        `${API_URL}${endpoint}`,
+        {
+          method: "GET",
+
+          headers: {
+            Authorization:
+              `Bearer ${token}`,
+
+            Accept:
+              "application/json",
+          },
+        }
+      );
+
+      const data =
+        await response.json();
+
+      console.log(
+        "Meetings API response:",
+        data
+      );
+
+      if (!response.ok) {
+        throw new Error(
+          data.message ||
+            `Unable to load meetings. HTTP ${response.status}`
+        );
+      }
+
+      setMeetings(
+        Array.isArray(data.meetings)
+          ? data.meetings
+          : []
+      );
+
+    } catch (error) {
+      console.error(
+        "Load meetings error:",
+        error
+      );
+
+      setError(
+        error.message ||
+          "Unable to load meetings."
+      );
+
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ==========================================
+  // Load on page open
   // ==========================================
 
   useEffect(() => {
-    const loadMeeting = async () => {
-      try {
-        setLoading(true);
-        setError("");
+    loadMeetings();
+  }, []);
 
-        const token =
-          localStorage.getItem("token");
+  // ==========================================
+  // Delete meeting
+  // ==========================================
 
-        if (!token) {
-          navigate("/login");
-          return;
-        }
+  const deleteMeeting = async (id) => {
+    const confirmed =
+      window.confirm(
+        "Are you sure you want to delete this meeting?"
+      );
 
-        const response = await fetch(
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      const token =
+        localStorage.getItem("token");
+
+      if (!token) {
+        navigate("/login");
+        return;
+      }
+
+      const response =
+        await fetch(
           `${API_URL}/api/meetings/${id}`,
           {
-            method: "GET",
+            method: "DELETE",
+
             headers: {
-              Authorization: `Bearer ${token}`,
-              Accept: "application/json",
+              Authorization:
+                `Bearer ${token}`,
+
+              Accept:
+                "application/json",
             },
           }
         );
 
-        const text =
-          await response.text();
+      const data =
+        await response.json();
 
-        let data = {};
-
-        try {
-          data = text
-            ? JSON.parse(text)
-            : {};
-        } catch {
-          data = {};
-        }
-
-        if (!response.ok) {
-          throw new Error(
-            data.message ||
-              `Unable to load meeting. HTTP ${response.status}`
-          );
-        }
-
-        if (!data.meeting) {
-          throw new Error(
-            "Meeting information was not returned."
-          );
-        }
-
-        setMeeting(data.meeting);
-      } catch (error) {
-        console.error(
-          "Load meeting error:",
-          error
+      if (!response.ok) {
+        throw new Error(
+          data.message ||
+            "Unable to delete meeting."
         );
-
-        setError(
-          error.message ||
-            "Unable to load meeting."
-        );
-      } finally {
-        setLoading(false);
       }
-    };
 
-    loadMeeting();
-  }, [id, navigate]);
+      await loadMeetings();
 
-  // ==========================================
-  // Join meeting
-  // ==========================================
+    } catch (error) {
+      console.error(
+        "Delete meeting error:",
+        error
+      );
 
-  const handleJoin = () => {
-    if (!meeting) {
-      return;
-    }
-
-    if (
-      meeting.status ===
-      "cancelled"
-    ) {
       setError(
-        "This meeting has been cancelled."
+        error.message ||
+          "Unable to delete meeting."
       );
-
-      return;
     }
-
-    setJoining(true);
-
-    // ========================================
-    // External meeting URL
-    // ========================================
-
-    if (meeting.meeting_url) {
-      window.open(
-        meeting.meeting_url,
-        "_blank",
-        "noopener,noreferrer"
-      );
-
-      setJoining(false);
-      return;
-    }
-
-    // ========================================
-    // Internal AI interview
-    // ========================================
-
-    navigate("/interview", {
-      state: {
-        meetingId: meeting.id,
-        employeeEmail:
-          meeting.employee_email,
-        employeeName:
-          meeting.employee_name,
-        meetingTitle:
-          meeting.title,
-      },
-    });
-
-    setJoining(false);
   };
 
   // ==========================================
-  // Back
+  // Status
   // ==========================================
 
-  const handleBack = () => {
-    navigate("/meetings");
+  const getStatusClass = (status) => {
+    if (status === "completed") {
+      return "bg-green-500/10 text-green-400";
+    }
+
+    if (status === "cancelled") {
+      return "bg-red-500/10 text-red-400";
+    }
+
+    return "bg-blue-500/10 text-blue-400";
   };
 
   // ==========================================
-  // Loading
+  // Dashboard
   // ==========================================
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center px-6">
-        <div className="text-center">
-          <div className="text-2xl font-bold">
-            Loading meeting...
-          </div>
+  const goToDashboard = () => {
+    if (user.role === "admin") {
+      navigate("/admin");
+      return;
+    }
 
-          <p className="text-slate-400 mt-2">
-            Please wait.
-          </p>
-        </div>
-      </div>
-    );
-  }
+    if (user.role === "employee") {
+      navigate("/employee");
+      return;
+    }
 
-  // ==========================================
-  // Error
-  // ==========================================
-
-  if (error) {
-    return (
-      <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center px-6">
-        <div className="max-w-md w-full bg-slate-900 border border-red-500/20 rounded-2xl p-8">
-          <h1 className="text-2xl font-bold text-red-400">
-            Unable to open meeting
-          </h1>
-
-          <p className="text-slate-400 mt-3">
-            {error}
-          </p>
-
-          <button
-            onClick={handleBack}
-            className="mt-6 w-full bg-blue-600 hover:bg-blue-700 py-3 rounded-xl font-semibold"
-          >
-            Back to Meetings
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  if (!meeting) {
-    return null;
-  }
-
-  const isCancelled =
-    meeting.status === "cancelled";
-
-  const isCompleted =
-    meeting.status === "completed";
+    navigate("/");
+  };
 
   // ==========================================
   // Render
@@ -219,199 +222,236 @@ export default function MeetingRoom() {
   return (
     <div className="min-h-screen bg-slate-950 text-white">
 
-      {/* ================================= */}
-      {/* Header */}
-      {/* ================================= */}
+      {/* ====================================== */}
+      {/* HEADER */}
+      {/* ====================================== */}
 
       <header className="border-b border-slate-800 bg-slate-900">
-        <div className="max-w-6xl mx-auto px-6 py-5 flex items-center justify-between">
+
+        <div className="max-w-7xl mx-auto px-6 py-5 flex items-center justify-between">
 
           <div>
-            <p className="text-blue-400 text-sm font-semibold">
-              INTERVIEW ROOM
+            <p className="text-purple-400 text-sm font-semibold">
+              MEETINGS
             </p>
 
             <h1 className="text-2xl font-bold">
-              {meeting.title}
+              {user.role === "admin"
+                ? "Manage Meetings"
+                : "My Meetings"}
             </h1>
           </div>
 
           <button
-            onClick={handleBack}
+            onClick={goToDashboard}
             className="border border-slate-700 hover:bg-slate-800 px-4 py-2 rounded-lg"
           >
-            Back
+            Dashboard
           </button>
 
         </div>
+
       </header>
 
-      {/* ================================= */}
-      {/* Main */}
-      {/* ================================= */}
+      {/* ====================================== */}
+      {/* MAIN */}
+      {/* ====================================== */}
 
-      <main className="max-w-6xl mx-auto px-6 py-10">
+      <main className="max-w-7xl mx-auto px-6 py-10">
 
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-8">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
 
-          <div className="grid md:grid-cols-2 gap-8">
+          <div>
 
-            {/* ============================= */}
-            {/* Details */}
-            {/* ============================= */}
+            <h2 className="text-4xl font-black">
+              Meetings
+            </h2>
 
-            <div>
-
-              <p className="text-blue-400 text-sm font-semibold uppercase">
-                Scheduled Interview
-              </p>
-
-              <h2 className="text-4xl font-black mt-2">
-                {meeting.title}
-              </h2>
-
-              {meeting.description && (
-                <p className="text-slate-400 mt-4">
-                  {meeting.description}
-                </p>
-              )}
-
-              <div className="mt-8 space-y-4">
-
-                {/* Employee */}
-
-                <div>
-                  <p className="text-slate-500 text-sm">
-                    Employee
-                  </p>
-
-                  <p className="text-slate-200 mt-1">
-                    {meeting.employee_name ||
-                      meeting.employee_email}
-                  </p>
-
-                  {meeting.employee_name &&
-                    meeting.employee_email && (
-                      <p className="text-slate-500 text-sm mt-1">
-                        {
-                          meeting.employee_email
-                        }
-                      </p>
-                    )}
-                </div>
-
-                {/* Time */}
-
-                <div>
-                  <p className="text-slate-500 text-sm">
-                    Scheduled time
-                  </p>
-
-                  <p className="text-slate-200 mt-1">
-                    {meeting.scheduled_at
-                      ? new Date(
-                          meeting.scheduled_at
-                        ).toLocaleString()
-                      : "Not scheduled"}
-                  </p>
-                </div>
-
-                {/* Duration */}
-
-                <div>
-                  <p className="text-slate-500 text-sm">
-                    Duration
-                  </p>
-
-                  <p className="text-slate-200 mt-1">
-                    {meeting.duration_minutes ||
-                      30}{" "}
-                    minutes
-                  </p>
-                </div>
-
-                {/* Status */}
-
-                <div>
-                  <p className="text-slate-500 text-sm">
-                    Status
-                  </p>
-
-                  <span
-                    className={`inline-block mt-1 px-3 py-1 rounded-full text-sm font-semibold ${
-                      meeting.status ===
-                      "completed"
-                        ? "bg-green-500/10 text-green-400"
-                        : meeting.status ===
-                          "cancelled"
-                        ? "bg-red-500/10 text-red-400"
-                        : "bg-blue-500/10 text-blue-400"
-                    }`}
-                  >
-                    {meeting.status ||
-                      "scheduled"}
-                  </span>
-                </div>
-
-              </div>
-            </div>
-
-            {/* ============================= */}
-            {/* Join */}
-            {/* ============================= */}
-
-            <div className="bg-slate-800 rounded-2xl p-8 flex flex-col justify-center">
-
-              <div className="text-center">
-
-                <div className="w-16 h-16 mx-auto rounded-full bg-blue-500/10 flex items-center justify-center text-blue-400 text-2xl">
-                  🎥
-                </div>
-
-                <h3 className="text-2xl font-bold mt-5">
-                  {isCancelled
-                    ? "Meeting Cancelled"
-                    : isCompleted
-                    ? "Interview Completed"
-                    : "Ready to join?"}
-                </h3>
-
-                <p className="text-slate-400 mt-2">
-                  {isCancelled
-                    ? "This interview is no longer available."
-                    : isCompleted
-                    ? "This interview has already been completed."
-                    : meeting.meeting_url
-                    ? "Join the external meeting when you are ready."
-                    : "Enter the AI interview room when you are ready."}
-                </p>
-
-                {!isCancelled &&
-                  !isCompleted && (
-                    <button
-                      onClick={
-                        handleJoin
-                      }
-                      disabled={joining}
-                      className="mt-6 w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 py-3 rounded-xl font-semibold"
-                    >
-                      {joining
-                        ? "Opening..."
-                        : meeting.meeting_url
-                        ? "Join Meeting"
-                        : "Start AI Interview"}
-                    </button>
-                  )}
-
-              </div>
-
-            </div>
+            <p className="text-slate-400 mt-2">
+              {user.role === "admin"
+                ? "Schedule and manage employee interviews."
+                : "View your scheduled interviews."}
+            </p>
 
           </div>
 
+          {user.role === "admin" && (
+            <button
+              onClick={() =>
+                navigate("/meetings/create")
+              }
+              className="bg-purple-600 hover:bg-purple-700 px-5 py-3 rounded-xl font-semibold"
+            >
+              + Create Meeting
+            </button>
+          )}
+
         </div>
 
+        {/* ====================================== */}
+        {/* ERROR */}
+        {/* ====================================== */}
+
+        {error && (
+          <div className="mb-6 bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl p-4">
+            {error}
+          </div>
+        )}
+
+        {/* ====================================== */}
+        {/* LOADING */}
+        {/* ====================================== */}
+
+        {loading && (
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-10 text-center text-slate-400">
+            Loading meetings...
+          </div>
+        )}
+
+        {/* ====================================== */}
+        {/* EMPTY */}
+        {/* ====================================== */}
+
+        {!loading &&
+          meetings.length === 0 && (
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-10 text-center">
+
+              <h3 className="text-xl font-bold">
+                No Meetings
+              </h3>
+
+              <p className="text-slate-400 mt-2">
+                {user.role === "admin"
+                  ? "Create a meeting to schedule an employee interview."
+                  : "You do not have any scheduled meetings yet."}
+              </p>
+
+            </div>
+          )}
+
+        {/* ====================================== */}
+        {/* MEETINGS */}
+        {/* ====================================== */}
+
+        {!loading &&
+          meetings.length > 0 && (
+            <div className="space-y-4">
+
+              {meetings.map((meeting) => (
+                <div
+                  key={meeting.id}
+                  className="bg-slate-900 border border-slate-800 rounded-2xl p-6"
+                >
+
+                  <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+
+                    {/* Meeting information */}
+
+                    <div className="flex-1">
+
+                      <h3 className="text-xl font-bold">
+                        {meeting.title}
+                      </h3>
+
+                      {user.role === "admin" && (
+                        <>
+                          <p className="text-slate-400 mt-2">
+                            {meeting.employee_name ||
+                              "Employee"}
+                          </p>
+
+                          <p className="text-slate-500 text-sm">
+                            {meeting.employee_email}
+                          </p>
+                        </>
+                      )}
+
+                      <p className="text-slate-400 mt-2">
+                        {meeting.scheduled_at
+                          ? new Date(
+                              meeting.scheduled_at
+                            ).toLocaleString()
+                          : "No scheduled time"}
+                      </p>
+
+                      <p className="text-slate-500 text-sm mt-1">
+                        {meeting.duration_minutes ||
+                          30}{" "}
+                        minutes
+                      </p>
+
+                    </div>
+
+                    {/* Status */}
+
+                    <span
+                      className={`inline-block w-fit px-3 py-1 rounded-full text-sm font-semibold ${getStatusClass(
+                        meeting.status
+                      )}`}
+                    >
+                      {meeting.status ||
+                        "scheduled"}
+                    </span>
+
+                    {/* Actions */}
+
+                    <div className="flex flex-wrap gap-3">
+
+                      <button
+                        onClick={() =>
+                          navigate(
+                            `/meetings/${meeting.id}`
+                          )
+                        }
+                        className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg font-semibold"
+                      >
+                        {meeting.meeting_url
+                          ? "Join Meeting"
+                          : "Open Meeting"}
+                      </button>
+
+                      {user.role === "admin" && (
+                        <button
+                          onClick={() =>
+                            deleteMeeting(
+                              meeting.id
+                            )
+                          }
+                          className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg font-semibold"
+                        >
+                          Delete
+                        </button>
+                      )}
+
+                    </div>
+
+                  </div>
+
+                </div>
+              ))}
+
+            </div>
+          )}
+
+        {/* ====================================== */}
+        {/* REFRESH */}
+        {/* ====================================== */}
+
+        {!loading && (
+          <div className="mt-8">
+
+            <button
+              onClick={loadMeetings}
+              className="border border-slate-700 hover:bg-slate-800 px-4 py-2 rounded-lg"
+            >
+              Refresh Meetings
+            </button>
+
+          </div>
+        )}
+
       </main>
+
     </div>
   );
 }

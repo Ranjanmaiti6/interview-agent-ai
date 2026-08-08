@@ -10,8 +10,43 @@ const db = require("../database");
 const router = express.Router();
 
 // ==========================================
+// Meetings table
+// ==========================================
+
+db.exec(`
+  CREATE TABLE IF NOT EXISTS meetings (
+    id TEXT PRIMARY KEY,
+
+    employee_request_id TEXT DEFAULT NULL,
+
+    employee_name TEXT DEFAULT NULL,
+
+    employee_email TEXT NOT NULL,
+
+    title TEXT NOT NULL,
+
+    description TEXT DEFAULT NULL,
+
+    scheduled_at TEXT NOT NULL,
+
+    duration_minutes INTEGER NOT NULL DEFAULT 30,
+
+    status TEXT NOT NULL DEFAULT 'scheduled',
+
+    meeting_url TEXT DEFAULT NULL,
+
+    created_by TEXT DEFAULT NULL,
+
+    created_at TEXT NOT NULL,
+
+    updated_at TEXT DEFAULT NULL
+  )
+`);
+
+// ==========================================
 // GET ALL MEETINGS
 // Admin only
+//
 // GET /api/meetings
 // ==========================================
 
@@ -23,20 +58,7 @@ router.get(
     try {
       const meetings = db
         .prepare(`
-          SELECT
-            id,
-            employee_request_id,
-            employee_name,
-            employee_email,
-            title,
-            description,
-            scheduled_at,
-            duration_minutes,
-            status,
-            meeting_url,
-            created_by,
-            created_at,
-            updated_at
+          SELECT *
           FROM meetings
           ORDER BY scheduled_at ASC
         `)
@@ -48,11 +70,15 @@ router.get(
       });
 
     } catch (error) {
-      console.error("Get meetings error:", error);
+      console.error(
+        "Get meetings error:",
+        error
+      );
 
       return res.status(500).json({
         success: false,
-        message: "Unable to load meetings.",
+        message:
+          "Unable to load meetings.",
       });
     }
   }
@@ -61,6 +87,7 @@ router.get(
 // ==========================================
 // GET MY MEETINGS
 // Employee only
+//
 // GET /api/meetings/my
 // ==========================================
 
@@ -70,41 +97,28 @@ router.get(
   requireRole("employee"),
   (req, res) => {
     try {
-      const employeeEmail = String(
+      const email = String(
         req.user?.email || ""
       )
         .trim()
         .toLowerCase();
 
-      if (!employeeEmail) {
+      if (!email) {
         return res.status(400).json({
           success: false,
           message:
-            "Employee email is missing from authentication.",
+            "Employee email is missing.",
         });
       }
 
       const meetings = db
         .prepare(`
-          SELECT
-            id,
-            employee_request_id,
-            employee_name,
-            employee_email,
-            title,
-            description,
-            scheduled_at,
-            duration_minutes,
-            status,
-            meeting_url,
-            created_by,
-            created_at,
-            updated_at
+          SELECT *
           FROM meetings
           WHERE LOWER(employee_email) = ?
           ORDER BY scheduled_at ASC
         `)
-        .all(employeeEmail);
+        .all(email);
 
       return res.json({
         success: true,
@@ -129,6 +143,7 @@ router.get(
 // ==========================================
 // CREATE MEETING
 // Admin only
+//
 // POST /api/meetings
 // ==========================================
 
@@ -149,6 +164,10 @@ router.post(
         meetingUrl,
       } = req.body;
 
+      // --------------------------------------
+      // Validate required fields
+      // --------------------------------------
+
       if (
         !employeeEmail ||
         !title ||
@@ -161,18 +180,38 @@ router.post(
         });
       }
 
-      const cleanEmail = String(
-        employeeEmail
-      )
-        .trim()
-        .toLowerCase();
+      const cleanEmail =
+        String(employeeEmail)
+          .trim()
+          .toLowerCase();
 
       const cleanTitle =
         String(title).trim();
 
-      const cleanName = employeeName
-        ? String(employeeName).trim()
-        : "Employee";
+      const cleanName =
+        employeeName
+          ? String(employeeName).trim()
+          : "Employee";
+
+      if (!cleanEmail) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Employee email is required.",
+        });
+      }
+
+      if (!cleanTitle) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Meeting title is required.",
+        });
+      }
+
+      // --------------------------------------
+      // Validate date
+      // --------------------------------------
 
       const scheduledDate =
         new Date(scheduledAt);
@@ -185,22 +224,34 @@ router.post(
         return res.status(400).json({
           success: false,
           message:
-            "Invalid scheduled date and time.",
+            "Invalid scheduled date.",
         });
       }
+
+      // --------------------------------------
+      // Duration
+      // --------------------------------------
 
       const duration =
         Number(durationMinutes) > 0
           ? Number(durationMinutes)
           : 30;
 
+      // --------------------------------------
+      // ID
+      // --------------------------------------
+
       const id =
         `${Date.now()}-${Math.round(
-          Math.random() * 1000000
+          Math.random() * 100000
         )}`;
 
       const createdAt =
         new Date().toISOString();
+
+      // --------------------------------------
+      // Insert
+      // --------------------------------------
 
       db.prepare(`
         INSERT INTO meetings (
@@ -215,8 +266,7 @@ router.post(
           status,
           meeting_url,
           created_by,
-          created_at,
-          updated_at
+          created_at
         )
         VALUES (
           @id,
@@ -230,8 +280,7 @@ router.post(
           'scheduled',
           @meetingUrl,
           @createdBy,
-          @createdAt,
-          NULL
+          @createdAt
         )
       `).run({
         id,
@@ -265,27 +314,18 @@ router.post(
             : null,
 
         createdBy:
-          req.user.email,
+          req.user?.email || null,
 
         createdAt,
       });
 
+      // --------------------------------------
+      // Get created meeting
+      // --------------------------------------
+
       const meeting =
         db.prepare(`
-          SELECT
-            id,
-            employee_request_id,
-            employee_name,
-            employee_email,
-            title,
-            description,
-            scheduled_at,
-            duration_minutes,
-            status,
-            meeting_url,
-            created_by,
-            created_at,
-            updated_at
+          SELECT *
           FROM meetings
           WHERE id = ?
         `).get(id);
@@ -306,7 +346,6 @@ router.post(
       return res.status(500).json({
         success: false,
         message:
-          error.message ||
           "Unable to create meeting.",
       });
     }
@@ -315,33 +354,31 @@ router.post(
 
 // ==========================================
 // GET SINGLE MEETING
+//
 // Admin OR owning employee
+//
 // GET /api/meetings/:id
 // ==========================================
 
 router.get(
   "/:id",
   authenticateToken,
-  async (req, res) => {
+  (req, res) => {
     try {
-      const { id } = req.params;
+      const { id } =
+        req.params;
+
+      if (!id || id === "undefined") {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Meeting ID is required.",
+        });
+      }
 
       const meeting =
         db.prepare(`
-          SELECT
-            id,
-            employee_request_id,
-            employee_name,
-            employee_email,
-            title,
-            description,
-            scheduled_at,
-            duration_minutes,
-            status,
-            meeting_url,
-            created_by,
-            created_at,
-            updated_at
+          SELECT *
           FROM meetings
           WHERE id = ?
         `).get(id);
@@ -354,22 +391,26 @@ router.get(
         });
       }
 
-      // ========================================
-      // Admin can access any meeting
-      // ========================================
+      // --------------------------------------
+      // Admin can see any meeting
+      // --------------------------------------
 
-      if (req.user?.role === "admin") {
+      if (
+        req.user?.role === "admin"
+      ) {
         return res.json({
           success: true,
           meeting,
         });
       }
 
-      // ========================================
-      // Employee can only access own meeting
-      // ========================================
+      // --------------------------------------
+      // Employee can see own meeting
+      // --------------------------------------
 
-      if (req.user?.role === "employee") {
+      if (
+        req.user?.role === "employee"
+      ) {
         const loggedInEmail =
           String(
             req.user?.email || ""
@@ -386,7 +427,8 @@ router.get(
 
         if (
           !loggedInEmail ||
-          loggedInEmail !== meetingEmail
+          loggedInEmail !==
+            meetingEmail
         ) {
           return res.status(403).json({
             success: false,
@@ -403,7 +445,8 @@ router.get(
 
       return res.status(403).json({
         success: false,
-        message: "Access denied.",
+        message:
+          "Access denied.",
       });
 
     } catch (error) {
@@ -424,6 +467,7 @@ router.get(
 // ==========================================
 // UPDATE MEETING
 // Admin only
+//
 // PUT /api/meetings/:id
 // ==========================================
 
@@ -433,19 +477,8 @@ router.put(
   requireRole("admin"),
   (req, res) => {
     try {
-      const { id } = req.params;
-
-      const {
-        employeeRequestId,
-        employeeName,
-        employeeEmail,
-        title,
-        description,
-        scheduledAt,
-        durationMinutes,
-        status,
-        meetingUrl,
-      } = req.body;
+      const { id } =
+        req.params;
 
       const existing =
         db.prepare(`
@@ -461,6 +494,18 @@ router.put(
             "Meeting not found.",
         });
       }
+
+      const {
+        employeeRequestId,
+        employeeName,
+        employeeEmail,
+        title,
+        description,
+        scheduledAt,
+        durationMinutes,
+        status,
+        meetingUrl,
+      } = req.body;
 
       const allowedStatuses = [
         "scheduled",
@@ -498,7 +543,7 @@ router.put(
           return res.status(400).json({
             success: false,
             message:
-              "Invalid scheduled date and time.",
+              "Invalid scheduled date.",
           });
         }
 
@@ -519,17 +564,17 @@ router.put(
           : existing.employee_name;
 
       const nextTitle =
-        title !== undefined
+        title
           ? String(title).trim()
           : existing.title;
 
       const nextDescription =
         description !== undefined
-          ? String(description).trim()
+          ? description
           : existing.description;
 
       const nextDuration =
-        durationMinutes !== undefined
+        Number(durationMinutes) > 0
           ? Number(durationMinutes)
           : existing.duration_minutes;
 
@@ -539,6 +584,11 @@ router.put(
             ? String(meetingUrl).trim()
             : null
           : existing.meeting_url;
+
+      const nextEmployeeRequestId =
+        employeeRequestId !== undefined
+          ? employeeRequestId
+          : existing.employee_request_id;
 
       const updatedAt =
         new Date().toISOString();
@@ -558,10 +608,7 @@ router.put(
           updated_at = ?
         WHERE id = ?
       `).run(
-        employeeRequestId !== undefined
-          ? employeeRequestId
-          : existing.employee_request_id,
-
+        nextEmployeeRequestId,
         nextName,
         nextEmail,
         nextTitle,
@@ -576,20 +623,7 @@ router.put(
 
       const meeting =
         db.prepare(`
-          SELECT
-            id,
-            employee_request_id,
-            employee_name,
-            employee_email,
-            title,
-            description,
-            scheduled_at,
-            duration_minutes,
-            status,
-            meeting_url,
-            created_by,
-            created_at,
-            updated_at
+          SELECT *
           FROM meetings
           WHERE id = ?
         `).get(id);
@@ -610,7 +644,6 @@ router.put(
       return res.status(500).json({
         success: false,
         message:
-          error.message ||
           "Unable to update meeting.",
       });
     }
@@ -620,6 +653,7 @@ router.put(
 // ==========================================
 // DELETE MEETING
 // Admin only
+//
 // DELETE /api/meetings/:id
 // ==========================================
 
@@ -629,7 +663,16 @@ router.delete(
   requireRole("admin"),
   (req, res) => {
     try {
-      const { id } = req.params;
+      const { id } =
+        req.params;
+
+      if (!id || id === "undefined") {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Meeting ID is required.",
+        });
+      }
 
       const result =
         db.prepare(`

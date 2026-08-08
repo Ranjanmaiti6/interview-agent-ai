@@ -12,13 +12,20 @@ export default function MeetingRoom() {
   const { id } = useParams();
   const navigate = useNavigate();
 
-  const [meeting, setMeeting] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [joining, setJoining] = useState(false);
+  const [meeting, setMeeting] =
+    useState(null);
+
+  const [loading, setLoading] =
+    useState(true);
+
+  const [error, setError] =
+    useState("");
+
+  const [joining, setJoining] =
+    useState(false);
 
   // ==========================================
-  // Load meeting
+  // LOAD MEETING
   // ==========================================
 
   useEffect(() => {
@@ -26,6 +33,16 @@ export default function MeetingRoom() {
       try {
         setLoading(true);
         setError("");
+
+        // --------------------------------------
+        // Make sure ID exists
+        // --------------------------------------
+
+        if (!id) {
+          throw new Error(
+            "Meeting ID is missing."
+          );
+        }
 
         const token =
           localStorage.getItem("token");
@@ -35,28 +52,47 @@ export default function MeetingRoom() {
           return;
         }
 
-        const response = await fetch(
-          `${API_URL}/api/meetings/${id}`,
-          {
-            method: "GET",
-
-            headers: {
-              Authorization:
-                `Bearer ${token}`,
-
-              Accept:
-                "application/json",
-            },
-          }
+        console.log(
+          "Loading meeting:",
+          `${API_URL}/api/meetings/${id}`
         );
+
+        const response =
+          await fetch(
+            `${API_URL}/api/meetings/${encodeURIComponent(
+              id
+            )}`,
+            {
+              method: "GET",
+
+              headers: {
+                Authorization:
+                  `Bearer ${token}`,
+
+                Accept:
+                  "application/json",
+              },
+            }
+          );
 
         const data =
           await response.json();
 
+        console.log(
+          "Meeting response:",
+          data
+        );
+
         if (!response.ok) {
           throw new Error(
             data.message ||
-              "Unable to load meeting."
+              `Unable to load meeting. HTTP ${response.status}`
+          );
+        }
+
+        if (!data.meeting) {
+          throw new Error(
+            "Meeting was not returned by the server."
           );
         }
 
@@ -84,7 +120,7 @@ export default function MeetingRoom() {
   }, [id, navigate]);
 
   // ==========================================
-  // Join meeting
+  // JOIN MEETING
   // ==========================================
 
   const handleJoin = () => {
@@ -94,9 +130,9 @@ export default function MeetingRoom() {
 
     setJoining(true);
 
-    // ========================================
+    // ----------------------------------------
     // External meeting URL
-    // ========================================
+    // ----------------------------------------
 
     if (meeting.meeting_url) {
       window.open(
@@ -109,14 +145,17 @@ export default function MeetingRoom() {
       return;
     }
 
-    // ========================================
+    // ----------------------------------------
     // Internal AI interview
-    // ========================================
+    // ----------------------------------------
+
+    const candidateId =
+      meeting.employee_request_id ||
+      meeting.employee_email;
 
     navigate(
       `/interview?id=${encodeURIComponent(
-        meeting.employee_request_id ||
-          meeting.employee_email
+        candidateId
       )}`,
       {
         state: {
@@ -127,7 +166,8 @@ export default function MeetingRoom() {
             meeting.employee_email,
 
           employeeName:
-            meeting.employee_name,
+            meeting.employee_name ||
+            "Employee",
 
           meetingTitle:
             meeting.title,
@@ -139,32 +179,37 @@ export default function MeetingRoom() {
   };
 
   // ==========================================
-  // Loading
+  // LOADING
   // ==========================================
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center px-6">
+      <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center px-6">
+
         <div className="text-center">
-          <div className="text-2xl font-bold text-white">
+
+          <div className="text-2xl font-bold">
             Loading meeting...
           </div>
 
           <p className="text-slate-400 mt-2">
             Please wait.
           </p>
+
         </div>
+
       </div>
     );
   }
 
   // ==========================================
-  // Error
+  // ERROR
   // ==========================================
 
   if (error) {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center px-6">
+      <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center px-6">
+
         <div className="max-w-md w-full bg-slate-900 border border-red-500/20 rounded-2xl p-8">
 
           <h1 className="text-2xl font-bold text-red-400">
@@ -185,6 +230,7 @@ export default function MeetingRoom() {
           </button>
 
         </div>
+
       </div>
     );
   }
@@ -194,17 +240,22 @@ export default function MeetingRoom() {
   }
 
   // ==========================================
-  // Render
+  // PAGE
   // ==========================================
 
   return (
     <div className="min-h-screen bg-slate-950 text-white">
+
+      {/* ====================================== */}
+      {/* HEADER */}
+      {/* ====================================== */}
 
       <header className="border-b border-slate-800 bg-slate-900">
 
         <div className="max-w-6xl mx-auto px-6 py-5 flex items-center justify-between">
 
           <div>
+
             <p className="text-blue-400 text-sm font-semibold">
               INTERVIEW ROOM
             </p>
@@ -212,6 +263,7 @@ export default function MeetingRoom() {
             <h1 className="text-2xl font-bold">
               {meeting.title}
             </h1>
+
           </div>
 
           <button
@@ -227,6 +279,10 @@ export default function MeetingRoom() {
 
       </header>
 
+      {/* ====================================== */}
+      {/* MAIN */}
+      {/* ====================================== */}
+
       <main className="max-w-6xl mx-auto px-6 py-10">
 
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-8">
@@ -234,7 +290,7 @@ export default function MeetingRoom() {
           <div className="grid md:grid-cols-2 gap-8">
 
             {/* ================================= */}
-            {/* Meeting details */}
+            {/* DETAILS */}
             {/* ================================= */}
 
             <div>
@@ -247,27 +303,27 @@ export default function MeetingRoom() {
                 {meeting.title}
               </h2>
 
-              <div className="mt-8 space-y-4">
+              <div className="mt-8 space-y-5">
 
                 <div>
+
                   <p className="text-slate-500 text-sm">
                     Employee
                   </p>
 
                   <p className="text-slate-200 mt-1">
                     {meeting.employee_name ||
-                      meeting.employee_email}
+                      "Employee"}
                   </p>
 
-                  {meeting.employee_name &&
-                    meeting.employee_email && (
-                      <p className="text-slate-500 text-sm mt-1">
-                        {meeting.employee_email}
-                      </p>
-                    )}
+                  <p className="text-slate-500 text-sm mt-1">
+                    {meeting.employee_email}
+                  </p>
+
                 </div>
 
                 <div>
+
                   <p className="text-slate-500 text-sm">
                     Scheduled time
                   </p>
@@ -279,19 +335,25 @@ export default function MeetingRoom() {
                         ).toLocaleString()
                       : "Not scheduled"}
                   </p>
+
                 </div>
 
                 <div>
+
                   <p className="text-slate-500 text-sm">
                     Duration
                   </p>
 
                   <p className="text-slate-200 mt-1">
-                    {meeting.duration_minutes} minutes
+                    {meeting.duration_minutes ||
+                      30}{" "}
+                    minutes
                   </p>
+
                 </div>
 
                 <div>
+
                   <p className="text-slate-500 text-sm">
                     Status
                   </p>
@@ -300,6 +362,7 @@ export default function MeetingRoom() {
                     {meeting.status ||
                       "scheduled"}
                   </span>
+
                 </div>
 
               </div>
@@ -307,7 +370,7 @@ export default function MeetingRoom() {
             </div>
 
             {/* ================================= */}
-            {/* Join */}
+            {/* JOIN */}
             {/* ================================= */}
 
             <div className="bg-slate-800 rounded-2xl p-8 flex flex-col justify-center">
