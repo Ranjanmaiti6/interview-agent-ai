@@ -1,87 +1,63 @@
 import { useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import {
-  useNavigate,
-  useParams,
-} from "react-router-dom";
+  ArrowLeft,
+  CalendarDays,
+  Clock3,
+  ExternalLink,
+  Video,
+  User,
+} from "lucide-react";
 
 const API_URL =
-  import.meta.env.VITE_API_URL ||
-  "http://localhost:5001";
+  import.meta.env.VITE_API_URL || "http://localhost:5001";
 
 export default function MeetingRoom() {
   const { id } = useParams();
   const navigate = useNavigate();
 
-  const [meeting, setMeeting] =
-    useState(null);
-
-  const [loading, setLoading] =
-    useState(true);
-
-  const [error, setError] =
-    useState("");
-
-  const [joining, setJoining] =
-    useState(false);
-
-  // ==========================================
-  // LOAD MEETING
-  // ==========================================
+  const [meeting, setMeeting] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [joining, setJoining] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
+    let cancelled = false;
+
     const loadMeeting = async () => {
       try {
-        setLoading(true);
-        setError("");
-
-        // --------------------------------------
-        // Make sure ID exists
-        // --------------------------------------
-
         if (!id) {
-          throw new Error(
-            "Meeting ID is missing."
-          );
+          throw new Error("Meeting ID is missing.");
         }
 
-        const token =
-          localStorage.getItem("token");
+        const token = localStorage.getItem("token");
 
         if (!token) {
           navigate("/login");
           return;
         }
 
-        console.log(
-          "Loading meeting:",
-          `${API_URL}/api/meetings/${id}`
+        setLoading(true);
+        setError("");
+
+        const response = await fetch(
+          `${API_URL}/api/meetings/${encodeURIComponent(id)}`,
+          {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              Accept: "application/json",
+            },
+          }
         );
 
-        const response =
-          await fetch(
-            `${API_URL}/api/meetings/${encodeURIComponent(
-              id
-            )}`,
-            {
-              method: "GET",
+        let data = {};
 
-              headers: {
-                Authorization:
-                  `Bearer ${token}`,
-
-                Accept:
-                  "application/json",
-              },
-            }
-          );
-
-        const data =
-          await response.json();
-
-        console.log(
-          "Meeting response:",
-          data
-        );
+        try {
+          data = await response.json();
+        } catch {
+          data = {};
+        }
 
         if (!response.ok) {
           throw new Error(
@@ -96,44 +72,39 @@ export default function MeetingRoom() {
           );
         }
 
-        setMeeting(
-          data.meeting
-        );
+        if (!cancelled) {
+          setMeeting(data.meeting);
+        }
+      } catch (err) {
+        console.error("Load meeting error:", err);
 
-      } catch (error) {
-        console.error(
-          "Load meeting error:",
-          error
-        );
-
-        setError(
-          error.message ||
-            "Unable to load meeting."
-        );
-
+        if (!cancelled) {
+          setError(
+            err.message || "Unable to load meeting."
+          );
+        }
       } finally {
-        setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
     };
 
     loadMeeting();
+
+    return () => {
+      cancelled = true;
+    };
   }, [id, navigate]);
 
-  // ==========================================
-  // JOIN MEETING
-  // ==========================================
-
   const handleJoin = () => {
-    if (!meeting) {
+    if (!meeting || joining) {
       return;
     }
 
     setJoining(true);
 
-    // ----------------------------------------
-    // External meeting URL
-    // ----------------------------------------
-
+    // External meeting
     if (meeting.meeting_url) {
       window.open(
         meeting.meeting_url,
@@ -145,32 +116,21 @@ export default function MeetingRoom() {
       return;
     }
 
-    // ----------------------------------------
     // Internal AI interview
-    // ----------------------------------------
-
     const candidateId =
       meeting.employee_request_id ||
       meeting.employee_email;
 
     navigate(
-      `/interview?id=${encodeURIComponent(
-        candidateId
-      )}`,
+      `/interview?id=${encodeURIComponent(candidateId)}`,
       {
         state: {
-          meetingId:
-            meeting.id,
-
-          employeeEmail:
-            meeting.employee_email,
-
+          meetingId: meeting.id,
+          employeeEmail: meeting.employee_email,
           employeeName:
-            meeting.employee_name ||
-            "Employee",
-
+            meeting.employee_name || "Employee",
           meetingTitle:
-            meeting.title,
+            meeting.title || "AI Interview",
         },
       }
     );
@@ -178,59 +138,53 @@ export default function MeetingRoom() {
     setJoining(false);
   };
 
-  // ==========================================
-  // LOADING
-  // ==========================================
-
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center px-6">
-
+      <div className="flex min-h-screen items-center justify-center bg-[#05070a] px-6 text-white">
         <div className="text-center">
-
-          <div className="text-2xl font-bold">
-            Loading meeting...
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-blue-400/15 bg-blue-400/[0.06]">
+            <Video
+              size={24}
+              className="text-blue-300"
+            />
           </div>
 
-          <p className="text-slate-400 mt-2">
-            Please wait.
+          <h1 className="mt-5 text-xl font-semibold">
+            Loading meeting...
+          </h1>
+
+          <p className="mt-2 text-sm text-white/35">
+            Please wait while we prepare the interview room.
           </p>
-
         </div>
-
       </div>
     );
   }
 
-  // ==========================================
-  // ERROR
-  // ==========================================
-
   if (error) {
     return (
-      <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center px-6">
+      <div className="flex min-h-screen items-center justify-center bg-[#05070a] px-6 text-white">
+        <div className="w-full max-w-md rounded-3xl border border-red-400/10 bg-white/[0.025] p-8 text-center backdrop-blur-xl">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-red-400/[0.07] text-red-300">
+            <Video size={24} />
+          </div>
 
-        <div className="max-w-md w-full bg-slate-900 border border-red-500/20 rounded-2xl p-8">
-
-          <h1 className="text-2xl font-bold text-red-400">
+          <h1 className="mt-5 text-2xl font-semibold">
             Unable to open meeting
           </h1>
 
-          <p className="text-slate-400 mt-3">
+          <p className="mt-3 text-sm leading-6 text-white/40">
             {error}
           </p>
 
           <button
-            onClick={() =>
-              navigate("/meetings")
-            }
-            className="mt-6 w-full bg-blue-600 hover:bg-blue-700 py-3 rounded-xl font-semibold text-white"
+            type="button"
+            onClick={() => navigate("/meetings")}
+            className="mt-7 w-full rounded-xl bg-blue-500 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-400"
           >
             Back to Meetings
           </button>
-
         </div>
-
       </div>
     );
   }
@@ -239,179 +193,176 @@ export default function MeetingRoom() {
     return null;
   }
 
-  // ==========================================
-  // PAGE
-  // ==========================================
+  const hasExternalMeeting =
+    Boolean(meeting.meeting_url);
+
+  const status =
+    meeting.status || "scheduled";
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white">
-
-      {/* ====================================== */}
-      {/* HEADER */}
-      {/* ====================================== */}
-
-      <header className="border-b border-slate-800 bg-slate-900">
-
-        <div className="max-w-6xl mx-auto px-6 py-5 flex items-center justify-between">
-
+    <div className="min-h-screen bg-[#05070a] text-white">
+      {/* Header */}
+      <header className="border-b border-white/[0.06] bg-[#090b0f]/90 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
           <div>
-
-            <p className="text-blue-400 text-sm font-semibold">
-              INTERVIEW ROOM
+            <p className="text-[10px] font-semibold uppercase tracking-[0.25em] text-blue-400">
+              Interview Room
             </p>
 
-            <h1 className="text-2xl font-bold">
-              {meeting.title}
+            <h1 className="mt-1 text-xl font-semibold">
+              {meeting.title || "AI Interview"}
             </h1>
-
           </div>
 
           <button
-            onClick={() =>
-              navigate("/meetings")
-            }
-            className="border border-slate-700 hover:bg-slate-800 px-4 py-2 rounded-lg"
+            type="button"
+            onClick={() => navigate("/meetings")}
+            className="inline-flex items-center gap-2 rounded-xl border border-white/[0.08] px-4 py-2 text-sm text-white/60 transition hover:bg-white/[0.05] hover:text-white"
           >
+            <ArrowLeft size={16} />
             Back
           </button>
-
         </div>
-
       </header>
 
-      {/* ====================================== */}
-      {/* MAIN */}
-      {/* ====================================== */}
-
-      <main className="max-w-6xl mx-auto px-6 py-10">
-
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-8">
-
-          <div className="grid md:grid-cols-2 gap-8">
-
-            {/* ================================= */}
-            {/* DETAILS */}
-            {/* ================================= */}
-
-            <div>
-
-              <p className="text-blue-400 text-sm font-semibold uppercase">
+      <main className="mx-auto max-w-6xl px-6 py-10">
+        <div className="overflow-hidden rounded-[28px] border border-white/[0.07] bg-white/[0.02] shadow-[0_30px_100px_rgba(0,0,0,0.3)]">
+          <div className="grid lg:grid-cols-[1.1fr_0.9fr]">
+            {/* Details */}
+            <div className="p-8 sm:p-10">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.25em] text-blue-400">
                 Scheduled Interview
               </p>
 
-              <h2 className="text-4xl font-black mt-2">
-                {meeting.title}
+              <h2 className="mt-4 text-4xl font-semibold tracking-[-0.04em] sm:text-5xl">
+                {meeting.title || "AI Interview"}
               </h2>
 
-              <div className="mt-8 space-y-5">
+              <div className="mt-10 space-y-6">
+                <InfoRow
+                  icon={User}
+                  label="Employee"
+                  value={
+                    meeting.employee_name ||
+                    "Employee"
+                  }
+                  secondary={
+                    meeting.employee_email
+                  }
+                />
 
-                <div>
-
-                  <p className="text-slate-500 text-sm">
-                    Employee
-                  </p>
-
-                  <p className="text-slate-200 mt-1">
-                    {meeting.employee_name ||
-                      "Employee"}
-                  </p>
-
-                  <p className="text-slate-500 text-sm mt-1">
-                    {meeting.employee_email}
-                  </p>
-
-                </div>
-
-                <div>
-
-                  <p className="text-slate-500 text-sm">
-                    Scheduled time
-                  </p>
-
-                  <p className="text-slate-200 mt-1">
-                    {meeting.scheduled_at
+                <InfoRow
+                  icon={CalendarDays}
+                  label="Scheduled time"
+                  value={
+                    meeting.scheduled_at
                       ? new Date(
                           meeting.scheduled_at
                         ).toLocaleString()
-                      : "Not scheduled"}
-                  </p>
+                      : "Not scheduled"
+                  }
+                />
 
-                </div>
-
-                <div>
-
-                  <p className="text-slate-500 text-sm">
-                    Duration
-                  </p>
-
-                  <p className="text-slate-200 mt-1">
-                    {meeting.duration_minutes ||
-                      30}{" "}
-                    minutes
-                  </p>
-
-                </div>
+                <InfoRow
+                  icon={Clock3}
+                  label="Duration"
+                  value={`${meeting.duration_minutes || 30} minutes`}
+                />
 
                 <div>
-
-                  <p className="text-slate-500 text-sm">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/25">
                     Status
                   </p>
 
-                  <span className="inline-block mt-1 px-3 py-1 rounded-full bg-blue-500/10 text-blue-400 text-sm font-semibold">
-                    {meeting.status ||
-                      "scheduled"}
+                  <span className="mt-2 inline-flex rounded-full border border-blue-400/15 bg-blue-400/[0.06] px-3 py-1.5 text-xs font-semibold capitalize text-blue-300">
+                    {status}
                   </span>
-
                 </div>
-
               </div>
-
             </div>
 
-            {/* ================================= */}
-            {/* JOIN */}
-            {/* ================================= */}
-
-            <div className="bg-slate-800 rounded-2xl p-8 flex flex-col justify-center">
-
-              <div className="text-center">
-
-                <div className="w-16 h-16 mx-auto rounded-full bg-blue-500/10 flex items-center justify-center text-blue-400 text-2xl">
-                  🎥
+            {/* Join */}
+            <div className="flex items-center border-t border-white/[0.06] bg-white/[0.015] p-8 lg:border-l lg:border-t-0 sm:p-10">
+              <div className="w-full rounded-3xl border border-white/[0.07] bg-black/20 p-8 text-center">
+                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl border border-blue-300/15 bg-blue-400/[0.07]">
+                  {hasExternalMeeting ? (
+                    <ExternalLink
+                      size={27}
+                      className="text-blue-300"
+                    />
+                  ) : (
+                    <Video
+                      size={27}
+                      className="text-blue-300"
+                    />
+                  )}
                 </div>
 
-                <h3 className="text-2xl font-bold mt-5">
+                <h3 className="mt-6 text-2xl font-semibold">
                   Ready to join?
                 </h3>
 
-                <p className="text-slate-400 mt-2">
-                  Enter the interview room when
-                  you are ready.
+                <p className="mx-auto mt-3 max-w-sm text-sm leading-6 text-white/35">
+                  {hasExternalMeeting
+                    ? "Open the scheduled meeting in a new tab."
+                    : "Start your adaptive AI technical interview."}
                 </p>
 
                 <button
+                  type="button"
                   onClick={handleJoin}
                   disabled={joining}
-                  className="mt-6 w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 py-3 rounded-xl font-semibold"
+                  className="mt-7 flex w-full items-center justify-center gap-2 rounded-xl bg-blue-500 px-5 py-3.5 text-sm font-semibold transition hover:bg-blue-400 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {joining
                     ? "Opening..."
-                    : meeting.meeting_url
+                    : hasExternalMeeting
                     ? "Join Meeting"
                     : "Start AI Interview"}
+
+                  {hasExternalMeeting && (
+                    <ExternalLink size={16} />
+                  )}
                 </button>
-
               </div>
-
             </div>
-
           </div>
-
         </div>
-
       </main>
+    </div>
+  );
+}
 
+function InfoRow({
+  icon: Icon,
+  label,
+  value,
+  secondary,
+}) {
+  return (
+    <div className="flex gap-4">
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-blue-400/10 bg-blue-400/[0.05]">
+        <Icon
+          size={17}
+          className="text-blue-300/80"
+        />
+      </div>
+
+      <div>
+        <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/25">
+          {label}
+        </p>
+
+        <p className="mt-1 text-sm text-white/75">
+          {value}
+        </p>
+
+        {secondary && (
+          <p className="mt-1 text-xs text-white/30">
+            {secondary}
+          </p>
+        )}
+      </div>
     </div>
   );
 }
