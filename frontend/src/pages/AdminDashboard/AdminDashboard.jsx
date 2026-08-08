@@ -5,12 +5,24 @@ const API_URL =
   import.meta.env.VITE_API_URL ||
   "http://localhost:5001";
 
+
 export default function AdminDashboard() {
+
   const navigate = useNavigate();
+
+
+  // ==========================================
+  // Current user
+  // ==========================================
 
   const user = JSON.parse(
     localStorage.getItem("user") || "{}"
   );
+
+
+  // ==========================================
+  // State
+  // ==========================================
 
   const [requests, setRequests] =
     useState([]);
@@ -21,11 +33,22 @@ export default function AdminDashboard() {
   const [error, setError] =
     useState("");
 
+  const [updatingId, setUpdatingId] =
+    useState(null);
+
+
+  // ==========================================
+  // Logout
+  // ==========================================
+
   const logout = () => {
+
     localStorage.removeItem("token");
+
     localStorage.removeItem("user");
 
     navigate("/login?role=admin");
+
   };
 
 
@@ -34,17 +57,39 @@ export default function AdminDashboard() {
   // ==========================================
 
   const loadRequests = async () => {
+
     try {
+
       setLoading(true);
+
       setError("");
+
 
       const token =
         localStorage.getItem("token");
+
+
+      if (!token) {
+
+        navigate("/login?role=admin");
+
+        return;
+
+      }
+
+
+      console.log(
+        "Loading employee requests from:",
+        `${API_URL}/api/employee/requests`
+      );
+
 
       const response =
         await fetch(
           `${API_URL}/api/employee/requests`,
           {
+            method: "GET",
+
             headers: {
               Authorization:
                 `Bearer ${token}`,
@@ -52,38 +97,57 @@ export default function AdminDashboard() {
           }
         );
 
+
       const data =
         await response.json();
 
+
       if (!response.ok) {
+
         throw new Error(
           data.message ||
-            "Unable to load requests."
+          "Unable to load employee requests."
         );
+
       }
 
+
       setRequests(
-        data.requests || []
+        Array.isArray(data.requests)
+          ? data.requests
+          : []
       );
 
     } catch (error) {
+
       console.error(
         "Load requests error:",
         error
       );
 
+
       setError(
         error.message ||
-          "Unable to load employee requests."
+        "Unable to load employee requests."
       );
+
     } finally {
+
       setLoading(false);
+
     }
+
   };
 
 
+  // ==========================================
+  // Load requests on page load
+  // ==========================================
+
   useEffect(() => {
+
     loadRequests();
+
   }, []);
 
 
@@ -95,9 +159,26 @@ export default function AdminDashboard() {
     requestId,
     status
   ) => {
+
     try {
+
+      setUpdatingId(requestId);
+
+      setError("");
+
+
       const token =
         localStorage.getItem("token");
+
+
+      if (!token) {
+
+        navigate("/login?role=admin");
+
+        return;
+
+      }
+
 
       const response =
         await fetch(
@@ -119,34 +200,96 @@ export default function AdminDashboard() {
           }
         );
 
+
       const data =
         await response.json();
 
+
       if (!response.ok) {
+
         throw new Error(
           data.message ||
-            "Unable to update request."
+          "Unable to update request."
         );
+
       }
+
+
+      // Reload requests after update
 
       await loadRequests();
 
     } catch (error) {
+
       console.error(
         "Update request error:",
         error
       );
 
+
       setError(
         error.message ||
-          "Unable to update request."
+        "Unable to update employee request."
       );
+
+    } finally {
+
+      setUpdatingId(null);
+
     }
+
+  };
+
+
+  // ==========================================
+  // Resume URL
+  // ==========================================
+
+  const getResumeUrl = (request) => {
+
+    if (!request?.resume) {
+      return null;
+    }
+
+
+    // New backend format
+
+    if (request.resume.url) {
+      return request.resume.url;
+    }
+
+
+    // Existing backend format
+
+    if (request.resume.path) {
+
+      if (
+        request.resume.path.startsWith(
+          "http://"
+        ) ||
+        request.resume.path.startsWith(
+          "https://"
+        )
+      ) {
+
+        return request.resume.path;
+
+      }
+
+
+      return `${API_URL}${request.resume.path}`;
+
+    }
+
+
+    return null;
+
   };
 
 
   return (
     <div className="min-h-screen bg-slate-950 text-white">
+
 
       {/* ================================= */}
       {/* Header */}
@@ -168,9 +311,10 @@ export default function AdminDashboard() {
 
           </div>
 
+
           <button
             onClick={logout}
-            className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg"
+            className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg font-semibold transition"
           >
             Logout
           </button>
@@ -186,13 +330,22 @@ export default function AdminDashboard() {
 
       <main className="max-w-7xl mx-auto px-6 py-10">
 
-        <h2 className="text-4xl font-black">
-          Welcome, {user.name || "Admin"}
-        </h2>
 
-        <p className="text-slate-400 mt-2">
-          Manage employees, interviews and meetings.
-        </p>
+        {/* ================================= */}
+        {/* Welcome */}
+        {/* ================================= */}
+
+        <div>
+
+          <h2 className="text-4xl font-black">
+            Welcome, {user.name || "Admin"}
+          </h2>
+
+          <p className="text-slate-400 mt-2">
+            Manage employees, interviews and meetings.
+          </p>
+
+        </div>
 
 
         {/* ================================= */}
@@ -201,7 +354,11 @@ export default function AdminDashboard() {
 
         <div className="grid md:grid-cols-3 gap-6 mt-10">
 
+
+          {/* Interview Requests */}
+
           <button
+            type="button"
             onClick={() =>
               document
                 .getElementById(
@@ -232,7 +389,10 @@ export default function AdminDashboard() {
           </button>
 
 
+          {/* Meetings */}
+
           <button
+            type="button"
             onClick={() =>
               navigate("/admin/meetings")
             }
@@ -244,13 +404,17 @@ export default function AdminDashboard() {
             </h3>
 
             <p className="text-slate-400 mt-2">
-              Schedule and conduct employee interviews.
+              Schedule and conduct employee
+              interviews.
             </p>
 
           </button>
 
 
+          {/* AI Reports */}
+
           <button
+            type="button"
             onClick={() =>
               navigate("/admin/reports")
             }
@@ -279,7 +443,12 @@ export default function AdminDashboard() {
           className="mt-14"
         >
 
-          <div className="flex items-center justify-between mb-6">
+
+          {/* ================================= */}
+          {/* Section Header */}
+          {/* ================================= */}
+
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
 
             <div>
 
@@ -293,38 +462,71 @@ export default function AdminDashboard() {
 
             </div>
 
+
             <button
+              type="button"
               onClick={loadRequests}
-              className="border border-slate-700 hover:bg-slate-800 px-4 py-2 rounded-lg text-sm"
+              disabled={loading}
+              className="border border-slate-700 hover:bg-slate-800 disabled:opacity-50 px-4 py-2 rounded-lg text-sm transition"
             >
-              Refresh
+              {loading
+                ? "Refreshing..."
+                : "Refresh"}
             </button>
 
           </div>
 
 
+          {/* ================================= */}
           {/* Error */}
+          {/* ================================= */}
 
           {error && (
+
             <div className="mb-6 bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl p-4">
-              {error}
+
+              <p className="font-semibold">
+                Error
+              </p>
+
+              <p className="mt-1">
+                {error}
+              </p>
+
             </div>
+
           )}
 
 
+          {/* ================================= */}
           {/* Loading */}
+          {/* ================================= */}
 
           {loading && (
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-8 text-center text-slate-400">
-              Loading employee requests...
+
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-10 text-center">
+
+              <div className="animate-pulse">
+
+                <p className="text-slate-400">
+                  Loading employee requests...
+                </p>
+
+              </div>
+
             </div>
+
           )}
 
 
-          {/* No requests */}
+          {/* ================================= */}
+          {/* No Requests */}
+          {/* ================================= */}
 
           {!loading &&
+            !error &&
             requests.length === 0 && (
+
               <div className="bg-slate-900 border border-slate-800 rounded-2xl p-10 text-center">
 
                 <h3 className="text-xl font-bold">
@@ -337,10 +539,13 @@ export default function AdminDashboard() {
                 </p>
 
               </div>
+
             )}
 
 
+          {/* ================================= */}
           {/* Requests */}
+          {/* ================================= */}
 
           {!loading &&
             requests.length > 0 && (
@@ -348,153 +553,197 @@ export default function AdminDashboard() {
               <div className="space-y-4">
 
                 {requests.map(
-                  (request) => (
+                  (request) => {
 
-                    <div
-                      key={request.id}
-                      className="bg-slate-900 border border-slate-800 rounded-2xl p-6"
-                    >
-
-                      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-
-                        {/* Employee information */}
-
-                        <div>
-
-                          <h3 className="text-xl font-bold">
-                            {request.name}
-                          </h3>
-
-                          <p className="text-slate-400 mt-1">
-                            {request.email}
-                          </p>
-
-                          <p className="text-slate-500 text-sm mt-2">
-                            Requested:{" "}
-                            {request.createdAt
-                              ? new Date(
-                                  request.createdAt
-                                ).toLocaleString()
-                              : "Unknown"}
-                          </p>
-
-                        </div>
+                    const resumeUrl =
+                      getResumeUrl(request);
 
 
-                        {/* Status */}
+                    return (
 
-                        <div>
-
-                          <span
-                            className={`inline-block px-3 py-1 rounded-full text-sm font-semibold ${
-                              request.status ===
-                              "accepted"
-                                ? "bg-green-500/10 text-green-400"
-                                : request.status ===
-                                  "rejected"
-                                ? "bg-red-500/10 text-red-400"
-                                : "bg-yellow-500/10 text-yellow-400"
-                            }`}
-                          >
-                            {request.status ||
-                              "pending"}
-                          </span>
-
-                        </div>
+                      <div
+                        key={request.id}
+                        className="bg-slate-900 border border-slate-800 rounded-2xl p-6"
+                      >
 
 
-                        {/* AI Score */}
+                        {/* ================================= */}
+                        {/* Request Information */}
+                        {/* ================================= */}
 
-                        <div>
-
-                          <p className="text-slate-500 text-sm">
-                            AI Score
-                          </p>
-
-                          <p className="text-2xl font-bold">
-                            {request.aiScore !==
-                            null &&
-                            request.aiScore !==
-                              undefined
-                              ? request.aiScore
-                              : "—"}
-                          </p>
-
-                        </div>
+                        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
 
 
-                        {/* Actions */}
+                          {/* Employee */}
 
-                        {request.status ===
-                          "pending" && (
+                          <div className="min-w-0">
 
-                          <div className="flex gap-3">
+                            <h3 className="text-xl font-bold break-words">
+                              {request.name ||
+                                "Unknown Employee"}
+                            </h3>
 
-                            <button
-                              onClick={() =>
-                                updateRequestStatus(
-                                  request.id,
-                                  "accepted"
-                                )
-                              }
-                              className="bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg font-semibold"
-                            >
-                              Accept
-                            </button>
+                            <p className="text-slate-400 mt-1 break-words">
+                              {request.email ||
+                                "No email"}
+                            </p>
 
-                            <button
-                              onClick={() =>
-                                updateRequestStatus(
-                                  request.id,
-                                  "rejected"
-                                )
-                              }
-                              className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg font-semibold"
-                            >
-                              Reject
-                            </button>
+                            <p className="text-slate-500 text-sm mt-2">
+
+                              Requested:{" "}
+
+                              {request.createdAt
+                                ? new Date(
+                                    request.createdAt
+                                  ).toLocaleString()
+                                : "Unknown"}
+
+                            </p>
 
                           </div>
 
-                        )}
 
-                      </div>
+                          {/* Status */}
+
+                          <div>
+
+                            <p className="text-slate-500 text-sm mb-1">
+                              Status
+                            </p>
+
+                            <span
+                              className={`inline-block px-3 py-1 rounded-full text-sm font-semibold ${
+                                request.status ===
+                                "accepted"
+                                  ? "bg-green-500/10 text-green-400"
+                                  : request.status ===
+                                    "rejected"
+                                  ? "bg-red-500/10 text-red-400"
+                                  : "bg-yellow-500/10 text-yellow-400"
+                              }`}
+                            >
+
+                              {request.status ||
+                                "pending"}
+
+                            </span>
+
+                          </div>
 
 
-                      {/* Resume */}
+                          {/* AI Score */}
 
-                      <div className="mt-5 pt-5 border-t border-slate-800">
+                          <div>
 
-                        <p className="text-sm text-slate-500">
-                          Resume
-                        </p>
+                            <p className="text-slate-500 text-sm">
+                              AI Score
+                            </p>
 
-                        {request.resume ? (
+                            <p className="text-2xl font-bold">
 
-                          <a
-                            href={
-                              request.resume
-                            }
-                            target="_blank"
-                            rel="noreferrer"
-                            className="text-blue-400 hover:text-blue-300 mt-1 inline-block"
-                          >
-                            View Resume
-                          </a>
+                              {request.aiScore !==
+                                null &&
+                              request.aiScore !==
+                                undefined
+                                ? request.aiScore
+                                : "—"}
 
-                        ) : (
+                            </p>
 
-                          <p className="text-slate-500 mt-1">
-                            No resume uploaded yet.
+                          </div>
+
+
+                          {/* Actions */}
+
+                          {request.status ===
+                            "pending" && (
+
+                            <div className="flex gap-3">
+
+                              <button
+                                type="button"
+                                disabled={
+                                  updatingId ===
+                                  request.id
+                                }
+                                onClick={() =>
+                                  updateRequestStatus(
+                                    request.id,
+                                    "accepted"
+                                  )
+                                }
+                                className="bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 rounded-lg font-semibold transition"
+                              >
+
+                                {updatingId ===
+                                request.id
+                                  ? "Updating..."
+                                  : "Accept"}
+
+                              </button>
+
+
+                              <button
+                                type="button"
+                                disabled={
+                                  updatingId ===
+                                  request.id
+                                }
+                                onClick={() =>
+                                  updateRequestStatus(
+                                    request.id,
+                                    "rejected"
+                                  )
+                                }
+                                className="bg-red-600 hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 rounded-lg font-semibold transition"
+                              >
+                                Reject
+                              </button>
+
+                            </div>
+
+                          )}
+
+                        </div>
+
+
+                        {/* ================================= */}
+                        {/* Resume */}
+                        {/* ================================= */}
+
+                        <div className="mt-5 pt-5 border-t border-slate-800">
+
+                          <p className="text-sm text-slate-500">
+                            Resume
                           </p>
 
-                        )}
+
+                          {resumeUrl ? (
+
+                            <a
+                              href={resumeUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-400 hover:text-blue-300 mt-2 inline-block font-semibold"
+                            >
+                              View Resume
+                            </a>
+
+                          ) : (
+
+                            <p className="text-slate-500 mt-2">
+                              No resume uploaded yet.
+                            </p>
+
+                          )}
+
+                        </div>
 
                       </div>
 
-                    </div>
+                    );
 
-                  )
+                  }
                 )}
 
               </div>

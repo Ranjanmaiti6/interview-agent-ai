@@ -15,7 +15,9 @@ const uploadDirectory = path.join(
   "../uploads/resumes"
 );
 
-// Create upload directory if it doesn't exist
+
+// Create directory if it doesn't exist
+
 if (!fs.existsSync(uploadDirectory)) {
   fs.mkdirSync(uploadDirectory, {
     recursive: true,
@@ -23,14 +25,22 @@ if (!fs.existsSync(uploadDirectory)) {
 }
 
 
+// ==========================================
+// Multer storage
+// ==========================================
+
 const storage = multer.diskStorage({
+
   destination: (req, file, cb) => {
     cb(null, uploadDirectory);
   },
 
   filename: (req, file, cb) => {
+
     const extension =
-      path.extname(file.originalname);
+      path.extname(
+        file.originalname
+      );
 
     const filename =
       `${Date.now()}-${Math.round(
@@ -39,10 +49,16 @@ const storage = multer.diskStorage({
 
     cb(null, filename);
   },
+
 });
 
 
+// ==========================================
+// Multer upload
+// ==========================================
+
 const upload = multer({
+
   storage,
 
   limits: {
@@ -50,6 +66,7 @@ const upload = multer({
   },
 
   fileFilter: (req, file, cb) => {
+
     const allowedExtensions = [
       ".pdf",
       ".doc",
@@ -66,20 +83,26 @@ const upload = multer({
         extension
       )
     ) {
+
       cb(null, true);
+
     } else {
+
       cb(
         new Error(
           "Only PDF, DOC and DOCX files are allowed."
         )
       );
+
     }
+
   },
+
 });
 
 
 // ==========================================
-// Temporary in-memory storage
+// Temporary storage
 // ==========================================
 
 const employeeRequests = [];
@@ -92,7 +115,9 @@ const employeeRequests = [];
 router.post(
   "/request",
   upload.single("resume"),
+
   (req, res) => {
+
     try {
 
       const {
@@ -101,46 +126,60 @@ router.post(
       } = req.body;
 
 
-      // ========================================
-      // Validate employee information
-      // ========================================
+      // ======================================
+      // Validate name/email
+      // ======================================
 
       if (!name || !email) {
 
-        // Delete uploaded file if validation fails
         if (req.file) {
-          fs.unlinkSync(
-            req.file.path
-          );
+
+          try {
+            fs.unlinkSync(
+              req.file.path
+            );
+          } catch (error) {
+            console.error(
+              "Unable to remove file:",
+              error
+            );
+          }
+
         }
 
         return res.status(400).json({
+
           success: false,
 
           message:
             "Name and email are required.",
+
         });
+
       }
 
 
-      // ========================================
+      // ======================================
       // Validate resume
-      // ========================================
+      // ======================================
 
       if (!req.file) {
 
         return res.status(400).json({
+
           success: false,
 
           message:
             "Resume is required.",
+
         });
+
       }
 
 
-      // ========================================
-      // Check existing pending request
-      // ========================================
+      // ======================================
+      // Check duplicate pending request
+      // ======================================
 
       const existingRequest =
         employeeRequests.find(
@@ -152,23 +191,41 @@ router.post(
 
       if (existingRequest) {
 
-        // Remove newly uploaded resume
-        fs.unlinkSync(
-          req.file.path
-        );
+        try {
+          fs.unlinkSync(
+            req.file.path
+          );
+        } catch (error) {
+          console.error(
+            "Unable to remove duplicate resume:",
+            error
+          );
+        }
 
         return res.status(409).json({
+
           success: false,
 
           message:
             "You already have a pending interview request.",
+
         });
+
       }
 
 
-      // ========================================
+      // ======================================
+      // Backend URL
+      // ======================================
+
+      const backendUrl =
+        process.env.BACKEND_URL ||
+        `http://localhost:${process.env.PORT || 5001}`;
+
+
+      // ======================================
       // Create request
-      // ========================================
+      // ======================================
 
       const request = {
 
@@ -179,11 +236,14 @@ router.post(
 
         email,
 
-        status: "pending",
+        status:
+          "pending",
 
-        aiScore: null,
+        aiScore:
+          null,
 
         resume: {
+
           originalName:
             req.file.originalname,
 
@@ -193,17 +253,23 @@ router.post(
           path:
             `/uploads/resumes/${req.file.filename}`,
 
+          url:
+            `${backendUrl}/uploads/resumes/${req.file.filename}`,
+
           size:
             req.file.size,
 
           uploadedAt:
             new Date().toISOString(),
+
         },
 
         createdAt:
           new Date().toISOString(),
 
-        updatedAt: null,
+        updatedAt:
+          null,
+
       };
 
 
@@ -218,9 +284,9 @@ router.post(
       );
 
 
-      // ========================================
+      // ======================================
       // Response
-      // ========================================
+      // ======================================
 
       return res.status(201).json({
 
@@ -230,6 +296,7 @@ router.post(
           "Interview request submitted successfully.",
 
         request,
+
       });
 
     } catch (error) {
@@ -240,19 +307,23 @@ router.post(
       );
 
 
-      // Delete uploaded file if something fails
       if (req.file) {
 
         try {
+
           fs.unlinkSync(
             req.file.path
           );
+
         } catch (deleteError) {
+
           console.error(
             "Unable to remove uploaded file:",
             deleteError
           );
+
         }
+
       }
 
 
@@ -263,8 +334,11 @@ router.post(
         message:
           error.message ||
           "Unable to submit interview request.",
+
       });
+
     }
+
   }
 );
 
@@ -275,9 +349,14 @@ router.post(
 
 router.get(
   "/requests",
+
   (req, res) => {
 
     try {
+
+      console.log(
+        "GET /api/employee/requests"
+      );
 
       return res.json({
 
@@ -303,17 +382,20 @@ router.get(
           "Unable to load employee requests.",
 
       });
+
     }
+
   }
 );
 
 
 // ==========================================
-// Accept / Reject employee request
+// Accept / Reject request
 // ==========================================
 
 router.put(
   "/requests/:id",
+
   (req, res) => {
 
     try {
@@ -338,6 +420,7 @@ router.put(
             "Status must be accepted or rejected.",
 
         });
+
       }
 
 
@@ -358,6 +441,7 @@ router.put(
             "Employee request not found.",
 
         });
+
       }
 
 
@@ -399,23 +483,27 @@ router.put(
           "Unable to update employee request.",
 
       });
+
     }
+
   }
 );
 
 
 // ==========================================
-// Get single employee request
+// Get single request
 // ==========================================
 
 router.get(
   "/requests/:id",
+
   (req, res) => {
 
     try {
 
       const { id } =
         req.params;
+
 
       const request =
         employeeRequests.find(
@@ -434,6 +522,7 @@ router.get(
             "Employee request not found.",
 
         });
+
       }
 
 
@@ -460,7 +549,9 @@ router.get(
           "Unable to load employee request.",
 
       });
+
     }
+
   }
 );
 

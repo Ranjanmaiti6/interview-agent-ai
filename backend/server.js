@@ -20,7 +20,6 @@ const PORT = process.env.PORT || 5001;
 const allowedOrigins = [
   "http://localhost:5173",
   "http://127.0.0.1:5173",
-
   "http://localhost:5174",
   "http://127.0.0.1:5174",
 
@@ -29,32 +28,17 @@ const allowedOrigins = [
 ];
 
 
-// Add FRONTEND_URL from Render environment
-if (process.env.FRONTEND_URL) {
-  allowedOrigins.push(
-    process.env.FRONTEND_URL.replace(/\/$/, "")
-  );
-}
-
-
 app.use(
   cors({
-    origin: function (origin, callback) {
+    origin: (origin, callback) => {
 
-      // Allow requests with no origin
-      // Example: Postman, curl, server-to-server
+      // Allow requests without an origin
+      // such as Postman / server-to-server
       if (!origin) {
         return callback(null, true);
       }
 
-      const cleanOrigin =
-        origin.replace(/\/$/, "");
-
-      if (
-        allowedOrigins.includes(
-          cleanOrigin
-        )
-      ) {
+      if (allowedOrigins.includes(origin)) {
         return callback(null, true);
       }
 
@@ -65,7 +49,7 @@ app.use(
 
       return callback(
         new Error(
-          `CORS blocked origin: ${origin}`
+          `CORS blocked for origin: ${origin}`
         )
       );
     },
@@ -143,6 +127,7 @@ app.use(
 // ==========================================
 
 app.get("/", (req, res) => {
+
   res.json({
     success: true,
 
@@ -158,6 +143,7 @@ app.get("/", (req, res) => {
       uploads: "/uploads",
     },
   });
+
 });
 
 
@@ -166,6 +152,7 @@ app.get("/", (req, res) => {
 // ==========================================
 
 app.use((req, res) => {
+
   res.status(404).json({
     success: false,
 
@@ -174,6 +161,7 @@ app.use((req, res) => {
 
     path: req.originalUrl,
   });
+
 });
 
 
@@ -192,12 +180,15 @@ app.use(
     res.status(
       error.status || 500
     ).json({
+
       success: false,
 
       message:
         error.message ||
         "Internal server error.",
+
     });
+
   }
 );
 
@@ -208,7 +199,6 @@ app.use(
 
 app.listen(
   PORT,
-  "0.0.0.0",
   () => {
 
     console.log(
@@ -232,17 +222,8 @@ app.listen(
     );
 
     console.log(
-      "Allowed frontend origins:"
-    );
-
-    allowedOrigins.forEach(
-      (origin) => {
-        console.log(`- ${origin}`);
-      }
-    );
-
-    console.log(
       "=========================================="
     );
+
   }
 );
