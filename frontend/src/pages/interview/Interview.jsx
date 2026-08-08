@@ -1,12 +1,21 @@
-import { useState, useEffect, useRef } from "react";
-import { useSearchParams, useNavigate } from "react-router-dom";
+import {
+  useState,
+  useEffect,
+  useRef,
+} from "react";
+
+import {
+  useSearchParams,
+  useNavigate,
+} from "react-router-dom";
 
 import InterviewHeader from "../../components/interview/InterviewHeader";
 import ChatMessage from "../../components/interview/ChatMessage";
 import InterviewInput from "../../components/interview/InterviewInput";
 
+
 // ==========================================
-// Backend API URL
+// API URL
 // ==========================================
 
 const API_URL =
@@ -31,7 +40,7 @@ const topics = [
 
 
 // ==========================================
-// Interview difficulties
+// Difficulty
 // ==========================================
 
 const difficulties = [
@@ -45,10 +54,6 @@ const difficulties = [
   "Hard",
 ];
 
-
-// ==========================================
-// Interview component
-// ==========================================
 
 export default function Interview() {
 
@@ -102,7 +107,6 @@ export default function Interview() {
   ] = useState(false);
 
 
-  // Latest score
   const [
     score,
     setScore,
@@ -113,7 +117,6 @@ export default function Interview() {
   });
 
 
-  // All question scores
   const [
     allScores,
     setAllScores,
@@ -140,7 +143,7 @@ export default function Interview() {
 
 
   // ========================================
-  // Scroll reference
+  // Bottom reference
   // ========================================
 
   const bottomRef =
@@ -164,7 +167,7 @@ export default function Interview() {
 
 
   // ========================================
-  // Send candidate answer
+  // Send answer
   // ========================================
 
   const sendAnswer = async (
@@ -172,7 +175,7 @@ export default function Interview() {
   ) => {
 
     // --------------------------------------
-    // Validation
+    // Prevent invalid submissions
     // --------------------------------------
 
     if (
@@ -186,7 +189,7 @@ export default function Interview() {
 
 
     // --------------------------------------
-    // Add candidate answer to chat
+    // Add candidate answer
     // --------------------------------------
 
     setMessages((prev) => [
@@ -195,15 +198,11 @@ export default function Interview() {
 
       {
         role: "user",
-        text: answer,
+        text: answer.trim(),
       },
 
     ]);
 
-
-    // --------------------------------------
-    // Loading
-    // --------------------------------------
 
     setLoading(true);
 
@@ -211,12 +210,26 @@ export default function Interview() {
     try {
 
       // ====================================
-      // API request
+      // API endpoint
+      // ====================================
+
+      const endpoint =
+        `${API_URL}/api/interview/answer`;
+
+
+      console.log(
+        "Sending interview answer to:",
+        endpoint
+      );
+
+
+      // ====================================
+      // Backend request
       // ====================================
 
       const response =
         await fetch(
-          `${API_URL}/api/interview/answer`,
+          endpoint,
           {
             method: "POST",
 
@@ -227,9 +240,10 @@ export default function Interview() {
 
             body: JSON.stringify({
 
-              answer,
+              answer:
+                answer.trim(),
 
-              // Backend expects zero-based
+              // Backend uses zero-based index
               questionNumber:
                 questionNumber - 1,
 
@@ -246,10 +260,28 @@ export default function Interview() {
 
       if (!response.ok) {
 
-        throw new Error(
-          `Backend returned ${response.status}`
-        );
+        let errorMessage =
+          `Backend returned ${response.status}`;
 
+        try {
+
+          const errorData =
+            await response.json();
+
+          if (
+            errorData?.message
+          ) {
+            errorMessage =
+              errorData.message;
+          }
+
+        } catch {
+          // Ignore JSON parsing error
+        }
+
+        throw new Error(
+          errorMessage
+        );
       }
 
 
@@ -268,7 +300,7 @@ export default function Interview() {
 
 
       // ====================================
-      // Score
+      // Latest score
       // ====================================
 
       const latestScore =
@@ -300,7 +332,7 @@ export default function Interview() {
 
 
       // ====================================
-      // Add feedback
+      // Feedback
       // ====================================
 
       setMessages((prev) => [
@@ -329,9 +361,7 @@ export default function Interview() {
         totalQuestions
       ) {
 
-        setCompleted(
-          true
-        );
+        setCompleted(true);
 
 
         setMessages((prev) => [
@@ -351,7 +381,7 @@ export default function Interview() {
 
 
         // ----------------------------------
-        // Navigate to report
+        // Go to report
         // ----------------------------------
 
         setTimeout(() => {
@@ -368,10 +398,12 @@ export default function Interview() {
                   updatedScores,
 
                 strengths:
-                  data.strengths || [],
+                  data.strengths ||
+                  [],
 
                 gaps:
-                  data.gaps || [],
+                  data.gaps ||
+                  [],
 
                 recommendation:
                   data.recommendation ||
@@ -412,12 +444,11 @@ export default function Interview() {
 
 
       // ====================================
-      // Increment question number
+      // Increment question
       // ====================================
 
       setQuestionNumber(
-        (prev) =>
-          prev + 1
+        (prev) => prev + 1
       );
 
     } catch (error) {
@@ -440,9 +471,9 @@ export default function Interview() {
           role: "ai",
 
           text:
-            "⚠️ Backend error.\n\n" +
+            `⚠️ Backend error.\n\n` +
             `Unable to connect to ${API_URL}.\n\n` +
-            "Please make sure your backend server is running.",
+            `Please check that the backend is running and the API URL is configured correctly.`,
         },
 
       ]);
@@ -496,11 +527,11 @@ export default function Interview() {
 
 
             <p className="text-slate-400 mt-4 leading-7">
-
-              We're analyzing your technical
-              answers, strengths, knowledge gaps,
-              and overall interview performance.
-
+              We're analyzing your
+              technical answers,
+              strengths, knowledge gaps,
+              and overall interview
+              performance.
             </p>
 
 
@@ -522,7 +553,6 @@ export default function Interview() {
       </div>
 
     );
-
   }
 
 
@@ -534,10 +564,7 @@ export default function Interview() {
 
     <div className="min-h-screen bg-slate-950 flex flex-col">
 
-
-      {/* ====================================
-          Header
-      ==================================== */}
+      {/* Header */}
 
       <InterviewHeader
 
@@ -568,18 +595,11 @@ export default function Interview() {
       />
 
 
-      {/* ====================================
-          Chat area
-      ==================================== */}
+      {/* Chat area */}
 
       <div className="flex-1 overflow-y-auto">
 
         <div className="max-w-5xl mx-auto px-6 py-8 space-y-6">
-
-
-          {/* --------------------------------
-              Messages
-          -------------------------------- */}
 
           {messages.map(
             (
@@ -605,9 +625,7 @@ export default function Interview() {
           )}
 
 
-          {/* --------------------------------
-              Loading indicator
-          -------------------------------- */}
+          {/* Loading */}
 
           {loading && (
 
@@ -624,10 +642,6 @@ export default function Interview() {
           )}
 
 
-          {/* --------------------------------
-              Bottom scroll target
-          -------------------------------- */}
-
           <div
             ref={bottomRef}
           />
@@ -637,9 +651,7 @@ export default function Interview() {
       </div>
 
 
-      {/* ====================================
-          Answer input
-      ==================================== */}
+      {/* Input */}
 
       <InterviewInput
         onSend={
@@ -649,6 +661,6 @@ export default function Interview() {
 
     </div>
 
-  );
 
-}
+  );
+} 

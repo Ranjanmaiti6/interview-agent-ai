@@ -12,14 +12,12 @@ export default function Report() {
   const { state } = useLocation();
   const navigate = useNavigate();
 
-
   // ==========================================
   // Candidate
   // ==========================================
 
   const candidateName =
-    state?.candidateName ||
-    "Candidate";
+    state?.candidateName || "Candidate";
 
 
   // ==========================================
@@ -42,25 +40,20 @@ export default function Report() {
   // Calculate average score
   // ==========================================
 
-  const calculateAverage = (
-    field
-  ) => {
-
+  const calculateAverage = (field) => {
     if (!allScores.length) {
       return 0;
     }
 
-
-    const total =
-      allScores.reduce(
-        (sum, item) =>
+    const total = allScores.reduce(
+      (sum, item) => {
+        return (
           sum +
-          Number(
-            item?.[field] || 0
-          ),
-        0
-      );
-
+          Number(item?.[field] || 0)
+        );
+      },
+      0
+    );
 
     return Math.round(
       total / allScores.length
@@ -68,34 +61,34 @@ export default function Report() {
   };
 
 
+  // ==========================================
+  // Average category scores
+  // ==========================================
+
   const technical =
-    calculateAverage(
-      "technical"
-    );
+    calculateAverage("technical");
 
   const communication =
-    calculateAverage(
-      "communication"
-    );
+    calculateAverage("communication");
 
   const problemSolving =
-    calculateAverage(
-      "problemSolving"
-    );
+    calculateAverage("problemSolving");
 
 
   // ==========================================
   // Overall score
+  //
+  // Individual scores are 0-10.
+  // Convert final average to 0-100%.
   // ==========================================
 
-  const overall =
-    Math.round(
-      (
-        technical +
-        communication +
-        problemSolving
-      ) / 3
-    );
+  const overall = Math.round(
+    (
+      technical +
+      communication +
+      problemSolving
+    ) / 3 * 10
+  );
 
 
   // ==========================================
@@ -131,31 +124,27 @@ export default function Report() {
 
 
   if (!recommendation) {
-
     if (overall >= 85) {
-
       recommendation =
         "Excellent performance. Recommended for an AI Engineering Internship.";
-
     } else if (overall >= 70) {
-
       recommendation =
         "Good performance. Strong fundamentals with room for improvement.";
-
     } else {
-
       recommendation =
         "Needs more practice before attempting technical interviews.";
-
     }
   }
 
+
+  // ==========================================
+  // Render
+  // ==========================================
 
   return (
     <div className="min-h-screen bg-slate-950">
 
       <div className="max-w-7xl mx-auto px-6 py-12">
-
 
         {/* ================================= */}
         {/* Back button */}
@@ -167,11 +156,9 @@ export default function Report() {
           }
           className="flex items-center gap-2 text-slate-400 hover:text-white transition mb-10"
         >
-
           <ArrowLeft size={18} />
 
           Back to Candidates
-
         </button>
 
 
@@ -185,22 +172,17 @@ export default function Report() {
             AI Interview
           </p>
 
-
           <h1 className="text-5xl font-black text-white mt-3">
             Interview Report
           </h1>
 
-
           <p className="text-slate-400 text-lg mt-3">
-
             Candidate:{" "}
 
             <span className="text-white font-semibold">
               {candidateName}
             </span>
-
           </p>
-
 
           <p className="text-slate-500 mt-2">
             Based on{" "}
@@ -222,13 +204,11 @@ export default function Report() {
 
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
 
-
             <div>
 
               <p className="text-slate-400">
                 Overall Interview Score
               </p>
-
 
               <h2 className="text-6xl font-black text-white mt-2">
                 {overall}%
@@ -242,7 +222,6 @@ export default function Report() {
               <p className="text-slate-500">
                 Interview Status
               </p>
-
 
               <p className="text-green-400 font-bold mt-2">
                 ✓ Completed Successfully
@@ -266,12 +245,10 @@ export default function Report() {
             value={technical}
           />
 
-
           <ScoreCard
             title="Communication"
             value={communication}
           />
-
 
           <ScoreCard
             title="Problem Solving"
@@ -301,7 +278,6 @@ export default function Report() {
                 size={28}
               />
 
-
               <h2 className="text-2xl font-bold text-white">
                 Strengths
               </h2>
@@ -323,7 +299,6 @@ export default function Report() {
                       className="text-green-500"
                       size={20}
                     />
-
 
                     <p className="text-slate-300">
                       {strength}
@@ -352,7 +327,6 @@ export default function Report() {
                 size={28}
               />
 
-
               <h2 className="text-2xl font-bold text-white">
                 Knowledge Gaps
               </h2>
@@ -374,7 +348,6 @@ export default function Report() {
                       className="text-yellow-500"
                       size={20}
                     />
-
 
                     <p className="text-slate-300">
                       {gap}
@@ -398,12 +371,8 @@ export default function Report() {
 
         <Recommendation
           overall={overall}
-          candidateName={
-            candidateName
-          }
-          recommendation={
-            recommendation
-          }
+          candidateName={candidateName}
+          recommendation={recommendation}
         />
 
 
