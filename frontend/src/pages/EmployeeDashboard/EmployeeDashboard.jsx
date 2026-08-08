@@ -17,16 +17,29 @@ import {
   Loader2,
 } from "lucide-react";
 
-const API_URL =
+const API_URL = (
   import.meta.env.VITE_API_URL ||
-  "http://localhost:5001";
+  "http://localhost:5001"
+).replace(/\/$/, "");
 
 export default function EmployeeDashboard() {
   const navigate = useNavigate();
 
-  const user = JSON.parse(
-    localStorage.getItem("user") || "{}"
-  );
+  // ==========================================
+  // Logged-in user
+  // ==========================================
+
+  const getUser = () => {
+    try {
+      return JSON.parse(
+        localStorage.getItem("user") || "{}"
+      );
+    } catch {
+      return {};
+    }
+  };
+
+  const user = getUser();
 
   // ==========================================
   // State
@@ -59,7 +72,7 @@ export default function EmployeeDashboard() {
   };
 
   // ==========================================
-  // Load my interview request
+  // Load interview request
   // ==========================================
 
   const loadMyRequest = async () => {
@@ -69,20 +82,29 @@ export default function EmployeeDashboard() {
       const token =
         localStorage.getItem("token");
 
+      if (!token) {
+        navigate("/login");
+        return;
+      }
+
       const response = await fetch(
         `${API_URL}/api/employee/my-request`,
         {
           method: "GET",
-
           headers: {
-            Authorization:
-              `Bearer ${token}`,
+            Authorization: `Bearer ${token}`,
+            Accept: "application/json",
           },
         }
       );
 
-      const data =
-        await response.json();
+      let data = {};
+
+      try {
+        data = await response.json();
+      } catch {
+        data = {};
+      }
 
       if (!response.ok) {
         throw new Error(
@@ -105,7 +127,7 @@ export default function EmployeeDashboard() {
   };
 
   // ==========================================
-  // Load request when dashboard opens
+  // Load request on dashboard
   // ==========================================
 
   useEffect(() => {
@@ -113,7 +135,7 @@ export default function EmployeeDashboard() {
   }, []);
 
   // ==========================================
-  // Select Resume
+  // Resume selection
   // ==========================================
 
   const handleResumeChange = (event) => {
@@ -131,7 +153,27 @@ export default function EmployeeDashboard() {
       "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     ];
 
-    if (!allowedTypes.includes(file.type)) {
+    const extension =
+      file.name
+        .split(".")
+        .pop()
+        ?.toLowerCase();
+
+    const allowedExtensions = [
+      "pdf",
+      "doc",
+      "docx",
+    ];
+
+    const validType =
+      allowedTypes.includes(
+        file.type
+      ) ||
+      allowedExtensions.includes(
+        extension
+      );
+
+    if (!validType) {
       setResume(null);
 
       setRequestStatus(
@@ -163,11 +205,19 @@ export default function EmployeeDashboard() {
   };
 
   // ==========================================
-  // Submit Interview Request
+  // Submit interview request
   // ==========================================
 
   const submitInterviewRequest =
     async () => {
+      if (myRequest?.status === "accepted") {
+        setRequestStatus(
+          "Your interview request has already been accepted."
+        );
+
+        return;
+      }
+
       if (!resume) {
         setRequestStatus(
           "Please upload your resume before submitting the request."
@@ -182,6 +232,11 @@ export default function EmployeeDashboard() {
       try {
         const token =
           localStorage.getItem("token");
+
+        if (!token) {
+          navigate("/login");
+          return;
+        }
 
         const formData =
           new FormData();
@@ -216,8 +271,13 @@ export default function EmployeeDashboard() {
             }
           );
 
-        const data =
-          await response.json();
+        let data = {};
+
+        try {
+          data = await response.json();
+        } catch {
+          data = {};
+        }
 
         if (!response.ok) {
           throw new Error(
@@ -232,8 +292,6 @@ export default function EmployeeDashboard() {
 
         setResume(null);
 
-        await loadMyRequest();
-
         const fileInput =
           document.getElementById(
             "resume-upload"
@@ -242,6 +300,8 @@ export default function EmployeeDashboard() {
         if (fileInput) {
           fileInput.value = "";
         }
+
+        await loadMyRequest();
       } catch (error) {
         console.error(
           "Request error:",
@@ -269,14 +329,11 @@ export default function EmployeeDashboard() {
       return {
         label: "Accepted",
         icon: CheckCircle2,
-        color:
-          "text-emerald-300",
-        bg:
-          "bg-emerald-400/[0.07]",
+        color: "text-emerald-300",
+        bg: "bg-emerald-400/[0.07]",
         border:
           "border-emerald-400/15",
-        dot:
-          "bg-emerald-400",
+        dot: "bg-emerald-400",
       };
     }
 
@@ -287,28 +344,22 @@ export default function EmployeeDashboard() {
       return {
         label: "Rejected",
         icon: XCircle,
-        color:
-          "text-red-300",
-        bg:
-          "bg-red-400/[0.07]",
+        color: "text-red-300",
+        bg: "bg-red-400/[0.07]",
         border:
           "border-red-400/15",
-        dot:
-          "bg-red-400",
+        dot: "bg-red-400",
       };
     }
 
     return {
       label: "Pending",
       icon: Clock3,
-      color:
-        "text-amber-300",
-      bg:
-        "bg-amber-400/[0.07]",
+      color: "text-amber-300",
+      bg: "bg-amber-400/[0.07]",
       border:
         "border-amber-400/15",
-      dot:
-        "bg-amber-400",
+      dot: "bg-amber-400",
     };
   };
 
@@ -318,12 +369,16 @@ export default function EmployeeDashboard() {
   const StatusIcon =
     statusConfig.icon;
 
+  // ==========================================
+  // Render
+  // ==========================================
+
   return (
     <div className="relative min-h-screen overflow-hidden bg-[#05070a] text-white">
 
-      {/* ==========================================
-          Background atmosphere
-      ========================================== */}
+      {/* ======================================
+          Background
+      ====================================== */}
 
       <div className="pointer-events-none fixed inset-0">
 
@@ -342,11 +397,14 @@ export default function EmployeeDashboard() {
               "34px 34px",
           }}
         />
+
       </div>
 
-      {/* ==========================================
-          Top navigation
-      ========================================== */}
+      <div className="pointer-events-none absolute left-0 right-0 top-0 h-px bg-gradient-to-r from-transparent via-blue-400/30 to-transparent" />
+
+      {/* ======================================
+          Header
+      ====================================== */}
 
       <header className="relative z-20 border-b border-white/[0.06] bg-[#05070a]/75 backdrop-blur-2xl">
 
@@ -388,7 +446,7 @@ export default function EmployeeDashboard() {
 
           </button>
 
-          {/* Right */}
+          {/* Header actions */}
 
           <div className="flex items-center gap-3">
 
@@ -425,15 +483,15 @@ export default function EmployeeDashboard() {
 
       </header>
 
-      {/* ==========================================
+      {/* ======================================
           Main
-      ========================================== */}
+      ====================================== */}
 
       <main className="relative z-10 mx-auto max-w-7xl px-5 py-10 sm:px-6 sm:py-12 lg:px-8 lg:py-16">
 
-        {/* ==========================================
+        {/* ======================================
             Hero
-        ========================================== */}
+        ====================================== */}
 
         <section className="relative overflow-hidden rounded-[28px] border border-white/[0.07] bg-white/[0.018] p-7 shadow-[0_30px_100px_rgba(0,0,0,0.25)] backdrop-blur-xl sm:p-10 lg:p-12">
 
@@ -476,15 +534,17 @@ export default function EmployeeDashboard() {
 
             </div>
 
-            {/* Profile marker */}
+            {/* Profile */}
 
             <div className="flex items-center gap-4 rounded-2xl border border-white/[0.07] bg-black/20 p-4 lg:min-w-[240px]">
 
               <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-blue-300/15 bg-blue-400/[0.07] text-lg font-semibold text-blue-200">
+
                 {(user.name ||
                   "E")
                   .charAt(0)
                   .toUpperCase()}
+
               </div>
 
               <div className="min-w-0">
@@ -507,9 +567,9 @@ export default function EmployeeDashboard() {
 
         </section>
 
-        {/* ==========================================
-            Quick navigation
-        ========================================== */}
+        {/* ======================================
+            Quick actions
+        ====================================== */}
 
         <section className="mt-6 grid gap-4 md:grid-cols-3">
 
@@ -545,9 +605,9 @@ export default function EmployeeDashboard() {
 
         </section>
 
-        {/* ==========================================
-            Request status + Resume
-        ========================================== */}
+        {/* ======================================
+            Request + Resume
+        ====================================== */}
 
         <section className="mt-6 grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
 
@@ -576,7 +636,7 @@ export default function EmployeeDashboard() {
 
                   </div>
 
-                  <h2 className="mt-4 text-2xl font-semibold tracking-[-0.035em] text-white">
+                  <h2 className="mt-4 text-2xl font-semibold tracking-[-0.035em]">
                     My interview request
                   </h2>
 
@@ -633,9 +693,8 @@ export default function EmployeeDashboard() {
                       </p>
 
                       <p className="mt-1 text-xs leading-5 text-white/30">
-                        Upload your resume to
-                        begin the interview request
-                        process.
+                        Upload your resume to begin
+                        the interview request process.
                       </p>
 
                     </div>
@@ -695,35 +754,46 @@ export default function EmployeeDashboard() {
 
                   {myRequest.status ===
                     "pending" && (
-
                     <StatusMessage
                       type="pending"
                       title="Waiting for admin review"
                       text="Your resume and interview request are currently being reviewed."
                     />
-
                   )}
 
                   {myRequest.status ===
                     "accepted" && (
+                    <>
+                      <StatusMessage
+                        type="accepted"
+                        title="Interview request accepted"
+                        text="Your request has been accepted. You can now continue with your scheduled interview."
+                      />
 
-                    <StatusMessage
-                      type="accepted"
-                      title="Interview request accepted"
-                      text="Your request has been accepted. You can proceed with the interview process."
-                    />
+                      <button
+                        type="button"
+                        onClick={() =>
+                          navigate("/meetings")
+                        }
+                        className="group mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-500 px-4 py-3 text-xs font-semibold text-white transition-all duration-300 hover:-translate-y-0.5 hover:bg-emerald-400"
+                      >
+                        View My Meetings
 
+                        <ArrowUpRight
+                          size={14}
+                          className="transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
+                        />
+                      </button>
+                    </>
                   )}
 
                   {myRequest.status ===
                     "rejected" && (
-
                     <StatusMessage
                       type="rejected"
                       title="Interview request rejected"
-                      text="Your interview request was rejected by the admin."
+                      text="Your interview request was rejected by the admin. You may submit a new request with an updated resume."
                     />
-
                   )}
 
                 </div>
@@ -734,7 +804,9 @@ export default function EmployeeDashboard() {
 
           </div>
 
-          {/* Resume request */}
+          {/* ======================================
+              Resume request
+          ====================================== */}
 
           <div className="relative overflow-hidden rounded-[26px] border border-white/[0.07] bg-white/[0.018] p-6 shadow-[0_25px_80px_rgba(0,0,0,0.20)] backdrop-blur-xl sm:p-8">
 
@@ -759,163 +831,237 @@ export default function EmployeeDashboard() {
 
                   </div>
 
-                  <h2 className="mt-4 text-2xl font-semibold tracking-[-0.035em] text-white">
-                    Prepare your profile
+                  <h2 className="mt-4 text-2xl font-semibold tracking-[-0.035em]">
+                    {myRequest?.status ===
+                    "accepted"
+                      ? "Interview approved"
+                      : "Prepare your profile"}
                   </h2>
 
                   <p className="mt-3 max-w-xl text-sm leading-6 text-white/35">
-                    Upload your latest resume so
-                    the admin can review your
-                    profile before scheduling the
-                    interview.
+
+                    {myRequest?.status ===
+                    "accepted"
+                      ? "Your profile has been approved. View your meetings to see the next interview session."
+                      : "Upload your latest resume so the admin can review your profile before scheduling the interview."}
+
                   </p>
 
                 </div>
 
                 <div className="hidden h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-blue-300/10 bg-blue-400/[0.05] sm:flex">
 
-                  <FileText
-                    size={18}
-                    className="text-blue-300"
-                  />
-
-                </div>
-
-              </div>
-
-              {/* Upload area */}
-
-              <label
-                htmlFor="resume-upload"
-                className="group mt-7 flex cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-white/[0.10] bg-black/20 px-5 py-8 text-center transition-all duration-300 hover:border-blue-300/25 hover:bg-blue-400/[0.025]"
-              >
-
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-white/[0.08] bg-white/[0.025] transition-all duration-300 group-hover:border-blue-300/15 group-hover:bg-blue-400/[0.06]">
-
-                  <Upload
-                    size={19}
-                    className="text-white/35 transition-colors duration-300 group-hover:text-blue-300"
-                  />
-
-                </div>
-
-                <p className="mt-4 text-sm font-medium text-white/65">
-                  {resume
-                    ? "Resume selected"
-                    : "Choose your resume"}
-                </p>
-
-                <p className="mt-1 max-w-md text-xs text-white/25">
-                  {resume
-                    ? resume.name
-                    : "PDF, DOC or DOCX · Maximum 5 MB"}
-                </p>
-
-                <span className="mt-4 rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 py-1.5 text-[9px] font-semibold uppercase tracking-[0.18em] text-white/35 transition-colors duration-300 group-hover:text-white/55">
-                  Browse files
-                </span>
-
-              </label>
-
-              <input
-                id="resume-upload"
-                type="file"
-                accept=".pdf,.doc,.docx"
-                onChange={
-                  handleResumeChange
-                }
-                className="sr-only"
-              />
-
-              {resume && (
-
-                <div className="mt-4 flex items-center gap-3 rounded-xl border border-emerald-400/10 bg-emerald-400/[0.04] p-3.5">
-
-                  <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-emerald-400/10 bg-emerald-400/[0.05]">
-
+                  {myRequest?.status ===
+                  "accepted" ? (
                     <CheckCircle2
-                      size={16}
+                      size={18}
                       className="text-emerald-300"
                     />
-
-                  </div>
-
-                  <div className="min-w-0">
-
-                    <p className="text-xs font-semibold text-emerald-300/80">
-                      Resume ready
-                    </p>
-
-                    <p className="mt-0.5 truncate text-[10px] text-white/30">
-                      {resume.name}
-                    </p>
-
-                  </div>
-
-                </div>
-
-              )}
-
-              <div className="mt-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-
-                <div className="flex items-center gap-2 text-[9px] uppercase tracking-[0.16em] text-white/20">
-
-                  <ShieldCheck
-                    size={12}
-                  />
-
-                  Secure submission
-
-                </div>
-
-                <button
-                  type="button"
-                  onClick={
-                    submitInterviewRequest
-                  }
-                  disabled={loading}
-                  className="group inline-flex items-center justify-center gap-2.5 rounded-xl bg-blue-500 px-5 py-3 text-xs font-semibold text-white shadow-[0_12px_35px_rgba(37,99,235,0.18)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-blue-400 hover:shadow-[0_16px_45px_rgba(37,99,235,0.28)] disabled:cursor-not-allowed disabled:opacity-40"
-                >
-
-                  {loading ? (
-                    <>
-                      <Loader2
-                        size={15}
-                        className="animate-spin"
-                      />
-
-                      Submitting...
-                    </>
                   ) : (
-                    <>
-                      Request Interview
-
-                      <ArrowUpRight
-                        size={15}
-                        className="transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
-                      />
-                    </>
+                    <FileText
+                      size={18}
+                      className="text-blue-300"
+                    />
                   )}
 
-                </button>
+                </div>
 
               </div>
 
-              {requestStatus && (
+              {myRequest?.status ===
+              "accepted" ? (
 
-                <div className="mt-5 flex items-start gap-3 rounded-xl border border-blue-400/10 bg-blue-400/[0.04] p-4">
+                /* Approved state */
 
-                  <AlertTriangle
-                    size={15}
-                    className="mt-0.5 shrink-0 text-blue-300"
-                  />
+                <div className="mt-7 rounded-2xl border border-emerald-400/10 bg-emerald-400/[0.035] p-6">
 
-                  <p className="text-xs leading-5 text-blue-200/65">
-                    {requestStatus}
-                  </p>
+                  <div className="flex items-start gap-4">
+
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-emerald-400/10 bg-emerald-400/[0.05]">
+
+                      <CheckCircle2
+                        size={19}
+                        className="text-emerald-300"
+                      />
+
+                    </div>
+
+                    <div>
+
+                      <p className="text-sm font-semibold text-emerald-300">
+                        Interview request accepted
+                      </p>
+
+                      <p className="mt-1 text-xs leading-5 text-white/30">
+                        Your resume has been reviewed
+                        and your interview request has
+                        been approved.
+                      </p>
+
+                    </div>
+
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      navigate("/meetings")
+                    }
+                    className="group mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-500 px-5 py-3 text-xs font-semibold text-white shadow-[0_12px_35px_rgba(16,185,129,0.12)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-emerald-400"
+                  >
+                    Open Interview Schedule
+
+                    <ArrowUpRight
+                      size={15}
+                      className="transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
+                    />
+                  </button>
 
                 </div>
 
+              ) : (
+
+                /* Resume upload */
+
+                <>
+                  <label
+                    htmlFor="resume-upload"
+                    className="group mt-7 flex cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-white/[0.10] bg-black/20 px-5 py-8 text-center transition-all duration-300 hover:border-blue-300/25 hover:bg-blue-400/[0.025]"
+                  >
+
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-white/[0.08] bg-white/[0.025] transition-all duration-300 group-hover:border-blue-300/15 group-hover:bg-blue-400/[0.06]">
+
+                      <Upload
+                        size={19}
+                        className="text-white/35 transition-colors duration-300 group-hover:text-blue-300"
+                      />
+
+                    </div>
+
+                    <p className="mt-4 text-sm font-medium text-white/65">
+
+                      {resume
+                        ? "Resume selected"
+                        : "Choose your resume"}
+
+                    </p>
+
+                    <p className="mt-1 max-w-md text-xs text-white/25">
+
+                      {resume
+                        ? resume.name
+                        : "PDF, DOC or DOCX · Maximum 5 MB"}
+
+                    </p>
+
+                    <span className="mt-4 rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 py-1.5 text-[9px] font-semibold uppercase tracking-[0.18em] text-white/35 transition-colors duration-300 group-hover:text-white/55">
+                      Browse files
+                    </span>
+
+                  </label>
+
+                  <input
+                    id="resume-upload"
+                    type="file"
+                    accept=".pdf,.doc,.docx"
+                    onChange={
+                      handleResumeChange
+                    }
+                    className="sr-only"
+                  />
+
+                  {resume && (
+
+                    <div className="mt-4 flex items-center gap-3 rounded-xl border border-emerald-400/10 bg-emerald-400/[0.04] p-3.5">
+
+                      <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-emerald-400/10 bg-emerald-400/[0.05]">
+
+                        <CheckCircle2
+                          size={16}
+                          className="text-emerald-300"
+                        />
+
+                      </div>
+
+                      <div className="min-w-0">
+
+                        <p className="text-xs font-semibold text-emerald-300/80">
+                          Resume ready
+                        </p>
+
+                        <p className="mt-0.5 truncate text-[10px] text-white/30">
+                          {resume.name}
+                        </p>
+
+                      </div>
+
+                    </div>
+
+                  )}
+
+                  <div className="mt-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+
+                    <div className="flex items-center gap-2 text-[9px] uppercase tracking-[0.16em] text-white/20">
+
+                      <ShieldCheck
+                        size={12}
+                      />
+
+                      Secure submission
+
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={
+                        submitInterviewRequest
+                      }
+                      disabled={loading}
+                      className="group inline-flex items-center justify-center gap-2.5 rounded-xl bg-blue-500 px-5 py-3 text-xs font-semibold text-white shadow-[0_12px_35px_rgba(37,99,235,0.18)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-blue-400 hover:shadow-[0_16px_45px_rgba(37,99,235,0.28)] disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+
+                      {loading ? (
+                        <>
+                          <Loader2
+                            size={15}
+                            className="animate-spin"
+                          />
+
+                          Submitting...
+                        </>
+                      ) : (
+                        <>
+                          Request Interview
+
+                          <ArrowUpRight
+                            size={15}
+                            className="transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
+                          />
+                        </>
+                      )}
+
+                    </button>
+
+                  </div>
+
+                  {requestStatus && (
+
+                    <div className="mt-5 flex items-start gap-3 rounded-xl border border-blue-400/10 bg-blue-400/[0.04] p-4">
+
+                      <AlertTriangle
+                        size={15}
+                        className="mt-0.5 shrink-0 text-blue-300"
+                      />
+
+                      <p className="text-xs leading-5 text-blue-200/65">
+                        {requestStatus}
+                      </p>
+
+                    </div>
+
+                  )}
+
+                </>
               )}
 
             </div>
@@ -924,9 +1070,9 @@ export default function EmployeeDashboard() {
 
         </section>
 
-        {/* ==========================================
-            Footer system status
-        ========================================== */}
+        {/* ======================================
+            Footer status
+        ====================================== */}
 
         <div className="mt-10 flex flex-col gap-4 border-t border-white/[0.06] pt-6 sm:flex-row sm:items-center sm:justify-between">
 
@@ -971,8 +1117,7 @@ function DashboardAction({
 }) {
   const accentClasses = {
     blue: {
-      icon:
-        "text-blue-300",
+      icon: "text-blue-300",
       border:
         "hover:border-blue-400/20",
       bg:
@@ -980,8 +1125,7 @@ function DashboardAction({
     },
 
     cyan: {
-      icon:
-        "text-cyan-300",
+      icon: "text-cyan-300",
       border:
         "hover:border-cyan-400/20",
       bg:
@@ -989,8 +1133,7 @@ function DashboardAction({
     },
 
     emerald: {
-      icon:
-        "text-emerald-300",
+      icon: "text-emerald-300",
       border:
         "hover:border-emerald-400/20",
       bg:

@@ -1,38 +1,106 @@
-import { Navigate } from "react-router-dom";
+import { Navigate, useLocation } from "react-router-dom";
 
 export default function ProtectedRoute({
   children,
   role,
 }) {
-  const token = localStorage.getItem("token");
+  const location = useLocation();
 
-  let user = {};
+  const token = localStorage.getItem("token");
+  const userData = localStorage.getItem("user");
+
+  // ==========================================
+  // Not authenticated
+  // ==========================================
+
+  if (!token || !userData) {
+    return (
+      <Navigate
+        to="/login"
+        replace
+        state={{
+          from: location.pathname,
+        }}
+      />
+    );
+  }
+
+  // ==========================================
+  // Parse user
+  // ==========================================
+
+  let user;
 
   try {
-    user = JSON.parse(
-      localStorage.getItem("user") || "{}"
-    );
+    user = JSON.parse(userData);
   } catch (error) {
-    console.error("Invalid user data:", error);
+    console.error(
+      "Invalid stored user data:",
+      error
+    );
+
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+
+    return (
+      <Navigate
+        to="/login"
+        replace
+      />
+    );
   }
 
-  // Not logged in
-  if (!token || !user.role) {
-    return <Navigate to="/login" replace />;
+  // ==========================================
+  // Validate role
+  // ==========================================
+
+  if (
+    !user ||
+    !["admin", "employee"].includes(
+      user.role
+    )
+  ) {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+
+    return (
+      <Navigate
+        to="/login"
+        replace
+      />
+    );
   }
 
-  // Wrong role
-  if (role && user.role !== role) {
+  // ==========================================
+  // Role protection
+  // ==========================================
+
+  if (
+    role &&
+    user.role !== role
+  ) {
     if (user.role === "admin") {
-      return <Navigate to="/admin" replace />;
+      return (
+        <Navigate
+          to="/admin"
+          replace
+        />
+      );
     }
 
     if (user.role === "employee") {
-      return <Navigate to="/employee" replace />;
+      return (
+        <Navigate
+          to="/employee"
+          replace
+        />
+      );
     }
-
-    return <Navigate to="/login" replace />;
   }
+
+  // ==========================================
+  // Authorized
+  // ==========================================
 
   return children;
 }

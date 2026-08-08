@@ -1,16 +1,26 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   ArrowLeft,
+  ArrowUpRight,
   CalendarDays,
+  CheckCircle2,
   Clock3,
   ExternalLink,
-  Video,
+  FileText,
+  Loader2,
+  Lock,
+  ShieldCheck,
+  Sparkles,
   User,
+  Video,
+  XCircle,
 } from "lucide-react";
 
-const API_URL =
-  import.meta.env.VITE_API_URL || "http://localhost:5001";
+const API_URL = (
+  import.meta.env.VITE_API_URL ||
+  "http://localhost:5001"
+).replace(/\/$/, "");
 
 export default function MeetingRoom() {
   const { id } = useParams();
@@ -21,16 +31,37 @@ export default function MeetingRoom() {
   const [joining, setJoining] = useState(false);
   const [error, setError] = useState("");
 
+  // ==========================================
+  // User
+  // ==========================================
+
+  const user = useMemo(() => {
+    try {
+      return JSON.parse(
+        localStorage.getItem("user") || "{}"
+      );
+    } catch {
+      return {};
+    }
+  }, []);
+
+  // ==========================================
+  // Load meeting
+  // ==========================================
+
   useEffect(() => {
     let cancelled = false;
 
     const loadMeeting = async () => {
       try {
         if (!id) {
-          throw new Error("Meeting ID is missing.");
+          throw new Error(
+            "Meeting ID is missing."
+          );
         }
 
-        const token = localStorage.getItem("token");
+        const token =
+          localStorage.getItem("token");
 
         if (!token) {
           navigate("/login");
@@ -41,7 +72,9 @@ export default function MeetingRoom() {
         setError("");
 
         const response = await fetch(
-          `${API_URL}/api/meetings/${encodeURIComponent(id)}`,
+          `${API_URL}/api/meetings/${encodeURIComponent(
+            id
+          )}`,
           {
             method: "GET",
             headers: {
@@ -57,6 +90,14 @@ export default function MeetingRoom() {
           data = await response.json();
         } catch {
           data = {};
+        }
+
+        if (response.status === 401) {
+          localStorage.removeItem("token");
+          localStorage.removeItem("user");
+
+          navigate("/login");
+          return;
         }
 
         if (!response.ok) {
@@ -76,11 +117,15 @@ export default function MeetingRoom() {
           setMeeting(data.meeting);
         }
       } catch (err) {
-        console.error("Load meeting error:", err);
+        console.error(
+          "Load meeting error:",
+          err
+        );
 
         if (!cancelled) {
           setError(
-            err.message || "Unable to load meeting."
+            err.message ||
+              "Unable to load meeting."
           );
         }
       } finally {
@@ -97,6 +142,10 @@ export default function MeetingRoom() {
     };
   }, [id, navigate]);
 
+  // ==========================================
+  // Join meeting
+  // ==========================================
+
   const handleJoin = () => {
     if (!meeting || joining) {
       return;
@@ -104,7 +153,6 @@ export default function MeetingRoom() {
 
     setJoining(true);
 
-    // External meeting
     if (meeting.meeting_url) {
       window.open(
         meeting.meeting_url,
@@ -116,21 +164,27 @@ export default function MeetingRoom() {
       return;
     }
 
-    // Internal AI interview
     const candidateId =
       meeting.employee_request_id ||
-      meeting.employee_email;
+      meeting.employee_email ||
+      meeting.id;
 
     navigate(
-      `/interview?id=${encodeURIComponent(candidateId)}`,
+      `/interview?id=${encodeURIComponent(
+        candidateId
+      )}`,
       {
         state: {
           meetingId: meeting.id,
-          employeeEmail: meeting.employee_email,
+          employeeEmail:
+            meeting.employee_email,
           employeeName:
-            meeting.employee_name || "Employee",
+            meeting.employee_name ||
+            user.name ||
+            "Employee",
           meetingTitle:
-            meeting.title || "AI Interview",
+            meeting.title ||
+            "AI Interview",
         },
       }
     );
@@ -138,50 +192,134 @@ export default function MeetingRoom() {
     setJoining(false);
   };
 
+  // ==========================================
+  // Helpers
+  // ==========================================
+
+  const formatDate = (value) => {
+    if (!value) {
+      return "Not scheduled";
+    }
+
+    const date = new Date(value);
+
+    if (Number.isNaN(date.getTime())) {
+      return "Invalid date";
+    }
+
+    return date.toLocaleString(
+      undefined,
+      {
+        dateStyle: "medium",
+        timeStyle: "short",
+      }
+    );
+  };
+
+  const getStatus = (value) => {
+    const status = String(
+      value || "scheduled"
+    ).toLowerCase();
+
+    if (status === "completed") {
+      return {
+        label: "Completed",
+        icon: CheckCircle2,
+        classes:
+          "border-emerald-400/15 bg-emerald-400/[0.05] text-emerald-300",
+      };
+    }
+
+    if (
+      status === "cancelled" ||
+      status === "canceled"
+    ) {
+      return {
+        label: "Cancelled",
+        icon: XCircle,
+        classes:
+          "border-red-400/15 bg-red-400/[0.05] text-red-300",
+      };
+    }
+
+    return {
+      label: "Scheduled",
+      icon: CalendarDays,
+      classes:
+        "border-blue-400/15 bg-blue-400/[0.05] text-blue-300",
+    };
+  };
+
+  // ==========================================
+  // Loading
+  // ==========================================
+
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#05070a] px-6 text-white">
-        <div className="text-center">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-blue-400/15 bg-blue-400/[0.06]">
-            <Video
-              size={24}
-              className="text-blue-300"
+      <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#05070a] px-6 text-white">
+        <AmbientBackground />
+
+        <div className="relative z-10 text-center">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl border border-blue-300/15 bg-blue-500/[0.07] shadow-[0_0_60px_rgba(37,99,235,0.12)]">
+            <Loader2
+              size={26}
+              className="animate-spin text-blue-300"
             />
           </div>
 
-          <h1 className="mt-5 text-xl font-semibold">
-            Loading meeting...
+          <p className="mt-6 text-[10px] font-semibold uppercase tracking-[0.25em] text-blue-300/60">
+            Secure interview room
+          </p>
+
+          <h1 className="mt-3 text-2xl font-semibold tracking-[-0.03em]">
+            Preparing your session
           </h1>
 
-          <p className="mt-2 text-sm text-white/35">
-            Please wait while we prepare the interview room.
+          <p className="mt-2 text-sm text-white/30">
+            Loading meeting information...
           </p>
         </div>
       </div>
     );
   }
 
+  // ==========================================
+  // Error
+  // ==========================================
+
   if (error) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#05070a] px-6 text-white">
-        <div className="w-full max-w-md rounded-3xl border border-red-400/10 bg-white/[0.025] p-8 text-center backdrop-blur-xl">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-red-400/[0.07] text-red-300">
-            <Video size={24} />
+      <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#05070a] px-6 text-white">
+        <AmbientBackground />
+
+        <div className="relative z-10 w-full max-w-md rounded-[28px] border border-white/[0.08] bg-white/[0.025] p-8 text-center shadow-[0_35px_120px_rgba(0,0,0,0.45)] backdrop-blur-2xl">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl border border-red-400/15 bg-red-400/[0.06]">
+            <XCircle
+              size={26}
+              className="text-red-300"
+            />
           </div>
 
-          <h1 className="mt-5 text-2xl font-semibold">
+          <p className="mt-6 text-[10px] font-semibold uppercase tracking-[0.24em] text-red-300/60">
+            Meeting unavailable
+          </p>
+
+          <h1 className="mt-3 text-2xl font-semibold tracking-[-0.03em]">
             Unable to open meeting
           </h1>
 
-          <p className="mt-3 text-sm leading-6 text-white/40">
+          <p className="mt-3 text-sm leading-6 text-white/35">
             {error}
           </p>
 
           <button
             type="button"
-            onClick={() => navigate("/meetings")}
-            className="mt-7 w-full rounded-xl bg-blue-500 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-400"
+            onClick={() =>
+              navigate("/meetings")
+            }
+            className="mt-7 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-500 px-5 py-3.5 text-sm font-semibold text-white transition-all duration-300 hover:-translate-y-0.5 hover:bg-blue-400"
           >
+            <ArrowLeft size={15} />
             Back to Meetings
           </button>
         </div>
@@ -196,173 +334,485 @@ export default function MeetingRoom() {
   const hasExternalMeeting =
     Boolean(meeting.meeting_url);
 
-  const status =
-    meeting.status || "scheduled";
+  const statusConfig =
+    getStatus(
+      meeting.status
+    );
+
+  const StatusIcon =
+    statusConfig.icon;
+
+  const isCompleted =
+    String(
+      meeting.status || ""
+    ).toLowerCase() ===
+    "completed";
+
+  const isCancelled =
+    ["cancelled", "canceled"].includes(
+      String(
+        meeting.status || ""
+      ).toLowerCase()
+    );
 
   return (
-    <div className="min-h-screen bg-[#05070a] text-white">
-      {/* Header */}
-      <header className="border-b border-white/[0.06] bg-[#090b0f]/90 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
-          <div>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.25em] text-blue-400">
-              Interview Room
-            </p>
+    <div className="relative min-h-screen overflow-hidden bg-[#05070a] text-white">
+      <AmbientBackground />
 
-            <h1 className="mt-1 text-xl font-semibold">
-              {meeting.title || "AI Interview"}
-            </h1>
+      {/* ==========================================
+          Top line
+      ========================================== */}
+
+      <div className="pointer-events-none absolute left-0 right-0 top-0 z-30 h-px bg-gradient-to-r from-transparent via-blue-400/40 to-transparent" />
+
+      {/* ==========================================
+          Header
+      ========================================== */}
+
+      <header className="relative z-20 border-b border-white/[0.06] bg-[#06080c]/75 backdrop-blur-2xl">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4 sm:px-6 lg:px-8">
+          {/* Brand */}
+
+          <div className="flex items-center gap-3">
+            <div className="relative flex h-10 w-10 items-center justify-center rounded-xl border border-blue-300/15 bg-blue-500/[0.07]">
+              <Video
+                size={19}
+                strokeWidth={1.5}
+                className="text-blue-300"
+              />
+
+              <span className="absolute inset-0 rounded-xl bg-blue-400/[0.05] blur-xl" />
+            </div>
+
+            <div>
+              <p className="text-[9px] font-semibold uppercase tracking-[0.25em] text-blue-300/70">
+                Interview Room
+              </p>
+
+              <p className="mt-0.5 text-sm font-semibold text-white">
+                Secure Session
+              </p>
+            </div>
           </div>
 
-          <button
-            type="button"
-            onClick={() => navigate("/meetings")}
-            className="inline-flex items-center gap-2 rounded-xl border border-white/[0.08] px-4 py-2 text-sm text-white/60 transition hover:bg-white/[0.05] hover:text-white"
-          >
-            <ArrowLeft size={16} />
-            Back
-          </button>
+          {/* Session indicator */}
+
+          <div className="flex items-center gap-3">
+            <div className="hidden items-center gap-2 rounded-full border border-emerald-400/10 bg-emerald-400/[0.035] px-3 py-2 sm:flex">
+              <span className="relative flex h-1.5 w-1.5">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-50" />
+                <span className="relative h-1.5 w-1.5 rounded-full bg-emerald-400" />
+              </span>
+
+              <span className="text-[9px] font-semibold uppercase tracking-[0.18em] text-emerald-300/60">
+                Session ready
+              </span>
+            </div>
+
+            <button
+              type="button"
+              onClick={() =>
+                navigate("/meetings")
+              }
+              className="group inline-flex items-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.025] px-3.5 py-2.5 text-xs font-semibold text-white/45 transition-all duration-300 hover:border-white/[0.15] hover:bg-white/[0.05] hover:text-white"
+            >
+              <ArrowLeft size={14} />
+
+              <span className="hidden sm:inline">
+                Meetings
+              </span>
+            </button>
+          </div>
         </div>
       </header>
 
-      <main className="mx-auto max-w-6xl px-6 py-10">
-        <div className="overflow-hidden rounded-[28px] border border-white/[0.07] bg-white/[0.02] shadow-[0_30px_100px_rgba(0,0,0,0.3)]">
-          <div className="grid lg:grid-cols-[1.1fr_0.9fr]">
-            {/* Details */}
-            <div className="p-8 sm:p-10">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.25em] text-blue-400">
-                Scheduled Interview
-              </p>
+      {/* ==========================================
+          Main
+      ========================================== */}
 
-              <h2 className="mt-4 text-4xl font-semibold tracking-[-0.04em] sm:text-5xl">
-                {meeting.title || "AI Interview"}
-              </h2>
+      <main className="relative z-10 mx-auto max-w-7xl px-5 py-8 sm:px-6 sm:py-10 lg:px-8 lg:py-14">
+        {/* ========================================
+            Hero
+        ======================================== */}
 
-              <div className="mt-10 space-y-6">
-                <InfoRow
-                  icon={User}
-                  label="Employee"
-                  value={
-                    meeting.employee_name ||
-                    "Employee"
-                  }
-                  secondary={
-                    meeting.employee_email
-                  }
-                />
+        <section className="relative overflow-hidden rounded-[30px] border border-white/[0.07] bg-white/[0.018] p-7 shadow-[0_35px_120px_rgba(0,0,0,0.25)] backdrop-blur-xl sm:p-9 lg:p-11">
+          <div className="pointer-events-none absolute -right-24 -top-32 h-[360px] w-[360px] rounded-full bg-blue-500/[0.07] blur-[110px]" />
 
-                <InfoRow
-                  icon={CalendarDays}
-                  label="Scheduled time"
-                  value={
-                    meeting.scheduled_at
-                      ? new Date(
-                          meeting.scheduled_at
-                        ).toLocaleString()
-                      : "Not scheduled"
-                  }
-                />
+          <div className="pointer-events-none absolute bottom-[-180px] left-[25%] h-[320px] w-[320px] rounded-full bg-cyan-500/[0.025] blur-[100px]" />
 
-                <InfoRow
-                  icon={Clock3}
-                  label="Duration"
-                  value={`${meeting.duration_minutes || 30} minutes`}
-                />
+          <div className="relative">
+            <div className="flex flex-col gap-7 lg:flex-row lg:items-end lg:justify-between">
+              <div className="max-w-3xl">
+                <div className="flex items-center gap-3">
+                  <span className="h-px w-9 bg-blue-500" />
 
+                  <span className="text-[10px] font-bold uppercase tracking-[0.28em] text-blue-400">
+                    Scheduled Interview
+                  </span>
+                </div>
+
+                <h1 className="mt-6 text-4xl font-semibold leading-[0.98] tracking-[-0.055em] text-white sm:text-5xl lg:text-6xl">
+                  {meeting.title ||
+                    "AI Interview"}
+                </h1>
+
+                <p className="mt-5 max-w-2xl text-sm leading-7 text-white/35 sm:text-base">
+                  Your interview session is prepared.
+                  Review the details below before
+                  entering the secure interview
+                  workspace.
+                </p>
+              </div>
+
+              <div
+                className={`inline-flex w-fit items-center gap-2 rounded-full border px-3.5 py-2 text-[9px] font-semibold uppercase tracking-[0.17em] ${statusConfig.classes}`}
+              >
+                <StatusIcon size={12} />
+
+                {statusConfig.label}
+              </div>
+            </div>
+
+            {/* Meeting metadata */}
+
+            <div className="mt-9 grid gap-px overflow-hidden rounded-2xl border border-white/[0.07] bg-white/[0.06] sm:grid-cols-3">
+              <MeetingMeta
+                icon={CalendarDays}
+                label="Scheduled"
+                value={formatDate(
+                  meeting.scheduled_at
+                )}
+              />
+
+              <MeetingMeta
+                icon={Clock3}
+                label="Duration"
+                value={`${meeting.duration_minutes || 30} minutes`}
+              />
+
+              <MeetingMeta
+                icon={User}
+                label="Candidate"
+                value={
+                  meeting.employee_name ||
+                  user.name ||
+                  "Employee"
+                }
+              />
+            </div>
+          </div>
+        </section>
+
+        {/* ========================================
+            Main workspace
+        ======================================== */}
+
+        <section className="mt-6 grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+          {/* Left - session preview */}
+
+          <div className="relative overflow-hidden rounded-[28px] border border-white/[0.07] bg-white/[0.018] shadow-[0_25px_90px_rgba(0,0,0,0.2)] backdrop-blur-xl">
+            <div className="pointer-events-none absolute left-[-120px] top-[-120px] h-64 w-64 rounded-full bg-blue-500/[0.055] blur-[90px]" />
+
+            <div className="relative p-6 sm:p-8">
+              <div className="flex items-center justify-between gap-4">
                 <div>
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/25">
-                    Status
+                  <p className="text-[9px] font-semibold uppercase tracking-[0.23em] text-blue-300/60">
+                    Interview workspace
                   </p>
 
-                  <span className="mt-2 inline-flex rounded-full border border-blue-400/15 bg-blue-400/[0.06] px-3 py-1.5 text-xs font-semibold capitalize text-blue-300">
-                    {status}
-                  </span>
+                  <h2 className="mt-2 text-2xl font-semibold tracking-[-0.035em]">
+                    Ready when you are.
+                  </h2>
+                </div>
+
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/[0.07] bg-white/[0.025]">
+                  <Sparkles
+                    size={17}
+                    className="text-blue-300"
+                  />
+                </div>
+              </div>
+
+              {/* Visual stage */}
+
+              <div className="relative mt-7 min-h-[300px] overflow-hidden rounded-[24px] border border-white/[0.07] bg-[#06090e]">
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_35%,rgba(59,130,246,0.12),transparent_38%)]" />
+
+                <div
+                  className="absolute inset-0 opacity-[0.035]"
+                  style={{
+                    backgroundImage:
+                      "linear-gradient(rgba(255,255,255,.8) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.8) 1px, transparent 1px)",
+                    backgroundSize:
+                      "42px 42px",
+                  }}
+                />
+
+                <div className="relative flex min-h-[300px] flex-col items-center justify-center px-6 text-center">
+                  <div className="relative flex h-24 w-24 items-center justify-center rounded-[28px] border border-blue-300/15 bg-blue-500/[0.07] shadow-[0_0_80px_rgba(37,99,235,0.15)]">
+                    <div className="absolute inset-2 rounded-[22px] border border-blue-300/10" />
+
+                    <Video
+                      size={35}
+                      strokeWidth={1.2}
+                      className="text-blue-300"
+                    />
+                  </div>
+
+                  <p className="mt-7 text-sm font-semibold text-white/75">
+                    {hasExternalMeeting
+                      ? "External meeting ready"
+                      : "AI interview ready"}
+                  </p>
+
+                  <p className="mt-2 max-w-sm text-xs leading-5 text-white/25">
+                    {hasExternalMeeting
+                      ? "The meeting link will open securely in a new browser tab."
+                      : "Your AI interview workspace will open when you start the session."}
+                  </p>
+
+                  <div className="mt-6 flex items-center gap-2 rounded-full border border-white/[0.07] bg-white/[0.025] px-3 py-1.5">
+                    <Lock
+                      size={11}
+                      className="text-emerald-300/70"
+                    />
+
+                    <span className="text-[9px] font-semibold uppercase tracking-[0.16em] text-white/30">
+                      Secure session
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Join button */}
+
+              {!isCompleted &&
+                !isCancelled && (
+                  <button
+                    type="button"
+                    onClick={handleJoin}
+                    disabled={joining}
+                    className="group mt-5 flex w-full items-center justify-center gap-2.5 rounded-xl bg-blue-500 px-5 py-3.5 text-sm font-semibold text-white shadow-[0_12px_40px_rgba(37,99,235,0.18)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-blue-400 hover:shadow-[0_18px_50px_rgba(37,99,235,0.28)] disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {joining ? (
+                      <>
+                        <Loader2
+                          size={16}
+                          className="animate-spin"
+                        />
+
+                        Opening session...
+                      </>
+                    ) : (
+                      <>
+                        {hasExternalMeeting
+                          ? "Join Meeting"
+                          : "Start AI Interview"}
+
+                        {hasExternalMeeting ? (
+                          <ExternalLink
+                            size={15}
+                            className="transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
+                          />
+                        ) : (
+                          <ArrowUpRight
+                            size={15}
+                            className="transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
+                          />
+                        )}
+                      </>
+                    )}
+                  </button>
+                )}
+
+              {isCompleted && (
+                <div className="mt-5 flex items-center justify-center gap-2 rounded-xl border border-emerald-400/10 bg-emerald-400/[0.04] px-5 py-3.5 text-sm font-semibold text-emerald-300">
+                  <CheckCircle2 size={16} />
+                  Interview completed
+                </div>
+              )}
+
+              {isCancelled && (
+                <div className="mt-5 flex items-center justify-center gap-2 rounded-xl border border-red-400/10 bg-red-400/[0.04] px-5 py-3.5 text-sm font-semibold text-red-300">
+                  <XCircle size={16} />
+                  Meeting cancelled
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Right - details */}
+
+          <div className="space-y-6">
+            {/* Candidate card */}
+
+            <div className="relative overflow-hidden rounded-[28px] border border-white/[0.07] bg-white/[0.018] p-6 shadow-[0_25px_90px_rgba(0,0,0,0.18)] backdrop-blur-xl sm:p-8">
+              <div className="pointer-events-none absolute -right-20 -top-20 h-48 w-48 rounded-full bg-cyan-500/[0.04] blur-[70px]" />
+
+              <div className="relative">
+                <div className="flex items-center gap-2">
+                  <User
+                    size={15}
+                    className="text-blue-300"
+                  />
+
+                  <p className="text-[9px] font-semibold uppercase tracking-[0.22em] text-blue-300/65">
+                    Candidate profile
+                  </p>
+                </div>
+
+                <div className="mt-6 flex items-center gap-4">
+                  <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-blue-300/15 bg-blue-500/[0.07] text-lg font-semibold text-blue-200">
+                    {(
+                      meeting.employee_name ||
+                      user.name ||
+                      "E"
+                    )
+                      .charAt(0)
+                      .toUpperCase()}
+                  </div>
+
+                  <div className="min-w-0">
+                    <p className="truncate text-base font-semibold text-white/85">
+                      {meeting.employee_name ||
+                        user.name ||
+                        "Employee"}
+                    </p>
+
+                    <p className="mt-1 truncate text-xs text-white/30">
+                      {meeting.employee_email ||
+                        user.email ||
+                        "Employee account"}
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* Join */}
-            <div className="flex items-center border-t border-white/[0.06] bg-white/[0.015] p-8 lg:border-l lg:border-t-0 sm:p-10">
-              <div className="w-full rounded-3xl border border-white/[0.07] bg-black/20 p-8 text-center">
-                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl border border-blue-300/15 bg-blue-400/[0.07]">
-                  {hasExternalMeeting ? (
-                    <ExternalLink
-                      size={27}
-                      className="text-blue-300"
-                    />
-                  ) : (
-                    <Video
-                      size={27}
-                      className="text-blue-300"
-                    />
-                  )}
+            {/* Description */}
+
+            <div className="relative overflow-hidden rounded-[28px] border border-white/[0.07] bg-white/[0.018] p-6 shadow-[0_25px_90px_rgba(0,0,0,0.18)] backdrop-blur-xl sm:p-8">
+              <div className="flex items-center gap-2">
+                <FileText
+                  size={15}
+                  className="text-blue-300"
+                />
+
+                <p className="text-[9px] font-semibold uppercase tracking-[0.22em] text-blue-300/65">
+                  Session brief
+                </p>
+              </div>
+
+              <p className="mt-5 text-sm leading-7 text-white/35">
+                {meeting.description ||
+                  "No additional instructions have been provided for this interview."}
+              </p>
+            </div>
+
+            {/* Security */}
+
+            <div className="rounded-[24px] border border-emerald-400/10 bg-emerald-400/[0.025] p-5">
+              <div className="flex items-start gap-3">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-emerald-400/10 bg-emerald-400/[0.04]">
+                  <ShieldCheck
+                    size={16}
+                    className="text-emerald-300/75"
+                  />
                 </div>
 
-                <h3 className="mt-6 text-2xl font-semibold">
-                  Ready to join?
-                </h3>
+                <div>
+                  <p className="text-xs font-semibold text-emerald-300/75">
+                    Secure interview workflow
+                  </p>
 
-                <p className="mx-auto mt-3 max-w-sm text-sm leading-6 text-white/35">
-                  {hasExternalMeeting
-                    ? "Open the scheduled meeting in a new tab."
-                    : "Start your adaptive AI technical interview."}
-                </p>
-
-                <button
-                  type="button"
-                  onClick={handleJoin}
-                  disabled={joining}
-                  className="mt-7 flex w-full items-center justify-center gap-2 rounded-xl bg-blue-500 px-5 py-3.5 text-sm font-semibold transition hover:bg-blue-400 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {joining
-                    ? "Opening..."
-                    : hasExternalMeeting
-                    ? "Join Meeting"
-                    : "Start AI Interview"}
-
-                  {hasExternalMeeting && (
-                    <ExternalLink size={16} />
-                  )}
-                </button>
+                  <p className="mt-1 text-[10px] leading-5 text-white/25">
+                    Access is protected by your
+                    authenticated session. Only
+                    authorized participants can enter
+                    this meeting.
+                  </p>
+                </div>
               </div>
             </div>
           </div>
+        </section>
+
+        {/* ========================================
+            Footer
+        ======================================== */}
+
+        <div className="mt-10 flex flex-col gap-3 border-t border-white/[0.06] pt-6 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-3">
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-40" />
+
+              <span className="relative h-2 w-2 rounded-full bg-emerald-400" />
+            </span>
+
+            <span className="text-[9px] font-semibold uppercase tracking-[0.2em] text-white/20">
+              Interview system operational
+            </span>
+          </div>
+
+          <p className="font-mono text-[9px] uppercase tracking-[0.16em] text-white/10">
+            Session / {meeting.id}
+          </p>
         </div>
       </main>
     </div>
   );
 }
 
-function InfoRow({
+// ==========================================
+// Ambient background
+// ==========================================
+
+function AmbientBackground() {
+  return (
+    <div className="pointer-events-none fixed inset-0">
+      <div className="absolute left-[-10%] top-[-18%] h-[540px] w-[540px] rounded-full bg-blue-500/[0.045] blur-[160px]" />
+
+      <div className="absolute right-[-12%] top-[20%] h-[520px] w-[520px] rounded-full bg-purple-500/[0.025] blur-[160px]" />
+
+      <div className="absolute bottom-[-20%] left-[25%] h-[500px] w-[500px] rounded-full bg-cyan-500/[0.02] blur-[160px]" />
+
+      <div
+        className="absolute inset-0 opacity-[0.018]"
+        style={{
+          backgroundImage:
+            "radial-gradient(circle at 1px 1px, rgba(255,255,255,0.8) 1px, transparent 0)",
+          backgroundSize: "34px 34px",
+        }}
+      />
+    </div>
+  );
+}
+
+// ==========================================
+// Meeting metadata
+// ==========================================
+
+function MeetingMeta({
   icon: Icon,
   label,
   value,
-  secondary,
 }) {
   return (
-    <div className="flex gap-4">
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-blue-400/10 bg-blue-400/[0.05]">
+    <div className="bg-black/20 p-5">
+      <div className="flex items-center gap-2">
         <Icon
-          size={17}
-          className="text-blue-300/80"
+          size={14}
+          className="text-blue-300/70"
         />
-      </div>
 
-      <div>
-        <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/25">
+        <span className="text-[9px] font-semibold uppercase tracking-[0.18em] text-white/20">
           {label}
-        </p>
-
-        <p className="mt-1 text-sm text-white/75">
-          {value}
-        </p>
-
-        {secondary && (
-          <p className="mt-1 text-xs text-white/30">
-            {secondary}
-          </p>
-        )}
+        </span>
       </div>
+
+      <p className="mt-3 text-sm font-medium leading-6 text-white/65">
+        {value}
+      </p>
     </div>
   );
 }
