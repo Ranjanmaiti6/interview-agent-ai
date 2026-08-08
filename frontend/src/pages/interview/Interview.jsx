@@ -5,6 +5,19 @@ import InterviewHeader from "../../components/interview/InterviewHeader";
 import ChatMessage from "../../components/interview/ChatMessage";
 import InterviewInput from "../../components/interview/InterviewInput";
 
+// ==========================================
+// Backend API URL
+// ==========================================
+
+const API_URL =
+  import.meta.env.VITE_API_URL ||
+  "http://localhost:5001";
+
+
+// ==========================================
+// Interview topics
+// ==========================================
+
 const topics = [
   "Retrieval-Augmented Generation",
   "Vector Databases",
@@ -15,6 +28,11 @@ const topics = [
   "AI Evaluation",
   "System Design",
 ];
+
+
+// ==========================================
+// Interview difficulties
+// ==========================================
 
 const difficulties = [
   "Easy",
@@ -27,42 +45,92 @@ const difficulties = [
   "Hard",
 ];
 
-export default function Interview() {
-  const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
 
-  const candidateId = searchParams.get("id");
+// ==========================================
+// Interview component
+// ==========================================
+
+export default function Interview() {
+
+  const [searchParams] =
+    useSearchParams();
+
+  const navigate =
+    useNavigate();
+
+
+  // ========================================
+  // Candidate
+  // ========================================
+
+  const candidateId =
+    searchParams.get("id");
+
 
   const candidateName =
     candidateId === "1"
       ? "Riya Sharma"
       : "Arjun Patel";
 
+
+  // ========================================
+  // Interview configuration
+  // ========================================
+
   const totalQuestions = 8;
 
-  const [questionNumber, setQuestionNumber] =
-    useState(1);
 
-  const [loading, setLoading] =
-    useState(false);
+  // ========================================
+  // State
+  // ========================================
 
-  const [completed, setCompleted] =
-    useState(false);
+  const [
+    questionNumber,
+    setQuestionNumber,
+  ] = useState(1);
+
+
+  const [
+    loading,
+    setLoading,
+  ] = useState(false);
+
+
+  const [
+    completed,
+    setCompleted,
+  ] = useState(false);
+
 
   // Latest score
-  const [score, setScore] = useState({
+  const [
+    score,
+    setScore,
+  ] = useState({
     technical: 0,
     communication: 0,
     problemSolving: 0,
   });
 
-  // Store score from every question
-  const [allScores, setAllScores] =
-    useState([]);
 
-  const [messages, setMessages] = useState([
+  // All question scores
+  const [
+    allScores,
+    setAllScores,
+  ] = useState([]);
+
+
+  // ========================================
+  // Chat messages
+  // ========================================
+
+  const [
+    messages,
+    setMessages,
+  ] = useState([
     {
       role: "ai",
+
       text:
         "Welcome to your AI Technical Interview.\n\n" +
         "Let's begin.\n\n" +
@@ -70,26 +138,45 @@ export default function Interview() {
     },
   ]);
 
-  const bottomRef = useRef(null);
+
+  // ========================================
+  // Scroll reference
+  // ========================================
+
+  const bottomRef =
+    useRef(null);
 
 
-  // ==========================================
+  // ========================================
   // Auto scroll
-  // ==========================================
+  // ========================================
 
   useEffect(() => {
+
     bottomRef.current?.scrollIntoView({
       behavior: "smooth",
     });
-  }, [messages, loading]);
+
+  }, [
+    messages,
+    loading,
+  ]);
 
 
-  // ==========================================
-  // Send answer
-  // ==========================================
+  // ========================================
+  // Send candidate answer
+  // ========================================
 
-  const sendAnswer = async (answer) => {
+  const sendAnswer = async (
+    answer
+  ) => {
+
+    // --------------------------------------
+    // Validation
+    // --------------------------------------
+
     if (
+      !answer ||
       !answer.trim() ||
       loading ||
       completed
@@ -98,58 +185,91 @@ export default function Interview() {
     }
 
 
-    // Add candidate answer
+    // --------------------------------------
+    // Add candidate answer to chat
+    // --------------------------------------
+
     setMessages((prev) => [
+
       ...prev,
+
       {
         role: "user",
         text: answer,
       },
+
     ]);
 
+
+    // --------------------------------------
+    // Loading
+    // --------------------------------------
 
     setLoading(true);
 
 
     try {
 
-      const response = await fetch(
-        "http://localhost:5001/api/interview/answer",
-        {
-          method: "POST",
+      // ====================================
+      // API request
+      // ====================================
 
-          headers: {
-            "Content-Type":
-              "application/json",
-          },
+      const response =
+        await fetch(
+          `${API_URL}/api/interview/answer`,
+          {
+            method: "POST",
 
-          body: JSON.stringify({
-            answer,
+            headers: {
+              "Content-Type":
+                "application/json",
+            },
 
-            // Backend expects zero-based question number
-            questionNumber:
-              questionNumber - 1,
+            body: JSON.stringify({
 
-            candidateId,
-          }),
-        }
-      );
+              answer,
 
+              // Backend expects zero-based
+              questionNumber:
+                questionNumber - 1,
+
+              candidateId,
+
+            }),
+          }
+        );
+
+
+      // ====================================
+      // HTTP error
+      // ====================================
 
       if (!response.ok) {
+
         throw new Error(
           `Backend returned ${response.status}`
         );
+
       }
 
+
+      // ====================================
+      // Parse response
+      // ====================================
 
       const data =
         await response.json();
 
 
-      // ======================================
-      // Save latest score
-      // ======================================
+      console.log(
+        "Interview response:",
+        data
+      );
+
+
+      // ====================================
+      // Score
+      // ====================================
 
       const latestScore =
         data.score || {
@@ -159,12 +279,14 @@ export default function Interview() {
         };
 
 
-      setScore(latestScore);
+      setScore(
+        latestScore
+      );
 
 
-      // ======================================
-      // Add score to all scores
-      // ======================================
+      // ====================================
+      // Store all question scores
+      // ====================================
 
       const updatedScores = [
         ...allScores,
@@ -172,14 +294,17 @@ export default function Interview() {
       ];
 
 
-      setAllScores(updatedScores);
+      setAllScores(
+        updatedScores
+      );
 
 
-      // ======================================
+      // ====================================
       // Add feedback
-      // ======================================
+      // ====================================
 
       setMessages((prev) => [
+
         ...prev,
 
         {
@@ -191,22 +316,26 @@ export default function Interview() {
               "Good answer."
             }`,
         },
+
       ]);
 
 
-      // ======================================
+      // ====================================
       // Interview completed
-      // ======================================
+      // ====================================
 
       if (
         questionNumber >=
         totalQuestions
       ) {
 
-        setCompleted(true);
+        setCompleted(
+          true
+        );
 
 
         setMessages((prev) => [
+
           ...prev,
 
           {
@@ -217,35 +346,42 @@ export default function Interview() {
               "Your answers have been evaluated. " +
               "We're now preparing your personalized AI report.",
           },
+
         ]);
 
 
+        // ----------------------------------
+        // Navigate to report
+        // ----------------------------------
+
         setTimeout(() => {
 
-          navigate("/report", {
-            state: {
+          navigate(
+            "/report",
+            {
+              state: {
 
-              // Latest score fallback
-              score: latestScore,
+                score:
+                  latestScore,
 
-              // All question scores
-              allScores:
-                updatedScores,
+                allScores:
+                  updatedScores,
 
-              strengths:
-                data.strengths || [],
+                strengths:
+                  data.strengths || [],
 
-              gaps:
-                data.gaps || [],
+                gaps:
+                  data.gaps || [],
 
-              recommendation:
-                data.recommendation ||
-                "",
+                recommendation:
+                  data.recommendation ||
+                  "",
 
-              candidateName,
+                candidateName,
 
-            },
-          });
+              },
+            }
+          );
 
         }, 2500);
 
@@ -254,11 +390,12 @@ export default function Interview() {
       }
 
 
-      // ======================================
-      // Add next question
-      // ======================================
+      // ====================================
+      // Next question
+      // ====================================
 
       setMessages((prev) => [
+
         ...prev,
 
         {
@@ -270,19 +407,24 @@ export default function Interview() {
               "Let's continue with the next question."
             }`,
         },
+
       ]);
 
 
-      // ======================================
-      // Move to next question
-      // ======================================
+      // ====================================
+      // Increment question number
+      // ====================================
 
       setQuestionNumber(
-        (prev) => prev + 1
+        (prev) =>
+          prev + 1
       );
 
-
     } catch (error) {
+
+      // ====================================
+      // Error handling
+      // ====================================
 
       console.error(
         "Interview error:",
@@ -291,6 +433,7 @@ export default function Interview() {
 
 
       setMessages((prev) => [
+
         ...prev,
 
         {
@@ -298,8 +441,10 @@ export default function Interview() {
 
           text:
             "⚠️ Backend error.\n\n" +
-            "Please make sure the backend server is running on port 5001.",
+            `Unable to connect to ${API_URL}.\n\n` +
+            "Please make sure your backend server is running.",
         },
+
       ]);
 
     } finally {
@@ -307,6 +452,7 @@ export default function Interview() {
       setLoading(false);
 
     }
+
   };
 
 
@@ -317,6 +463,7 @@ export default function Interview() {
   if (completed) {
 
     return (
+
       <div className="min-h-screen bg-slate-950 flex items-center justify-center px-6">
 
         <div className="text-center max-w-xl w-full">
@@ -349,9 +496,11 @@ export default function Interview() {
 
 
             <p className="text-slate-400 mt-4 leading-7">
+
               We're analyzing your technical
               answers, strengths, knowledge gaps,
               and overall interview performance.
+
             </p>
 
 
@@ -371,7 +520,9 @@ export default function Interview() {
         </div>
 
       </div>
+
     );
+
   }
 
 
@@ -380,44 +531,92 @@ export default function Interview() {
   // ==========================================
 
   return (
+
     <div className="min-h-screen bg-slate-950 flex flex-col">
 
+
+      {/* ====================================
+          Header
+      ==================================== */}
+
       <InterviewHeader
-        questionNumber={questionNumber}
-        totalQuestions={totalQuestions}
-        candidateName={candidateName}
-        topic={
-          topics[questionNumber - 1]
+
+        questionNumber={
+          questionNumber
         }
+
+        totalQuestions={
+          totalQuestions
+        }
+
+        candidateName={
+          candidateName
+        }
+
+        topic={
+          topics[
+            questionNumber - 1
+          ]
+        }
+
         difficulty={
           difficulties[
             questionNumber - 1
           ]
         }
+
       />
 
+
+      {/* ====================================
+          Chat area
+      ==================================== */}
 
       <div className="flex-1 overflow-y-auto">
 
         <div className="max-w-5xl mx-auto px-6 py-8 space-y-6">
 
+
+          {/* --------------------------------
+              Messages
+          -------------------------------- */}
+
           {messages.map(
-            (message, index) => (
+            (
+              message,
+              index
+            ) => (
+
               <ChatMessage
+
                 key={index}
-                role={message.role}
-                text={message.text}
+
+                role={
+                  message.role
+                }
+
+                text={
+                  message.text
+                }
+
               />
+
             )
           )}
 
+
+          {/* --------------------------------
+              Loading indicator
+          -------------------------------- */}
 
           {loading && (
 
             <div className="flex justify-start">
 
               <div className="bg-slate-800 rounded-xl px-5 py-3 text-blue-400 italic animate-pulse">
+
                 🤖 AI is thinking...
+
               </div>
 
             </div>
@@ -425,17 +624,31 @@ export default function Interview() {
           )}
 
 
-          <div ref={bottomRef}></div>
+          {/* --------------------------------
+              Bottom scroll target
+          -------------------------------- */}
+
+          <div
+            ref={bottomRef}
+          />
 
         </div>
 
       </div>
 
 
+      {/* ====================================
+          Answer input
+      ==================================== */}
+
       <InterviewInput
-        onSend={sendAnswer}
+        onSend={
+          sendAnswer
+        }
       />
 
     </div>
+
   );
+
 }
