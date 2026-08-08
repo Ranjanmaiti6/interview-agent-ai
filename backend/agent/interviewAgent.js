@@ -7,6 +7,10 @@ const {
   clearConversation,
 } = require("./interviewMemory");
 
+const {
+  evaluateAnswer,
+} = require("../services/aiService");
+
 const questions = [
   "Explain Retrieval-Augmented Generation (RAG).",
   "Why is chunking important in RAG?",
@@ -15,7 +19,7 @@ const questions = [
   "What problem does Model Context Protocol (MCP) solve?",
   "How would you deploy an LLM application?",
   "How do you evaluate an AI system?",
-  "Design a production-ready AI architecture."
+  "Design a production-ready AI architecture.",
 ];
 
 async function generateQuestion(
@@ -24,14 +28,18 @@ async function generateQuestion(
   candidateId
 ) {
 
+  // Find candidate
   const candidate =
     candidates.find(
       (c) => c.id == candidateId
     ) || candidates[0];
 
+
+  // Find current curriculum topic
   const topic =
     curriculum[questionNumber] ||
     curriculum[0];
+
 
   // Store candidate answer
   addMessage(
@@ -40,67 +48,97 @@ async function generateQuestion(
     answer
   );
 
-  // Mock scoring (replace with AI later)
-  const score = {
-    technical:
-      Math.floor(Math.random() * 3) + 7,
 
-    communication:
-      Math.floor(Math.random() * 3) + 7,
+  // Get complete conversation
+  const conversation =
+    getConversation(candidateId);
 
-    problemSolving:
-      Math.floor(Math.random() * 3) + 7,
-  };
 
-  // Generate feedback
-  const feedback =
-    answer.length > 40
-      ? "Good explanation. Your answer covered the main concepts clearly."
-      : "Your answer is a bit short. Try explaining your reasoning with more detail.";
+  // Ask AI to evaluate the answer
+  const evaluation =
+    await evaluateAnswer({
+      candidate,
+      topic: topic.topic,
+      question:
+        questions[questionNumber],
+      answer,
+      conversation,
+    });
+
 
   // Store AI feedback
   addMessage(
     candidateId,
     "assistant",
-    feedback
+    evaluation.feedback
   );
 
+
+  // Convert AI scores into the format
+  // expected by the frontend
+  const score = {
+    technical:
+      evaluation.technical || 0,
+
+    communication:
+      evaluation.communication || 0,
+
+    problemSolving:
+      evaluation.problemSolving || 0,
+  };
+
+
+  // AI-generated next question
   const nextQuestion =
+    evaluation.nextQuestion ||
     questions[questionNumber + 1] ||
     "Interview Completed";
 
-  const strengths = [
-    "Retrieval-Augmented Generation",
-    "Prompt Engineering",
-    "Vector Databases",
-  ];
 
-  const gaps = [
-    "Model Context Protocol",
-    "Production Deployment",
-    "AI Evaluation",
-  ];
+  // AI-generated strengths
+  const strengths =
+    evaluation.strengths || [];
 
+
+  // AI-generated knowledge gaps
+  const gaps =
+    evaluation.gaps || [];
+
+
+  // Generate recommendation
   const recommendation =
     score.technical >= 8
       ? "Recommended for AI Engineering Internship."
       : "Needs more practice before technical interviews.";
 
-  const conversation =
+
+  // Get latest conversation
+  const currentConversation =
     getConversation(candidateId);
 
-  // Clear memory after last question
+
+  // Save conversation before clearing it
+  const responseConversation =
+    [...currentConversation];
+
+
+  // Clear memory after question 8
   if (questionNumber >= 7) {
     clearConversation(candidateId);
   }
 
+
+  // Return response to frontend
   return {
 
-    candidate: candidate.name,
+    candidate:
+      candidate.name,
 
-    topic: topic.topic,
+    topic:
+      topic.topic,
 
-    feedback,
+    feedback:
+      evaluation.feedback,
 
     nextQuestion,
 
@@ -112,14 +150,15 @@ async function generateQuestion(
 
     recommendation,
 
-    conversation,
+    conversation:
+      responseConversation,
 
     questionNumber:
       questionNumber + 1,
 
   };
-
 }
+
 
 module.exports = {
   generateQuestion,
