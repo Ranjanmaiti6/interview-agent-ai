@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-const API_URL =
+const API_URL = (
   import.meta.env.VITE_API_URL ||
-  "http://localhost:5001";
+  "http://localhost:5001"
+).replace(/\/$/, "");
 
 export default function Login() {
   const navigate = useNavigate();
@@ -25,6 +26,8 @@ export default function Login() {
     setLoading(true);
 
     try {
+      console.log("Login API:", `${API_URL}/api/auth/login`);
+
       const response = await fetch(
         `${API_URL}/api/auth/login`,
         {
@@ -41,11 +44,24 @@ export default function Login() {
         }
       );
 
-      const data = await response.json();
+      let data = {};
+
+      try {
+        data = await response.json();
+      } catch {
+        data = {};
+      }
 
       if (!response.ok) {
         throw new Error(
-          data.message || "Login failed."
+          data.message ||
+            `Login failed. Server returned ${response.status}.`
+        );
+      }
+
+      if (!data.user || !data.token) {
+        throw new Error(
+          "Login succeeded, but the server returned invalid authentication data."
         );
       }
 
@@ -78,7 +94,7 @@ export default function Login() {
       }
 
       throw new Error(
-        "Invalid user role."
+        "Invalid user role returned by the server."
       );
 
     } catch (error) {
@@ -89,7 +105,7 @@ export default function Login() {
 
       setError(
         error.message ||
-          "Unable to login."
+          "Unable to login. Please try again."
       );
     } finally {
       setLoading(false);
