@@ -6,6 +6,7 @@ const path = require("path");
 
 const interviewRoute = require("./routes/interview");
 const employeeRoute = require("./routes/employee");
+const authRoute = require("./routes/auth");
 
 const app = express();
 
@@ -70,18 +71,23 @@ app.use(
 // ==========================================
 
 // AI Interview
+// Authentication
+app.use(
+  "/api/auth",
+  authRoute
+);
+
+// AI Interview
 app.use(
   "/api/interview",
   interviewRoute
 );
-
 
 // Employee requests
 app.use(
   "/api/employee",
   employeeRoute
 );
-
 
 // ==========================================
 // Health Check
