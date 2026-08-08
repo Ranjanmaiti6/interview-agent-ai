@@ -1,5 +1,9 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 
+import Login from "./pages/Login/Login";
+import AdminDashboard from "./pages/AdminDashboard/AdminDashboard";
+import EmployeeDashboard from "./pages/EmployeeDashboard/EmployeeDashboard";
+
 import Landing from "./pages/Landing/Landing";
 import Candidate from "./pages/Candidate/Candidate";
 import Interview from "./pages/interview/Interview";
@@ -10,13 +14,57 @@ import Meetings from "./pages/meetings/Meetings";
 import CreateMeeting from "./pages/meetings/CreateMeeting";
 import MeetingRoom from "./pages/meetings/MeetingRoom";
 
+import ProtectedRoute from "./components/auth/ProtectedRoute";
+
 function App() {
   return (
     <BrowserRouter>
+
       <Routes>
 
-        {/* Main pages */}
-        <Route path="/" element={<Landing />} />
+        {/* ============================== */}
+        {/* Public */}
+        {/* ============================== */}
+
+        <Route
+          path="/"
+          element={<Landing />}
+        />
+
+        <Route
+          path="/login"
+          element={<Login />}
+        />
+
+        {/* ============================== */}
+        {/* Admin */}
+        {/* ============================== */}
+
+        <Route
+          path="/admin"
+          element={
+            <ProtectedRoute role="admin">
+              <AdminDashboard />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* ============================== */}
+        {/* Employee */}
+        {/* ============================== */}
+
+        <Route
+          path="/employee"
+          element={
+            <ProtectedRoute role="employee">
+              <EmployeeDashboard />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* ============================== */}
+        {/* Existing pages */}
+        {/* ============================== */}
 
         <Route
           path="/candidate"
@@ -38,7 +86,10 @@ function App() {
           element={<CandidateDashboard />}
         />
 
+        {/* ============================== */}
         {/* Meetings */}
+        {/* ============================== */}
+
         <Route
           path="/meetings"
           element={<Meetings />}
@@ -55,6 +106,7 @@ function App() {
         />
 
       </Routes>
+
     </BrowserRouter>
   );
 }

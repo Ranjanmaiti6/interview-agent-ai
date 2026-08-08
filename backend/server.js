@@ -6,6 +6,7 @@ const http = require("http");
 const { Server } = require("socket.io");
 
 const interviewRoute = require("./routes/interview");
+const authRoute = require("./routes/auth");
 
 const app = express();
 
@@ -77,7 +78,10 @@ app.use(
   "/api/interview",
   interviewRoute
 );
-
+app.use(
+  "/api/auth",
+  authRoute
+);
 
 // ==========================================
 // Health Check
