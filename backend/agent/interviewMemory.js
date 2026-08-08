@@ -16,7 +16,7 @@ const localMemory = {};
 
 
 // ==========================================
-// Add message to Breeth
+// Save message to local + Breeth
 // ==========================================
 
 async function addMessage(
@@ -25,7 +25,6 @@ async function addMessage(
   content
 ) {
 
-  // Always keep a local copy as fallback
   if (!localMemory[candidateId]) {
     localMemory[candidateId] = [];
   }
@@ -33,11 +32,11 @@ async function addMessage(
   localMemory[candidateId].push({
     role,
     content,
-    timestamp: new Date().toISOString(),
+    timestamp:
+      new Date().toISOString(),
   });
 
 
-  // If Breeth isn't configured, stop here
   if (!BREETH_API_KEY) {
     return;
   }
@@ -51,7 +50,9 @@ async function addMessage(
         method: "POST",
 
         headers: {
-          "Content-Type": "application/json",
+          "Content-Type":
+            "application/json",
+
           Authorization:
             `Bearer ${BREETH_API_KEY}`,
         },
@@ -67,15 +68,16 @@ async function addMessage(
     );
 
 
+    const body =
+      await response.text();
+
+
     if (!response.ok) {
 
-      const errorText =
-        await response.text();
-
       console.error(
-        "Breeth memory write failed:",
+        "Breeth write failed:",
         response.status,
-        errorText
+        body
       );
 
       return;
@@ -89,7 +91,7 @@ async function addMessage(
   } catch (error) {
 
     console.error(
-      "Breeth memory connection error:",
+      "Breeth write error:",
       error.message
     );
   }
@@ -97,20 +99,20 @@ async function addMessage(
 
 
 // ==========================================
-// Retrieve conversation
+// Retrieve memory from Breeth
 // ==========================================
 
 async function getConversation(
   candidateId
 ) {
 
-  // If Breeth isn't configured,
-  // use local memory.
-  if (!BREETH_API_KEY) {
+  // Local fallback
+  const local =
+    localMemory[candidateId] || [];
 
-    return (
-      localMemory[candidateId] || []
-    );
+
+  if (!BREETH_API_KEY) {
+    return local;
   }
 
 
@@ -122,14 +124,16 @@ async function getConversation(
         method: "POST",
 
         headers: {
-          "Content-Type": "application/json",
+          "Content-Type":
+            "application/json",
+
           Authorization:
             `Bearer ${BREETH_API_KEY}`,
         },
 
         body: JSON.stringify({
           query:
-            `Interview history for candidate ${candidateId}`,
+            `Interview answers and feedback for candidate ${candidateId}`,
 
           group_id:
             `candidate-${candidateId}`,
@@ -140,34 +144,150 @@ async function getConversation(
     );
 
 
+    const body =
+      await response.text();
+
+
     if (!response.ok) {
 
-      const errorText =
-        await response.text();
-
       console.error(
-        "Breeth memory retrieval failed:",
+        "Breeth retrieval failed:",
         response.status,
-        errorText
+        body
       );
 
-      return (
-        localMemory[candidateId] || []
-      );
+      return local;
     }
 
 
-    const data =
-      await response.json();
+    let data;
+
+    try {
+
+      data = JSON.parse(body);
+
+    } catch (error) {
+
+      console.error(
+        "Breeth returned invalid JSON."
+      );
+
+      return local;
+    }
 
 
-    return (
-      data.results ||
-      data.memories ||
-      data.items ||
-      localMemory[candidateId] ||
-      []
+    // ========================================
+    // Log actual response once
+    // ========================================
+
+    console.log(
+      "Breeth search response:",
+      JSON.stringify(
+        data,
+        null,
+        2
+      )
     );
+
+
+    // ========================================
+    // Handle common Breeth response formats
+    // ========================================
+
+    let memories = [];
+
+
+    if (
+      Array.isArray(data)
+    ) {
+
+      memories = data;
+
+    } else if (
+      Array.isArray(
+        data.results
+      )
+    ) {
+
+      memories =
+        data.results;
+
+    } else if (
+      Array.isArray(
+        data.memories
+      )
+    ) {
+
+      memories =
+        data.memories;
+
+    } else if (
+      Array.isArray(
+        data.items
+      )
+    ) {
+
+      memories =
+        data.items;
+
+    }
+
+
+    // ========================================
+    // If Breeth has no searchable results yet,
+    // use local memory
+    // ========================================
+
+    if (!memories.length) {
+
+      return local;
+    }
+
+
+    // ========================================
+    // Convert Breeth results into the format
+    // our evaluator understands
+    // ========================================
+
+    const normalized =
+      memories.map(
+        (memory) => {
+
+          const content =
+            memory.content ||
+            memory.text ||
+            memory.fact ||
+            memory.name ||
+            JSON.stringify(
+              memory
+            );
+
+
+          return {
+            role:
+              memory.role ||
+              "memory",
+
+            content,
+
+            timestamp:
+              memory.timestamp ||
+              memory.created_at ||
+              null,
+
+            source:
+              "breeth",
+          };
+        }
+      );
+
+
+    // Combine local conversation with
+    // Breeth memory without crashing
+    return [
+      ...local,
+      ...normalized,
+    ];
 
   } catch (error) {
 
@@ -176,16 +296,13 @@ async function getConversation(
       error.message
     );
 
-
-    return (
-      localMemory[candidateId] || []
-    );
+    return local;
   }
 }
 
 
 // ==========================================
-// Clear local conversation
+// Clear local memory
 // ==========================================
 
 function clearConversation(

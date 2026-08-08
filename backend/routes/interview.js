@@ -8,86 +8,161 @@ const {
 
 
 // ==========================================
-// Submit Interview Answer
+// POST /api/interview/answer
 // ==========================================
 
-router.post(
-  "/answer",
-  async (req, res) => {
+router.post("/answer", async (req, res) => {
 
-    try {
+  try {
 
-      const {
-        answer,
-        questionNumber,
-        candidateId,
-      } = req.body;
+    const {
+      answer,
+      questionNumber,
+      candidateId,
+    } = req.body;
 
 
-      // ------------------------------
-      // Validation
-      // ------------------------------
+    // ========================================
+    // Validate request
+    // ========================================
 
-      if (!answer) {
-        return res.status(400).json({
-          success: false,
-          error: "Answer is required.",
-        });
-      }
+    if (
+      typeof answer !== "string" ||
+      !answer.trim()
+    ) {
 
-
-      if (
-        questionNumber === undefined ||
-        questionNumber === null
-      ) {
-        return res.status(400).json({
-          success: false,
-          error:
-            "Question number is required.",
-        });
-      }
-
-
-      // ------------------------------
-      // Generate response
-      // ------------------------------
-
-      const response =
-        await generateQuestion(
-          answer,
-          Number(questionNumber),
-          candidateId
-        );
-
-
-      // ------------------------------
-      // Send response
-      // ------------------------------
-
-      return res.json({
-        success: true,
-        ...response,
+      return res.status(400).json({
+        success: false,
+        error: "Answer is required.",
       });
 
-    } catch (error) {
+    }
 
-      console.error(
-        "Interview route error:",
-        error
+
+    if (
+      questionNumber === undefined ||
+      questionNumber === null
+    ) {
+
+      return res.status(400).json({
+        success: false,
+        error:
+          "Question number is required.",
+      });
+
+    }
+
+
+    if (!candidateId) {
+
+      return res.status(400).json({
+        success: false,
+        error:
+          "Candidate ID is required.",
+      });
+
+    }
+
+
+    // ========================================
+    // Convert question number
+    // ========================================
+
+    const parsedQuestionNumber =
+      Number(questionNumber);
+
+
+    if (
+      Number.isNaN(
+        parsedQuestionNumber
+      )
+    ) {
+
+      return res.status(400).json({
+        success: false,
+        error:
+          "Question number must be a number.",
+      });
+
+    }
+
+
+    // ========================================
+    // Generate evaluation + next question
+    // ========================================
+
+    const result =
+      await generateQuestion(
+        answer.trim(),
+        parsedQuestionNumber,
+        candidateId
       );
 
 
-      return res.status(500).json({
-        success: false,
+    // ========================================
+    // Return result
+    // ========================================
 
-        error:
-          error.message ||
-          "Internal server error.",
+    return res.status(200).json({
 
-      });
-    }
+      success: true,
+
+      candidate:
+        result.candidate,
+
+      topic:
+        result.topic,
+
+      feedback:
+        result.feedback,
+
+      nextQuestion:
+        result.nextQuestion,
+
+      score:
+        result.score,
+
+      strengths:
+        result.strengths || [],
+
+      gaps:
+        result.gaps || [],
+
+      recommendation:
+        result.recommendation || "",
+
+      questionNumber:
+        result.questionNumber,
+
+    });
+
+
+  } catch (error) {
+
+    console.error(
+      "Interview route error:",
+      error
+    );
+
+
+    return res.status(500).json({
+
+      success: false,
+
+      error:
+        "Unable to process interview answer.",
+
+      message:
+        process.env.NODE_ENV ===
+        "development"
+          ? error.message
+          : undefined,
+
+    });
+
   }
-);
+
+});
 
 
 module.exports = router;
