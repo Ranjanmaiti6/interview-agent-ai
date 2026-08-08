@@ -42,65 +42,317 @@ export default function About() {
   return (
     <section
       id="about"
-      className="relative overflow-hidden bg-slate-950 py-28 md:py-36"
+      className="
+        relative
+        overflow-hidden
+        bg-[#05070a]
+        py-28
+        text-white
+        md:py-36
+      "
     >
-      {/* Ambient background */}
-      <div className="pointer-events-none absolute inset-0">
-        <div className="absolute left-[-12%] top-[18%] h-[420px] w-[420px] rounded-full bg-blue-600/[0.05] blur-[120px]" />
+      {/* ===================================================== */}
+      {/* Ambient environment */}
+      {/* ===================================================== */}
 
-        <div className="absolute right-[-10%] bottom-[5%] h-[380px] w-[380px] rounded-full bg-cyan-500/[0.035] blur-[120px]" />
+      <div className="pointer-events-none absolute inset-0">
+        {/* Main atmosphere */}
+        <div
+          className="
+            absolute
+            left-[-15%]
+            top-[15%]
+            h-[500px]
+            w-[500px]
+            rounded-full
+            bg-blue-500/[0.035]
+            blur-[150px]
+          "
+        />
 
         <div
-          className="absolute inset-0 opacity-[0.035]"
+          className="
+            absolute
+            right-[-12%]
+            bottom-[0]
+            h-[500px]
+            w-[500px]
+            rounded-full
+            bg-cyan-400/[0.025]
+            blur-[160px]
+          "
+        />
+
+        {/* Central glow */}
+        <div
+          className="
+            absolute
+            left-1/2
+            top-[38%]
+            h-[420px]
+            w-[420px]
+            -translate-x-1/2
+            rounded-full
+            bg-blue-600/[0.018]
+            blur-[140px]
+          "
+        />
+
+        {/* Technical grid */}
+        <div
+          className="
+            absolute
+            inset-0
+            opacity-[0.018]
+          "
           style={{
             backgroundImage:
-              "linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)",
+              "linear-gradient(rgba(255,255,255,0.6) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.6) 1px, transparent 1px)",
             backgroundSize: "80px 80px",
             maskImage:
-              "linear-gradient(to bottom, transparent, black 20%, black 80%, transparent)",
+              "linear-gradient(to bottom, transparent, black 12%, black 88%, transparent)",
+            WebkitMaskImage:
+              "linear-gradient(to bottom, transparent, black 12%, black 88%, transparent)",
           }}
+        />
+
+        {/* Large architectural circle */}
+        <div
+          className="
+            absolute
+            right-[-180px]
+            top-[20%]
+            h-[560px]
+            w-[560px]
+            rounded-full
+            border
+            border-white/[0.025]
+          "
+        />
+
+        <div
+          className="
+            absolute
+            right-[-80px]
+            top-[30%]
+            h-[360px]
+            w-[360px]
+            rounded-full
+            border
+            border-blue-400/[0.025]
+          "
         />
       </div>
 
-      <div className="relative mx-auto max-w-7xl px-6">
-        {/* Header */}
-        <div className="grid gap-12 lg:grid-cols-[0.8fr_1.4fr] lg:items-end">
-          <div>
-            <div className="inline-flex items-center gap-3">
-              <span className="h-px w-10 bg-blue-500" />
+      {/* ===================================================== */}
+      {/* Top edge */}
+      {/* ===================================================== */}
 
-              <p className="text-xs font-bold uppercase tracking-[0.32em] text-blue-400">
+      <div
+        className="
+          pointer-events-none
+          absolute
+          left-0
+          right-0
+          top-0
+          h-px
+          bg-gradient-to-r
+          from-transparent
+          via-white/[0.06]
+          to-transparent
+        "
+      />
+
+      {/* ===================================================== */}
+      {/* Main */}
+      {/* ===================================================== */}
+
+      <div className="relative mx-auto max-w-7xl px-6">
+        {/* =================================================== */}
+        {/* Header */}
+        {/* =================================================== */}
+
+        <div
+          className="
+            grid
+            gap-12
+            lg:grid-cols-[0.72fr_1.28fr]
+            lg:items-end
+          "
+        >
+          {/* Metadata */}
+          <div>
+            <div className="flex items-center gap-3">
+              <span
+                className="
+                  h-px
+                  w-12
+                  bg-gradient-to-r
+                  from-blue-400
+                  to-transparent
+                "
+              />
+
+              <p
+                className="
+                  text-[10px]
+                  font-semibold
+                  uppercase
+                  tracking-[0.32em]
+                  text-blue-400
+                "
+              >
                 About
               </p>
             </div>
 
-            <div className="mt-8 flex items-center gap-3 text-slate-500">
-              <Sparkles size={16} />
+            <div
+              className="
+                mt-8
+                inline-flex
+                items-center
+                gap-3
+                rounded-full
+                border
+                border-white/[0.07]
+                bg-white/[0.02]
+                px-3.5
+                py-2
+                backdrop-blur-md
+              "
+            >
+              <Sparkles
+                size={13}
+                strokeWidth={1.5}
+                className="text-blue-400/70"
+              />
 
-              <span className="text-xs uppercase tracking-[0.2em]">
+              <span
+                className="
+                  text-[9px]
+                  font-medium
+                  uppercase
+                  tracking-[0.22em]
+                  text-white/35
+                "
+              >
                 Intelligent interviewing
               </span>
             </div>
           </div>
 
+          {/* Main heading */}
           <div>
-            <h2 className="max-w-4xl text-4xl font-black leading-[0.98] tracking-[-0.04em] text-white sm:text-5xl md:text-6xl">
+            <h2
+              className="
+                max-w-4xl
+                text-4xl
+                font-semibold
+                leading-[0.94]
+                tracking-[-0.055em]
+                text-white
+                sm:text-5xl
+                md:text-6xl
+              "
+            >
               Smarter
-              <span className="text-slate-600"> technical </span>
-              interviews.
+              <span className="text-white/20">
+                {" "}
+                technical{" "}
+              </span>
+              <span
+                className="
+                  bg-gradient-to-r
+                  from-white
+                  via-blue-200
+                  to-white/55
+                  bg-clip-text
+                  text-transparent
+                "
+              >
+                interviews.
+              </span>
             </h2>
 
-            <p className="mt-7 max-w-3xl text-base leading-8 text-slate-400 md:text-lg">
-              Our AI Interview Agent evaluates candidates using curriculum
-              progress, interview context, and adaptive questioning instead of
-              static quizzes. It creates a realistic technical interview
-              experience that helps both learners and recruiters.
+            <p
+              className="
+                mt-7
+                max-w-3xl
+                text-[15px]
+                leading-8
+                text-white/40
+                md:text-[16px]
+              "
+            >
+              Our AI Interview Agent evaluates candidates
+              using curriculum progress, interview context,
+              and adaptive questioning instead of static
+              quizzes. It creates a realistic technical
+              interview experience that helps both learners
+              and recruiters.
             </p>
           </div>
         </div>
 
+        {/* =================================================== */}
+        {/* Architecture label */}
+        {/* =================================================== */}
+
+        <div
+          className="
+            mt-20
+            flex
+            items-center
+            justify-between
+            border-t
+            border-white/[0.07]
+            pt-6
+          "
+        >
+          <div className="flex items-center gap-3">
+            <span
+              className="
+                h-1.5
+                w-1.5
+                rounded-full
+                bg-blue-400
+                shadow-[0_0_12px_rgba(96,165,250,0.7)]
+              "
+            />
+
+            <span
+              className="
+                text-[9px]
+                font-semibold
+                uppercase
+                tracking-[0.24em]
+                text-white/30
+              "
+            >
+              Intelligence architecture
+            </span>
+          </div>
+
+          <span
+            className="
+              hidden
+              font-mono
+              text-[9px]
+              uppercase
+              tracking-[0.2em]
+              text-white/20
+              sm:block
+            "
+          >
+            04 core capabilities
+          </span>
+        </div>
+
+        {/* =================================================== */}
         {/* Feature architecture */}
-        <div className="mt-20 border-t border-slate-800/80">
+        {/* =================================================== */}
+
+        <div className="mt-8 border-y border-white/[0.07]">
           <div className="grid md:grid-cols-2">
             {features.map((feature, index) => {
               const Icon = feature.icon;
@@ -108,64 +360,350 @@ export default function About() {
               return (
                 <article
                   key={feature.title}
-                  className={`group relative min-h-[280px] overflow-hidden border-b border-slate-800/80 p-8 md:p-10 ${
-                    index % 2 === 0
-                      ? "md:border-r md:border-slate-800/80"
-                      : ""
-                  }`}
+                  className={`
+                    group
+                    relative
+                    min-h-[300px]
+                    overflow-hidden
+                    p-8
+                    md:p-10
+                    lg:min-h-[330px]
+                    ${
+                      index % 2 === 0
+                        ? "md:border-r md:border-white/[0.07]"
+                        : ""
+                    }
+                    ${
+                      index < 2
+                        ? "border-b border-white/[0.07]"
+                        : ""
+                    }
+                  `}
                 >
-                  {/* Hover light */}
-                  <div className="pointer-events-none absolute -right-20 -top-20 h-56 w-56 rounded-full bg-blue-500/[0.07] opacity-0 blur-3xl transition-all duration-700 group-hover:opacity-100" />
+                  {/* ================================================= */}
+                  {/* Hover atmosphere */}
+                  {/* ================================================= */}
 
-                  {/* Number */}
+                  <div
+                    className="
+                      pointer-events-none
+                      absolute
+                      -right-24
+                      -top-24
+                      h-72
+                      w-72
+                      rounded-full
+                      bg-blue-500/[0.065]
+                      opacity-0
+                      blur-[70px]
+                      transition-all
+                      duration-700
+                      group-hover:opacity-100
+                    "
+                  />
+
+                  {/* Secondary light */}
+                  <div
+                    className="
+                      pointer-events-none
+                      absolute
+                      bottom-[-100px]
+                      left-[-80px]
+                      h-48
+                      w-48
+                      rounded-full
+                      bg-cyan-400/[0.025]
+                      opacity-0
+                      blur-[70px]
+                      transition-opacity
+                      duration-700
+                      group-hover:opacity-100
+                    "
+                  />
+
+                  {/* ================================================= */}
+                  {/* Top metadata */}
+                  {/* ================================================= */}
+
                   <div className="relative flex items-start justify-between">
-                    <span className="font-mono text-xs tracking-[0.2em] text-slate-600 transition-colors duration-300 group-hover:text-blue-500">
+                    <span
+                      className="
+                        font-mono
+                        text-[10px]
+                        tracking-[0.22em]
+                        text-white/20
+                        transition-colors
+                        duration-300
+                        group-hover:text-blue-400/70
+                      "
+                    >
                       {feature.number}
                     </span>
 
-                    <div className="flex h-12 w-12 items-center justify-center border border-slate-800 bg-slate-900/70 text-slate-400 transition-all duration-500 group-hover:border-blue-500/40 group-hover:bg-blue-500/10 group-hover:text-blue-400">
-                      <Icon size={22} strokeWidth={1.7} />
+                    <div
+                      className="
+                        relative
+                        flex
+                        h-14
+                        w-14
+                        items-center
+                        justify-center
+                        rounded-2xl
+                        border
+                        border-white/[0.08]
+                        bg-white/[0.025]
+                        text-white/35
+                        shadow-[inset_0_0_25px_rgba(255,255,255,0.015)]
+                        transition-all
+                        duration-500
+                        group-hover:-translate-y-1
+                        group-hover:border-blue-400/25
+                        group-hover:bg-blue-500/[0.07]
+                        group-hover:text-blue-300
+                        group-hover:shadow-[0_12px_35px_rgba(37,99,235,0.10)]
+                      "
+                    >
+                      <Icon
+                        size={22}
+                        strokeWidth={1.4}
+                      />
+
+                      {/* Icon glow */}
+                      <span
+                        className="
+                          pointer-events-none
+                          absolute
+                          inset-0
+                          rounded-2xl
+                          bg-blue-400/[0.06]
+                          opacity-0
+                          blur-xl
+                          transition-opacity
+                          duration-500
+                          group-hover:opacity-100
+                        "
+                      />
                     </div>
                   </div>
 
+                  {/* ================================================= */}
                   {/* Content */}
-                  <div className="relative mt-14 max-w-xl">
-                    <h3 className="text-2xl font-bold tracking-tight text-white transition-transform duration-500 group-hover:translate-x-1 md:text-3xl">
+                  {/* ================================================= */}
+
+                  <div
+                    className="
+                      relative
+                      mt-14
+                      max-w-xl
+                    "
+                  >
+                    <h3
+                      className="
+                        text-2xl
+                        font-semibold
+                        tracking-[-0.035em]
+                        text-white
+                        transition-transform
+                        duration-500
+                        group-hover:translate-x-1
+                        md:text-3xl
+                      "
+                    >
                       {feature.title}
                     </h3>
 
-                    <p className="mt-4 max-w-lg text-sm leading-7 text-slate-500 transition-colors duration-500 group-hover:text-slate-400 md:text-base">
+                    <p
+                      className="
+                        mt-4
+                        max-w-lg
+                        text-sm
+                        leading-7
+                        text-white/30
+                        transition-colors
+                        duration-500
+                        group-hover:text-white/45
+                        md:text-[15px]
+                      "
+                    >
                       {feature.description}
                     </p>
                   </div>
 
+                  {/* ================================================= */}
                   {/* Arrow */}
-                  <ArrowUpRight
-                    size={20}
-                    className="absolute bottom-9 right-9 text-slate-700 transition-all duration-500 group-hover:-translate-y-1 group-hover:translate-x-1 group-hover:text-blue-400"
+                  {/* ================================================= */}
+
+                  <div
+                    className="
+                      absolute
+                      bottom-8
+                      right-8
+                      flex
+                      h-9
+                      w-9
+                      items-center
+                      justify-center
+                      rounded-full
+                      border
+                      border-white/[0.06]
+                      bg-white/[0.015]
+                      text-white/20
+                      transition-all
+                      duration-500
+                      group-hover:-translate-y-1
+                      group-hover:translate-x-1
+                      group-hover:border-blue-400/20
+                      group-hover:bg-blue-500/[0.06]
+                      group-hover:text-blue-300
+                    "
+                  >
+                    <ArrowUpRight
+                      size={16}
+                      strokeWidth={1.5}
+                    />
+                  </div>
+
+                  {/* ================================================= */}
+                  {/* Bottom scanning line */}
+                  {/* ================================================= */}
+
+                  <div
+                    className="
+                      absolute
+                      bottom-0
+                      left-0
+                      h-px
+                      w-0
+                      bg-gradient-to-r
+                      from-blue-400
+                      via-blue-300
+                      to-transparent
+                      transition-all
+                      duration-700
+                      group-hover:w-full
+                    "
                   />
 
-                  {/* Bottom accent */}
-                  <div className="absolute bottom-0 left-0 h-px w-0 bg-blue-500 transition-all duration-700 group-hover:w-full" />
+                  {/* Vertical accent */}
+                  <div
+                    className="
+                      absolute
+                      left-0
+                      top-0
+                      h-0
+                      w-px
+                      bg-gradient-to-b
+                      from-blue-400
+                      to-transparent
+                      transition-all
+                      duration-700
+                      group-hover:h-24
+                    "
+                  />
                 </article>
               );
             })}
           </div>
         </div>
 
+        {/* =================================================== */}
         {/* Bottom statement */}
-        <div className="mt-16 flex flex-col justify-between gap-8 border-t border-slate-800/70 pt-10 md:flex-row md:items-center">
-          <p className="max-w-2xl text-sm leading-7 text-slate-500 md:text-base">
-            Built to make technical interviews feel less like a questionnaire
-            and more like a genuine engineering conversation.
+        {/* =================================================== */}
+
+        <div
+          className="
+            mt-16
+            flex
+            flex-col
+            justify-between
+            gap-8
+            border-t
+            border-white/[0.07]
+            pt-9
+            md:flex-row
+            md:items-center
+          "
+        >
+          <p
+            className="
+              max-w-2xl
+              text-[13px]
+              leading-7
+              text-white/30
+              md:text-sm
+            "
+          >
+            Built to make technical interviews feel less
+            like a questionnaire and more like a genuine
+            engineering conversation.
           </p>
 
-          <div className="flex items-center gap-4 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-            <span className="h-2 w-2 rounded-full bg-blue-500 shadow-[0_0_16px_rgba(59,130,246,0.8)]" />
+          <div
+            className="
+              flex
+              items-center
+              gap-3
+              text-[9px]
+              font-semibold
+              uppercase
+              tracking-[0.22em]
+              text-white/30
+            "
+          >
+            <span
+              className="
+                relative
+                flex
+                h-2
+                w-2
+              "
+            >
+              <span
+                className="
+                  absolute
+                  inset-0
+                  rounded-full
+                  bg-blue-400
+                  opacity-40
+                  blur-sm
+                "
+              />
+
+              <span
+                className="
+                  relative
+                  h-2
+                  w-2
+                  rounded-full
+                  bg-blue-400
+                  shadow-[0_0_14px_rgba(59,130,246,0.8)]
+                "
+              />
+            </span>
+
             AI-powered evaluation
           </div>
         </div>
       </div>
+
+      {/* ===================================================== */}
+      {/* Bottom edge */}
+      {/* ===================================================== */}
+
+      <div
+        className="
+          pointer-events-none
+          absolute
+          bottom-0
+          left-0
+          right-0
+          h-px
+          bg-gradient-to-r
+          from-transparent
+          via-white/[0.05]
+          to-transparent
+        "
+      />
     </section>
   );
 }
