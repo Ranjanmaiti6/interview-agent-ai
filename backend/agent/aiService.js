@@ -1,29 +1,54 @@
 const OpenAI = require("openai");
 
-
 // ==========================================
-// OpenAI Client
+// OpenRouter Client
+// ==========================================
+//
+// OpenRouter provides an OpenAI-compatible API.
+// We can therefore continue using the existing
+// "openai" npm package.
+//
 // ==========================================
 
 let client = null;
 
-if (process.env.OPENAI_API_KEY) {
+if (process.env.OPENROUTER_API_KEY) {
   client = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
+    apiKey: process.env.OPENROUTER_API_KEY,
+
+    baseURL: "https://openrouter.ai/api/v1",
+
+    defaultHeaders: {
+      "HTTP-Referer":
+        process.env.BACKEND_URL ||
+        "http://localhost:5001",
+
+      "X-Title":
+        "AI Interview Agent",
+    },
   });
 }
-
 
 // ==========================================
 // Topic-Specific Mock Evaluation
 // ==========================================
+//
+// This remains as a fallback.
+//
+// If OpenRouter is unavailable, the interview
+// will still receive a basic evaluation instead
+// of crashing.
+//
+// ==========================================
 
 function mockEvaluation({
-  topic,
-  answer,
+  topic = "",
+  answer = "",
   conversation = [],
 }) {
-  const text = answer.trim().toLowerCase();
+  const text = String(answer)
+    .trim()
+    .toLowerCase();
 
   const length = text.length;
 
@@ -34,7 +59,6 @@ function mockEvaluation({
   let feedback = "";
   let strengths = [];
   let gaps = [];
-
 
   // ==========================================
   // RAG
@@ -85,7 +109,6 @@ function mockEvaluation({
       ];
     }
   }
-
 
   // ==========================================
   // Chunking
@@ -139,7 +162,6 @@ function mockEvaluation({
     }
   }
 
-
   // ==========================================
   // Few-shot Prompting
   // ==========================================
@@ -186,7 +208,6 @@ function mockEvaluation({
       ];
     }
   }
-
 
   // ==========================================
   // AI Agents
@@ -240,7 +261,6 @@ function mockEvaluation({
     }
   }
 
-
   // ==========================================
   // MCP
   // ==========================================
@@ -286,7 +306,6 @@ function mockEvaluation({
       ];
     }
   }
-
 
   // ==========================================
   // Deployment
@@ -338,7 +357,6 @@ function mockEvaluation({
     }
   }
 
-
   // ==========================================
   // AI Evaluation
   // ==========================================
@@ -387,7 +405,6 @@ function mockEvaluation({
       ];
     }
   }
-
 
   // ==========================================
   // System Design
@@ -441,7 +458,6 @@ function mockEvaluation({
       ];
     }
   }
-
 
   // ==========================================
   // Generic Fallback
@@ -498,9 +514,8 @@ function mockEvaluation({
     }
   }
 
-
   // ==========================================
-  // Add memory-aware feedback
+  // Memory-aware feedback
   // ==========================================
 
   const previousUserMessages =
@@ -513,7 +528,6 @@ function mockEvaluation({
     feedback +=
       " Your response is also being considered in the context of your previous interview answers.";
   }
-
 
   return {
     feedback,
@@ -530,6 +544,123 @@ function mockEvaluation({
   };
 }
 
+// ==========================================
+// Safely parse AI JSON
+// ==========================================
+
+function parseEvaluation(content) {
+  if (!content) {
+    throw new Error(
+      "AI returned an empty response."
+    );
+  }
+
+  // Sometimes an AI model may return
+  // ```json ... ```
+  // even though we asked for JSON only.
+
+  let cleaned =
+    String(content).trim();
+
+  cleaned = cleaned
+    .replace(/^```json\s*/i, "")
+    .replace(/^```\s*/i, "")
+    .replace(/\s*```$/i, "")
+    .trim();
+
+  const parsed =
+    JSON.parse(cleaned);
+
+  // ========================================
+  // Validate structure
+  // ========================================
+
+  if (
+    !parsed ||
+    typeof parsed !== "object"
+  ) {
+    throw new Error(
+      "AI returned invalid evaluation."
+    );
+  }
+
+  if (
+    typeof parsed.feedback !== "string"
+  ) {
+    throw new Error(
+      "AI evaluation feedback is missing."
+    );
+  }
+
+  if (
+    !parsed.score ||
+    typeof parsed.score !== "object"
+  ) {
+    throw new Error(
+      "AI evaluation score is missing."
+    );
+  }
+
+  const technical =
+    Number(parsed.score.technical);
+
+  const communication =
+    Number(
+      parsed.score.communication
+    );
+
+  const problemSolving =
+    Number(
+      parsed.score.problemSolving
+    );
+
+  if (
+    !Number.isFinite(technical) ||
+    !Number.isFinite(communication) ||
+    !Number.isFinite(problemSolving)
+  ) {
+    throw new Error(
+      "AI returned invalid scores."
+    );
+  }
+
+  return {
+    feedback:
+      parsed.feedback,
+
+    score: {
+      technical:
+        Math.max(
+          0,
+          Math.min(10, technical)
+        ),
+
+      communication:
+        Math.max(
+          0,
+          Math.min(10, communication)
+        ),
+
+      problemSolving:
+        Math.max(
+          0,
+          Math.min(10, problemSolving)
+        ),
+    },
+
+    strengths:
+      Array.isArray(
+        parsed.strengths
+      )
+        ? parsed.strengths
+        : [],
+
+    gaps:
+      Array.isArray(parsed.gaps)
+        ? parsed.gaps
+        : [],
+  };
+}
 
 // ==========================================
 // Main Evaluation Function
@@ -542,14 +673,13 @@ async function evaluateAnswer({
   answer,
   conversation = [],
 }) {
-
   // ==========================================
-  // No OpenAI API key
+  // Check OpenRouter configuration
   // ==========================================
 
   if (!client) {
     console.log(
-      "OPENAI_API_KEY not configured. Using topic-aware mock evaluation."
+      "OPENROUTER_API_KEY not configured. Using mock evaluation."
     );
 
     return mockEvaluation({
@@ -559,16 +689,37 @@ async function evaluateAnswer({
     });
   }
 
+  // ==========================================
+  // Candidate information
+  // ==========================================
+
+  const candidateName =
+    candidate?.name ||
+    "Employee Candidate";
 
   // ==========================================
-  // Real OpenAI Evaluation
+  // Limit conversation size
+  // ==========================================
+  //
+  // This prevents sending unnecessarily huge
+  // interview history to the model.
+  //
+  // ==========================================
+
+  const recentConversation =
+    Array.isArray(conversation)
+      ? conversation.slice(-20)
+      : [];
+
+  // ==========================================
+  // Evaluation prompt
   // ==========================================
 
   const prompt = `
 You are a senior AI engineer conducting a technical interview.
 
 Candidate:
-${candidate.name}
+${candidateName}
 
 Topic:
 ${topic}
@@ -581,7 +732,7 @@ ${answer}
 
 Previous Interview Conversation:
 ${JSON.stringify(
-  conversation,
+  recentConversation,
   null,
   2
 )}
@@ -605,53 +756,85 @@ Return ONLY valid JSON in this exact structure:
 Rules:
 
 - Scores must be between 0 and 10.
-- Give specific feedback.
+- Give specific and useful feedback.
 - Consider the candidate's previous answers.
 - Identify repeated strengths.
 - Identify knowledge gaps.
+- Do not invent information about the candidate.
 - Do not include markdown.
 - Do not include anything outside the JSON.
 `;
 
+  // ==========================================
+  // Call OpenRouter
+  // ==========================================
 
   try {
+    console.log(
+      "Sending evaluation to OpenRouter:",
+      process.env.OPENROUTER_MODEL
+    );
 
     const response =
       await client.chat.completions.create({
-        model: "gpt-4.1-mini",
+        model:
+          process.env.OPENROUTER_MODEL ||
+          "openai/gpt-oss-20b:free",
 
         messages: [
           {
             role: "system",
+
             content:
-              "You are a senior AI engineer evaluating technical interview answers.",
+              "You are a senior AI engineer evaluating technical interview answers. Return only valid JSON.",
           },
 
           {
             role: "user",
+
             content: prompt,
           },
         ],
 
         temperature: 0.2,
+
+        max_tokens: 1000,
+
+        // Ask the model for JSON output.
+        response_format: {
+          type: "json_object",
+        },
       });
 
+    // ========================================
+    // Get model response
+    // ========================================
 
     const content =
-      response.choices[0].message.content;
+      response?.choices?.[0]?.message?.content;
 
+    console.log(
+      "OpenRouter evaluation received."
+    );
+
+    // ========================================
+    // Parse response
+    // ========================================
 
     try {
-
-      return JSON.parse(content);
-
+      return parseEvaluation(
+        content
+      );
     } catch (parseError) {
-
       console.error(
-        "Failed to parse OpenAI response:"
+        "OpenRouter returned invalid JSON:",
+        parseError.message
       );
 
-      console.error(content);
+      console.error(
+        "Raw AI response:",
+        content
+      );
 
       return mockEvaluation({
         topic,
@@ -659,13 +842,23 @@ Rules:
         conversation,
       });
     }
-
   } catch (error) {
+    // ========================================
+    // OpenRouter failure
+    // ========================================
 
     console.error(
-      "OpenAI evaluation failed:",
-      error.message
+      "OpenRouter evaluation failed:"
     );
+
+    console.error(
+      error?.message ||
+        error
+    );
+
+    // ========================================
+    // Fallback
+    // ========================================
 
     return mockEvaluation({
       topic,
@@ -674,7 +867,6 @@ Rules:
     });
   }
 }
-
 
 // ==========================================
 // Export
