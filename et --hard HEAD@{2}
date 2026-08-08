@@ -1,0 +1,14 @@
+[33m9ded718[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m HEAD@{0}: reset: moving to HEAD
+[33m9ded718[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m HEAD@{1}: reset: moving to HEAD
+[33m9ded718[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m HEAD@{2}: pull origin main: Fast-forward
+[33me4d64e0[m HEAD@{3}: commit: pass
+[33m2485d62[m HEAD@{4}: commit: Pass
+[33m0e70b7d[m HEAD@{5}: commit: Backend start
+[33me75b147[m HEAD@{6}: commit: Interview page
+[33m6c6d39e[m HEAD@{7}: commit: Interview header
+[33mbf31afd[m HEAD@{8}: commit: candiate page
+[33mde92e47[m HEAD@{9}: commit: Recheck
+[33m0892806[m HEAD@{10}: pull origin main: Fast-forward
+[33m7ad18e1[m HEAD@{11}: pull origin main: Fast-forward
+[33meede23e[m HEAD@{12}: pull origin main: Fast-forward
+[33m7ce140e[m HEAD@{13}: clone: from https://github.com/Ranjanmaiti6/interview-agent-ai.git
