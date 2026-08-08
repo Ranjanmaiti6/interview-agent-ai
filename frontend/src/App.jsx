@@ -1,6 +1,6 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 
-import Login from "./pages/Login/Login";
+import Login from "./pages/Login/login";
 import AdminDashboard from "./pages/AdminDashboard/AdminDashboard";
 import EmployeeDashboard from "./pages/EmployeeDashboard/EmployeeDashboard";
 
