@@ -1,165 +1,133 @@
-const curriculum = require("../data/curriculum.json");
-const candidates = require("../data/candidates.json");
+const express = require("express");
+
+const router = express.Router();
 
 const {
-  addMessage,
-  getConversation,
-  clearConversation,
-} = require("./interviewMemory");
-
-const {
-  evaluateAnswer,
-} = require("../services/aiService");
-
-const questions = [
-  "Explain Retrieval-Augmented Generation (RAG).",
-  "Why is chunking important in RAG?",
-  "What is Few-shot Prompting?",
-  "Explain how AI Agents work.",
-  "What problem does Model Context Protocol (MCP) solve?",
-  "How would you deploy an LLM application?",
-  "How do you evaluate an AI system?",
-  "Design a production-ready AI architecture.",
-];
-
-async function generateQuestion(
-  answer,
-  questionNumber,
-  candidateId
-) {
-
-  // Find candidate
-  const candidate =
-    candidates.find(
-      (c) => c.id == candidateId
-    ) || candidates[0];
+  generateQuestion,
+} = require("../agent/interviewAgent");
 
 
-  // Find current curriculum topic
-  const topic =
-    curriculum[questionNumber] ||
-    curriculum[0];
+// ------------------------------------
+// POST /api/interview/answer
+// ------------------------------------
 
+router.post("/answer", async (req, res) => {
+  try {
 
-  // Store candidate answer
-  addMessage(
-    candidateId,
-    "user",
-    answer
-  );
-
-
-  // Get complete conversation
-  const conversation =
-    getConversation(candidateId);
-
-
-  // Ask AI to evaluate the answer
-  const evaluation =
-    await evaluateAnswer({
-      candidate,
-      topic: topic.topic,
-      question:
-        questions[questionNumber],
+    const {
       answer,
-      conversation,
+      questionNumber,
+      candidateId,
+    } = req.body;
+
+
+    // Validate answer
+    if (!answer || !answer.trim()) {
+      return res.status(400).json({
+        success: false,
+        error: "Answer is required",
+      });
+    }
+
+
+    // Validate question number
+    if (
+      questionNumber === undefined ||
+      questionNumber === null
+    ) {
+      return res.status(400).json({
+        success: false,
+        error: "Question number is required",
+      });
+    }
+
+
+    // Validate candidate
+    if (!candidateId) {
+      return res.status(400).json({
+        success: false,
+        error: "Candidate ID is required",
+      });
+    }
+
+
+    console.log(
+      "Interview answer received:",
+      {
+        candidateId,
+        questionNumber,
+      }
+    );
+
+
+    // Generate AI evaluation + next question
+    const response =
+      await generateQuestion(
+        answer,
+        Number(questionNumber),
+        candidateId
+      );
+
+
+    // Send response to frontend
+    return res.status(200).json({
+      success: true,
+
+      candidate:
+        response.candidate,
+
+      topic:
+        response.topic,
+
+      feedback:
+        response.feedback,
+
+      nextQuestion:
+        response.nextQuestion,
+
+      score:
+        response.score,
+
+      strengths:
+        response.strengths,
+
+      gaps:
+        response.gaps,
+
+      recommendation:
+        response.recommendation,
+
+      conversation:
+        response.conversation,
+
+      questionNumber:
+        response.questionNumber,
     });
 
 
-  // Store AI feedback
-  addMessage(
-    candidateId,
-    "assistant",
-    evaluation.feedback
-  );
+  } catch (error) {
+
+    console.error(
+      "Interview API error:",
+      error
+    );
 
 
-  // Convert AI scores into the format
-  // expected by the frontend
-  const score = {
-    technical:
-      evaluation.technical || 0,
+    return res.status(500).json({
+      success: false,
 
-    communication:
-      evaluation.communication || 0,
+      error:
+        "Failed to process interview answer.",
 
-    problemSolving:
-      evaluation.problemSolving || 0,
-  };
-
-
-  // AI-generated next question
-  const nextQuestion =
-    evaluation.nextQuestion ||
-    questions[questionNumber + 1] ||
-    "Interview Completed";
-
-
-  // AI-generated strengths
-  const strengths =
-    evaluation.strengths || [];
-
-
-  // AI-generated knowledge gaps
-  const gaps =
-    evaluation.gaps || [];
-
-
-  // Generate recommendation
-  const recommendation =
-    score.technical >= 8
-      ? "Recommended for AI Engineering Internship."
-      : "Needs more practice before technical interviews.";
-
-
-  // Get latest conversation
-  const currentConversation =
-    getConversation(candidateId);
-
-
-  // Save conversation before clearing it
-  const responseConversation =
-    [...currentConversation];
-
-
-  // Clear memory after question 8
-  if (questionNumber >= 7) {
-    clearConversation(candidateId);
+      message:
+        error.message,
+    });
   }
+});
 
 
-  // Return response to frontend
-  return {
+// ------------------------------------
+// Export router
+// ------------------------------------
 
-    candidate:
-      candidate.name,
-
-    topic:
-      topic.topic,
-
-    feedback:
-      evaluation.feedback,
-
-    nextQuestion,
-
-    score,
-
-    strengths,
-
-    gaps,
-
-    recommendation,
-
-    conversation:
-      responseConversation,
-
-    questionNumber:
-      questionNumber + 1,
-
-  };
-}
-
-
-module.exports = {
-  generateQuestion,
-};
+module.exports = router;
