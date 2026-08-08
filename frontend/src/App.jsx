@@ -1,119 +1,112 @@
-  import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 
-<<<<<<< HEAD
-  import Login from "./pages/Login/Login";
-  import AdminDashboard from "./pages/AdminDashboard/AdminDashboard";
-  import EmployeeDashboard from "./pages/EmployeeDashboard/EmployeeDashboard";
-import Login from "./pages/Login/login";
+import Login from "./pages/Login/Login";
 import AdminDashboard from "./pages/AdminDashboard/AdminDashboard";
 import EmployeeDashboard from "./pages/EmployeeDashboard/EmployeeDashboard";
->>>>>>> af7d66ebfad887a8a839eeffcf0fe530d9b3f8d4
 
-  import Landing from "./pages/Landing/Landing";
-  import Candidate from "./pages/Candidate/Candidate";
-  import Interview from "./pages/interview/Interview";
-  import Report from "./pages/Report/Report";
-  import CandidateDashboard from "./pages/CandidateDashboard/CandidateDashboard";
+import Landing from "./pages/Landing/Landing";
+import Candidate from "./pages/Candidate/Candidate";
+import Interview from "./pages/interview/Interview";
+import Report from "./pages/Report/Report";
+import CandidateDashboard from "./pages/CandidateDashboard/CandidateDashboard";
 
-  import Meetings from "./pages/meetings/Meetings";
-  import CreateMeeting from "./pages/meetings/CreateMeeting";
-  import MeetingRoom from "./pages/meetings/MeetingRoom";
+import Meetings from "./pages/meetings/Meetings";
+import CreateMeeting from "./pages/meetings/CreateMeeting";
+import MeetingRoom from "./pages/meetings/MeetingRoom";
 
-  import ProtectedRoute from "./components/auth/ProtectedRoute";
+import ProtectedRoute from "./components/auth/ProtectedRoute";
 
-  function App() {
-    return (
-      <BrowserRouter>
+function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
 
-        <Routes>
+        {/* ============================== */}
+        {/* Public */}
+        {/* ============================== */}
 
-          {/* ============================== */}
-          {/* Public */}
-          {/* ============================== */}
+        <Route
+          path="/"
+          element={<Landing />}
+        />
 
-          <Route
-            path="/"
-            element={<Landing />}
-          />
+        <Route
+          path="/login"
+          element={<Login />}
+        />
 
-          <Route
-            path="/login"
-            element={<Login />}
-          />
+        {/* ============================== */}
+        {/* Admin */}
+        {/* ============================== */}
 
-          {/* ============================== */}
-          {/* Admin */}
-          {/* ============================== */}
+        <Route
+          path="/admin"
+          element={
+            <ProtectedRoute role="admin">
+              <AdminDashboard />
+            </ProtectedRoute>
+          }
+        />
 
-          <Route
-            path="/admin"
-            element={
-              <ProtectedRoute role="admin">
-                <AdminDashboard />
-              </ProtectedRoute>
-            }
-          />
+        {/* ============================== */}
+        {/* Employee */}
+        {/* ============================== */}
 
-          {/* ============================== */}
-          {/* Employee */}
-          {/* ============================== */}
+        <Route
+          path="/employee"
+          element={
+            <ProtectedRoute role="employee">
+              <EmployeeDashboard />
+            </ProtectedRoute>
+          }
+        />
 
-          <Route
-            path="/employee"
-            element={
-              <ProtectedRoute role="employee">
-                <EmployeeDashboard />
-              </ProtectedRoute>
-            }
-          />
+        {/* ============================== */}
+        {/* Existing pages */}
+        {/* ============================== */}
 
-          {/* ============================== */}
-          {/* Existing pages */}
-          {/* ============================== */}
+        <Route
+          path="/candidate"
+          element={<Candidate />}
+        />
 
-          <Route
-            path="/candidate"
-            element={<Candidate />}
-          />
+        <Route
+          path="/interview"
+          element={<Interview />}
+        />
 
-          <Route
-            path="/interview"
-            element={<Interview />}
-          />
+        <Route
+          path="/report"
+          element={<Report />}
+        />
 
-          <Route
-            path="/report"
-            element={<Report />}
-          />
+        <Route
+          path="/candidate/:id"
+          element={<CandidateDashboard />}
+        />
 
-          <Route
-            path="/candidate/:id"
-            element={<CandidateDashboard />}
-          />
+        {/* ============================== */}
+        {/* Meetings */}
+        {/* ============================== */}
 
-          {/* ============================== */}
-          {/* Meetings */}
-          {/* ============================== */}
+        <Route
+          path="/meetings"
+          element={<Meetings />}
+        />
 
-          <Route
-            path="/meetings"
-            element={<Meetings />}
-          />
+        <Route
+          path="/meetings/create"
+          element={<CreateMeeting />}
+        />
 
-          <Route
-            path="/meetings/create"
-            element={<CreateMeeting />}
-          />
+        <Route
+          path="/meetings/:id"
+          element={<MeetingRoom />}
+        />
 
-          <Route
-            path="/meetings/:id"
-            element={<MeetingRoom />}
-          />
+      </Routes>
+    </BrowserRouter>
+  );
+}
 
-        </Routes>
-
-      </BrowserRouter>
-    );
-  }
-
-  export default App;
+export default App;
