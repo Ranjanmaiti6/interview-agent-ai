@@ -1,261 +1,419 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Calendar, Clock, Users, Video } from "lucide-react";
+
+const API_URL =
+  import.meta.env.VITE_API_URL ||
+  "http://localhost:5001";
 
 export default function CreateMeeting() {
   const navigate = useNavigate();
 
-  const [meetingType, setMeetingType] = useState("client");
-  const [title, setTitle] = useState("");
-  const [participant, setParticipant] = useState("");
-  const [date, setDate] = useState("");
-  const [time, setTime] = useState("");
-  const [duration, setDuration] = useState("30");
+  const [requests, setRequests] = useState([]);
+  const [loadingRequests, setLoadingRequests] =
+    useState(true);
 
-  const handleSubmit = (event) => {
+  const [title, setTitle] =
+    useState("AI Interview");
+
+  const [employeeEmail, setEmployeeEmail] =
+    useState("");
+
+  const [scheduledAt, setScheduledAt] =
+    useState("");
+
+  const [meetingUrl, setMeetingUrl] =
+    useState("");
+
+  const [loading, setLoading] =
+    useState(false);
+
+  const [error, setError] =
+    useState("");
+
+  const [success, setSuccess] =
+    useState("");
+
+  // ==========================================
+  // Load accepted employees
+  // ==========================================
+
+  const loadRequests = async () => {
+    try {
+      setLoadingRequests(true);
+      setError("");
+
+      const token =
+        localStorage.getItem("token");
+
+      const response = await fetch(
+        `${API_URL}/api/employee/requests`,
+        {
+          headers: {
+            Authorization:
+              `Bearer ${token}`,
+          },
+        }
+      );
+
+      const data =
+        await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data.message ||
+            "Unable to load employees."
+        );
+      }
+
+      const accepted =
+        (data.requests || []).filter(
+          (request) =>
+            request.status === "accepted"
+        );
+
+      setRequests(accepted);
+
+    } catch (error) {
+      console.error(
+        "Load employees error:",
+        error
+      );
+
+      setError(
+        error.message ||
+          "Unable to load employees."
+      );
+    } finally {
+      setLoadingRequests(false);
+    }
+  };
+
+  useEffect(() => {
+    loadRequests();
+  }, []);
+
+  // ==========================================
+  // Create meeting
+  // ==========================================
+
+  const handleSubmit = async (event) => {
     event.preventDefault();
 
-    const meeting = {
-      id: Date.now(),
-      type: meetingType,
-      title,
-      participant,
-      date,
-      time,
-      duration,
-    };
+    setError("");
+    setSuccess("");
 
-    // Temporary storage.
-    // Later we will replace this with the backend API.
-    const existingMeetings = JSON.parse(
-      localStorage.getItem("meetings") || "[]"
-    );
+    if (
+      !title.trim() ||
+      !employeeEmail ||
+      !scheduledAt
+    ) {
+      setError(
+        "Please fill in all required fields."
+      );
+      return;
+    }
 
-    localStorage.setItem(
-      "meetings",
-      JSON.stringify([...existingMeetings, meeting])
-    );
+    setLoading(true);
 
-    navigate("/meetings");
+    try {
+      const token =
+        localStorage.getItem("token");
+
+      const response = await fetch(
+        `${API_URL}/api/meetings`,
+        {
+          method: "POST",
+
+          headers: {
+            "Content-Type":
+              "application/json",
+
+            Authorization:
+              `Bearer ${token}`,
+          },
+
+          body: JSON.stringify({
+            title: title.trim(),
+            employeeEmail,
+            scheduledAt,
+            meetingUrl:
+              meetingUrl.trim() || null,
+          }),
+        }
+      );
+
+      const data =
+        await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data.message ||
+            "Unable to create meeting."
+        );
+      }
+
+      setSuccess(
+        "Meeting scheduled successfully."
+      );
+
+      setTitle("AI Interview");
+      setEmployeeEmail("");
+      setScheduledAt("");
+      setMeetingUrl("");
+
+    } catch (error) {
+      console.error(
+        "Create meeting error:",
+        error
+      );
+
+      setError(
+        error.message ||
+          "Unable to create meeting."
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="min-h-screen bg-slate-950 text-white">
 
-      <div className="max-w-3xl mx-auto px-6 py-10">
+      {/* ================================= */}
+      {/* Header */}
+      {/* ================================= */}
 
-        <button
-          onClick={() => navigate("/meetings")}
-          className="flex items-center gap-2 text-slate-400 hover:text-white mb-8"
-        >
-          <ArrowLeft size={18} />
-          Back to Meetings
-        </button>
+      <header className="border-b border-slate-800 bg-slate-900">
 
-        <p className="text-purple-400 uppercase tracking-[0.25em] text-sm font-semibold">
-          Meetings
-        </p>
+        <div className="max-w-4xl mx-auto px-6 py-5 flex items-center justify-between">
 
-        <h1 className="text-4xl font-black mt-2">
-          Create Meeting
-        </h1>
+          <div>
+            <p className="text-purple-400 text-sm font-semibold">
+              ADMIN
+            </p>
 
-        <p className="text-slate-400 mt-3">
-          Schedule a client or employee meeting.
-        </p>
+            <h1 className="text-2xl font-bold">
+              Create Meeting
+            </h1>
+          </div>
+
+          <button
+            onClick={() =>
+              navigate("/meetings")
+            }
+            className="border border-slate-700 hover:bg-slate-800 px-4 py-2 rounded-lg"
+          >
+            Back to Meetings
+          </button>
+
+        </div>
+
+      </header>
+
+      {/* ================================= */}
+      {/* Main */}
+      {/* ================================= */}
+
+      <main className="max-w-4xl mx-auto px-6 py-10">
+
+        <div className="mb-8">
+
+          <h2 className="text-4xl font-black">
+            Schedule Interview
+          </h2>
+
+          <p className="text-slate-400 mt-2">
+            Schedule an interview with an
+            accepted employee.
+          </p>
+
+        </div>
+
+        {/* ================================= */}
+        {/* Error */}
+        {/* ================================= */}
+
+        {error && (
+          <div className="mb-6 bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl p-4">
+            {error}
+          </div>
+        )}
+
+        {/* ================================= */}
+        {/* Success */}
+        {/* ================================= */}
+
+        {success && (
+          <div className="mb-6 bg-green-500/10 border border-green-500/20 text-green-400 rounded-xl p-4">
+            {success}
+          </div>
+        )}
+
+        {/* ================================= */}
+        {/* Form */}
+        {/* ================================= */}
 
         <form
           onSubmit={handleSubmit}
-          className="mt-8 bg-slate-900 border border-slate-800 rounded-2xl p-8"
+          className="bg-slate-900 border border-slate-800 rounded-2xl p-8"
         >
-
-          {/* Meeting Type */}
-
-          <label className="block text-sm font-semibold text-slate-300 mb-3">
-            Meeting Type
-          </label>
-
-          <div className="grid md:grid-cols-2 gap-4">
-
-            <button
-              type="button"
-              onClick={() => setMeetingType("client")}
-              className={`p-5 rounded-xl border text-left ${
-                meetingType === "client"
-                  ? "border-blue-500 bg-blue-500/10"
-                  : "border-slate-700 bg-slate-800"
-              }`}
-            >
-              <Users className="text-blue-400 mb-3" />
-
-              <p className="font-bold">
-                Client Meeting
-              </p>
-
-              <p className="text-sm text-slate-400 mt-1">
-                Meeting with a client.
-              </p>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setMeetingType("employee")}
-              className={`p-5 rounded-xl border text-left ${
-                meetingType === "employee"
-                  ? "border-blue-500 bg-blue-500/10"
-                  : "border-slate-700 bg-slate-800"
-              }`}
-            >
-              <Users className="text-green-400 mb-3" />
-
-              <p className="font-bold">
-                Employee Meeting
-              </p>
-
-              <p className="text-sm text-slate-400 mt-1">
-                Meeting with an employee.
-              </p>
-            </button>
-
-          </div>
-
 
           {/* Title */}
 
-          <div className="mt-6">
+          <div className="mb-6">
 
             <label className="block text-sm font-semibold text-slate-300 mb-2">
               Meeting Title
             </label>
 
             <input
+              type="text"
               value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Project Discussion"
+              onChange={(event) =>
+                setTitle(event.target.value)
+              }
+              placeholder="AI Interview"
               required
-              className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 outline-none focus:border-blue-500"
+              className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 outline-none focus:border-purple-500"
             />
 
           </div>
 
+          {/* Employee */}
 
-          {/* Participant */}
-
-          <div className="mt-6">
+          <div className="mb-6">
 
             <label className="block text-sm font-semibold text-slate-300 mb-2">
-              {meetingType === "client"
-                ? "Client Name"
-                : "Employee Name"}
+              Employee
+            </label>
+
+            {loadingRequests ? (
+              <div className="bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-slate-400">
+                Loading accepted employees...
+              </div>
+            ) : requests.length === 0 ? (
+              <div className="bg-yellow-500/10 border border-yellow-500/20 text-yellow-400 rounded-xl p-4">
+                No accepted employee requests
+                are available.
+              </div>
+            ) : (
+              <select
+                value={employeeEmail}
+                onChange={(event) =>
+                  setEmployeeEmail(
+                    event.target.value
+                  )
+                }
+                required
+                className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 outline-none focus:border-purple-500"
+              >
+
+                <option value="">
+                  Select employee
+                </option>
+
+                {requests.map(
+                  (request) => (
+                    <option
+                      key={request.id}
+                      value={request.email}
+                    >
+                      {request.name} —{" "}
+                      {request.email}
+                    </option>
+                  )
+                )}
+
+              </select>
+            )}
+
+          </div>
+
+          {/* Date/time */}
+
+          <div className="mb-6">
+
+            <label className="block text-sm font-semibold text-slate-300 mb-2">
+              Interview Date & Time
             </label>
 
             <input
-              value={participant}
-              onChange={(e) => setParticipant(e.target.value)}
-              placeholder={
-                meetingType === "client"
-                  ? "Client name"
-                  : "Employee name"
+              type="datetime-local"
+              value={scheduledAt}
+              onChange={(event) =>
+                setScheduledAt(
+                  event.target.value
+                )
               }
               required
-              className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 outline-none focus:border-blue-500"
+              className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 outline-none focus:border-purple-500"
             />
 
           </div>
 
+          {/* Meeting URL */}
 
-          {/* Date and Time */}
-
-          <div className="grid md:grid-cols-2 gap-5 mt-6">
-
-            <div>
-
-              <label className="block text-sm font-semibold text-slate-300 mb-2">
-                Date
-              </label>
-
-              <div className="relative">
-
-                <Calendar
-                  size={18}
-                  className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500"
-                />
-
-                <input
-                  type="date"
-                  value={date}
-                  onChange={(e) => setDate(e.target.value)}
-                  required
-                  className="w-full bg-slate-800 border border-slate-700 rounded-xl pl-11 pr-4 py-3 outline-none focus:border-blue-500"
-                />
-
-              </div>
-
-            </div>
-
-
-            <div>
-
-              <label className="block text-sm font-semibold text-slate-300 mb-2">
-                Time
-              </label>
-
-              <div className="relative">
-
-                <Clock
-                  size={18}
-                  className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500"
-                />
-
-                <input
-                  type="time"
-                  value={time}
-                  onChange={(e) => setTime(e.target.value)}
-                  required
-                  className="w-full bg-slate-800 border border-slate-700 rounded-xl pl-11 pr-4 py-3 outline-none focus:border-blue-500"
-                />
-
-              </div>
-
-            </div>
-
-          </div>
-
-
-          {/* Duration */}
-
-          <div className="mt-6">
+          <div className="mb-8">
 
             <label className="block text-sm font-semibold text-slate-300 mb-2">
-              Duration
+              Meeting URL
+              <span className="text-slate-500 font-normal">
+                {" "} (optional)
+              </span>
             </label>
 
-            <select
-              value={duration}
-              onChange={(e) => setDuration(e.target.value)}
-              className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 outline-none"
-            >
-              <option value="15">15 minutes</option>
-              <option value="30">30 minutes</option>
-              <option value="45">45 minutes</option>
-              <option value="60">60 minutes</option>
-              <option value="90">90 minutes</option>
-            </select>
+            <input
+              type="url"
+              value={meetingUrl}
+              onChange={(event) =>
+                setMeetingUrl(
+                  event.target.value
+                )
+              }
+              placeholder="https://..."
+              className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 outline-none focus:border-purple-500"
+            />
+
+            <p className="text-slate-500 text-sm mt-2">
+              You can add a meeting link now or
+              leave it empty for the moment.
+            </p>
 
           </div>
 
+          {/* Buttons */}
 
-          <button
-            type="submit"
-            className="w-full mt-8 flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 py-4 rounded-xl font-semibold"
-          >
-            <Video size={20} />
-            Create Meeting
-          </button>
+          <div className="flex flex-col sm:flex-row justify-end gap-3">
+
+            <button
+              type="button"
+              onClick={() =>
+                navigate("/meetings")
+              }
+              className="border border-slate-700 hover:bg-slate-800 px-5 py-3 rounded-xl"
+            >
+              Cancel
+            </button>
+
+            <button
+              type="submit"
+              disabled={
+                loading ||
+                loadingRequests ||
+                requests.length === 0
+              }
+              className="bg-purple-600 hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed px-6 py-3 rounded-xl font-semibold"
+            >
+              {loading
+                ? "Scheduling..."
+                : "Schedule Interview"}
+            </button>
+
+          </div>
 
         </form>
 
-      </div>
+      </main>
 
     </div>
   );

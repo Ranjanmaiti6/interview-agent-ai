@@ -1,294 +1,396 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  Plus,
-  Video,
-  Calendar,
-  Clock,
-  Users,
-} from "lucide-react";
+
+const API_URL =
+  import.meta.env.VITE_API_URL ||
+  "http://localhost:5001";
 
 export default function Meetings() {
   const navigate = useNavigate();
 
+  const user = JSON.parse(
+    localStorage.getItem("user") || "{}"
+  );
+
   const [meetings, setMeetings] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   // ==========================================
   // Load meetings
   // ==========================================
 
-  useEffect(() => {
-    const savedMeetings = JSON.parse(
-      localStorage.getItem("meetings") || "[]"
-    );
+  const loadMeetings = async () => {
+    try {
+      setLoading(true);
+      setError("");
 
-    setMeetings(savedMeetings);
+      const token =
+        localStorage.getItem("token");
+
+      const endpoint =
+        user.role === "admin"
+          ? "/api/meetings"
+          : "/api/meetings/my";
+
+      const response = await fetch(
+        `${API_URL}${endpoint}`,
+        {
+          headers: {
+            Authorization:
+              `Bearer ${token}`,
+          },
+        }
+      );
+
+      const data =
+        await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data.message ||
+            "Unable to load meetings."
+        );
+      }
+
+      setMeetings(
+        data.meetings || []
+      );
+
+    } catch (error) {
+      console.error(
+        "Load meetings error:",
+        error
+      );
+
+      setError(
+        error.message ||
+          "Unable to load meetings."
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadMeetings();
   }, []);
 
-
   // ==========================================
-  // Get meeting status
+  // Delete meeting
   // ==========================================
 
-  const getMeetingStatus = (meeting) => {
-    // If meeting was completed
-    if (meeting.status === "completed") {
-      return "Completed";
+  const deleteMeeting = async (id) => {
+    const confirmed =
+      window.confirm(
+        "Are you sure you want to delete this meeting?"
+      );
+
+    if (!confirmed) {
+      return;
     }
 
-    // If meeting is currently active
-    if (meeting.status === "in-progress") {
-      return "In Progress";
-    }
+    try {
+      const token =
+        localStorage.getItem("token");
 
-    // If someone has joined
-    if (meeting.status === "waiting") {
-      return "Waiting";
-    }
+      const response = await fetch(
+        `${API_URL}/api/meetings/${id}`,
+        {
+          method: "DELETE",
 
-    // Default
-    return "Scheduled";
+          headers: {
+            Authorization:
+              `Bearer ${token}`,
+          },
+        }
+      );
+
+      const data =
+        await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data.message ||
+            "Unable to delete meeting."
+        );
+      }
+
+      await loadMeetings();
+
+    } catch (error) {
+      console.error(
+        "Delete meeting error:",
+        error
+      );
+
+      setError(
+        error.message ||
+          "Unable to delete meeting."
+      );
+    }
   };
 
-
   // ==========================================
-  // Status styling
+  // Status color
   // ==========================================
 
-  const getStatusStyle = (status) => {
-    switch (status) {
-      case "Completed":
-        return "bg-green-500/10 text-green-400";
-
-      case "In Progress":
-        return "bg-blue-500/10 text-blue-400";
-
-      case "Waiting":
-        return "bg-yellow-500/10 text-yellow-400";
-
-      default:
-        return "bg-slate-500/10 text-slate-400";
+  const getStatusClass = (status) => {
+    if (status === "completed") {
+      return "bg-green-500/10 text-green-400";
     }
-  };
 
+    if (status === "cancelled") {
+      return "bg-red-500/10 text-red-400";
+    }
+
+    return "bg-blue-500/10 text-blue-400";
+  };
 
   return (
     <div className="min-h-screen bg-slate-950 text-white">
 
-      <div className="max-w-6xl mx-auto px-6 py-12">
+      {/* ================================= */}
+      {/* Header */}
+      {/* ================================= */}
 
-        {/* ==================================
-            Header
-        ================================== */}
+      <header className="border-b border-slate-800 bg-slate-900">
 
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+        <div className="max-w-7xl mx-auto px-6 py-5 flex items-center justify-between">
 
           <div>
-
-            <p className="text-purple-400 uppercase tracking-[0.25em] text-sm font-semibold">
-              Meetings
+            <p className="text-purple-400 text-sm font-semibold">
+              MEETINGS
             </p>
 
-            <h1 className="text-4xl font-black mt-2">
-              Meetings
+            <h1 className="text-2xl font-bold">
+              {user.role === "admin"
+                ? "Manage Meetings"
+                : "My Meetings"}
             </h1>
-
-            <p className="text-slate-400 mt-2">
-              Manage client and employee meetings.
-            </p>
-
           </div>
-
-
-          {/* Create Meeting */}
 
           <button
             onClick={() =>
-              navigate("/meetings/create")
+              navigate(
+                user.role === "admin"
+                  ? "/admin"
+                  : "/employee"
+              )
             }
-            className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 px-5 py-3 rounded-xl font-semibold"
+            className="border border-slate-700 hover:bg-slate-800 px-4 py-2 rounded-lg"
           >
-            <Plus size={20} />
-            Create Meeting
+            Dashboard
           </button>
 
         </div>
 
+      </header>
 
-        {/* ==================================
-            No Meetings
-        ================================== */}
+      {/* ================================= */}
+      {/* Main */}
+      {/* ================================= */}
 
-        {meetings.length === 0 ? (
+      <main className="max-w-7xl mx-auto px-6 py-10">
 
-          <div className="mt-10 bg-slate-900 border border-slate-800 rounded-2xl p-12 text-center">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
 
-            <Video
-              size={52}
-              className="mx-auto text-purple-500"
-            />
-
-            <h2 className="text-2xl font-bold mt-5">
-              No meetings yet
+          <div>
+            <h2 className="text-4xl font-black">
+              Meetings
             </h2>
 
-            <p className="text-slate-400 mt-3">
-              Create your first client or employee meeting.
+            <p className="text-slate-400 mt-2">
+              {user.role === "admin"
+                ? "Schedule and manage employee interviews."
+                : "View your scheduled interviews."}
             </p>
+          </div>
 
+          {user.role === "admin" && (
             <button
               onClick={() =>
-                navigate("/meetings/create")
+                navigate(
+                  "/meetings/create"
+                )
               }
-              className="mt-7 bg-purple-600 hover:bg-purple-700 px-6 py-3 rounded-xl font-semibold"
+              className="bg-purple-600 hover:bg-purple-700 px-5 py-3 rounded-xl font-semibold"
             >
-              Create Your First Meeting
+              + Create Meeting
+            </button>
+          )}
+
+        </div>
+
+        {/* ================================= */}
+        {/* Error */}
+        {/* ================================= */}
+
+        {error && (
+          <div className="mb-6 bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl p-4">
+            {error}
+          </div>
+        )}
+
+        {/* ================================= */}
+        {/* Loading */}
+        {/* ================================= */}
+
+        {loading && (
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-10 text-center text-slate-400">
+            Loading meetings...
+          </div>
+        )}
+
+        {/* ================================= */}
+        {/* No meetings */}
+        {/* ================================= */}
+
+        {!loading &&
+          meetings.length === 0 && (
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-10 text-center">
+
+              <h3 className="text-xl font-bold">
+                No Meetings
+              </h3>
+
+              <p className="text-slate-400 mt-2">
+                {user.role === "admin"
+                  ? "Create a meeting to schedule an employee interview."
+                  : "You do not have any scheduled meetings yet."}
+              </p>
+
+            </div>
+          )}
+
+        {/* ================================= */}
+        {/* Meeting list */}
+        {/* ================================= */}
+
+        {!loading &&
+          meetings.length > 0 && (
+
+            <div className="space-y-4">
+
+              {meetings.map(
+                (meeting) => (
+
+                  <div
+                    key={meeting.id}
+                    className="bg-slate-900 border border-slate-800 rounded-2xl p-6"
+                  >
+
+                    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+
+                      {/* Meeting info */}
+
+                      <div>
+
+                        <h3 className="text-xl font-bold">
+                          {meeting.title}
+                        </h3>
+
+                        <p className="text-slate-400 mt-2">
+                          {user.role === "admin"
+                            ? meeting.employee_email
+                            : "Interview"}
+                        </p>
+
+                        <p className="text-slate-400 mt-1">
+                          {meeting.scheduled_at
+                            ? new Date(
+                                meeting.scheduled_at
+                              ).toLocaleString()
+                            : "No scheduled time"}
+                        </p>
+
+                      </div>
+
+                      {/* Status */}
+
+                      <span
+                        className={`inline-block w-fit px-3 py-1 rounded-full text-sm font-semibold ${getStatusClass(
+                          meeting.status
+                        )}`}
+                      >
+                        {meeting.status ||
+                          "scheduled"}
+                      </span>
+
+                      {/* Actions */}
+
+                      <div className="flex flex-wrap gap-3">
+
+                        {meeting.meeting_url && (
+                          <button
+                            onClick={() =>
+                              window.open(
+                                meeting.meeting_url,
+                                "_blank"
+                              )
+                            }
+                            className="bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg font-semibold"
+                          >
+                            Join Meeting
+                          </button>
+                        )}
+
+                        {user.role ===
+                          "admin" && (
+                          <>
+                            <button
+                              onClick={() =>
+                                navigate(
+                                  `/meetings/${meeting.id}`
+                                )
+                              }
+                              className="border border-slate-700 hover:bg-slate-800 px-4 py-2 rounded-lg"
+                            >
+                              View
+                            </button>
+
+                            <button
+                              onClick={() =>
+                                deleteMeeting(
+                                  meeting.id
+                                )
+                              }
+                              className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg font-semibold"
+                            >
+                              Delete
+                            </button>
+                          </>
+                        )}
+
+                      </div>
+
+                    </div>
+
+                  </div>
+                )
+              )}
+
+            </div>
+          )}
+
+        {/* ================================= */}
+        {/* Refresh */}
+        {/* ================================= */}
+
+        {!loading && (
+          <div className="mt-8">
+
+            <button
+              onClick={loadMeetings}
+              className="border border-slate-700 hover:bg-slate-800 px-4 py-2 rounded-lg"
+            >
+              Refresh Meetings
             </button>
 
           </div>
-
-        ) : (
-
-          /* ==================================
-             Meeting Cards
-          ================================== */
-
-          <div className="grid md:grid-cols-2 gap-6 mt-10">
-
-            {meetings.map((meeting) => {
-
-              const status =
-                getMeetingStatus(meeting);
-
-              return (
-
-                <div
-                  key={meeting.id}
-                  className="bg-slate-900 border border-slate-800 rounded-2xl p-6"
-                >
-
-                  {/* Meeting Type */}
-
-                  <div className="flex items-center justify-between">
-
-                    <span
-                      className={`px-3 py-1 rounded-full text-sm font-semibold ${
-                        meeting.type === "client"
-                          ? "bg-blue-500/10 text-blue-400"
-                          : "bg-green-500/10 text-green-400"
-                      }`}
-                    >
-                      {meeting.type === "client"
-                        ? "Client Meeting"
-                        : "Employee Meeting"}
-                    </span>
-
-                    <Video
-                      size={22}
-                      className="text-purple-400"
-                    />
-
-                  </div>
-
-
-                  {/* Title */}
-
-                  <h2 className="text-2xl font-bold mt-5">
-                    {meeting.title}
-                  </h2>
-
-
-                  {/* Participant */}
-
-                  <div className="flex items-center gap-3 text-slate-300 mt-5">
-
-                    <Users size={18} />
-
-                    <span>
-                      {meeting.participant}
-                    </span>
-
-                  </div>
-
-
-                  {/* Date */}
-
-                  <div className="flex items-center gap-3 text-slate-400 mt-4">
-
-                    <Calendar size={18} />
-
-                    <span>
-                      {meeting.date}
-                    </span>
-
-                  </div>
-
-
-                  {/* Time */}
-
-                  <div className="flex items-center gap-3 text-slate-400 mt-3">
-
-                    <Clock size={18} />
-
-                    <span>
-                      {meeting.time} ·{" "}
-                      {meeting.duration} minutes
-                    </span>
-
-                  </div>
-
-
-                  {/* Dynamic Status */}
-
-                  <div className="flex items-center gap-3 mt-4">
-
-                    <span className="text-sm text-slate-400">
-                      Status:
-                    </span>
-
-                    <span
-                      className={`px-3 py-1 rounded-full text-sm font-semibold ${getStatusStyle(
-                        status
-                      )}`}
-                    >
-                      {status}
-                    </span>
-
-                  </div>
-
-
-                  {/* Join Button */}
-
-                  <button
-                    onClick={() =>
-                      navigate(
-                        `/meetings/${meeting.id}`
-                      )
-                    }
-                    className="w-full mt-6 bg-purple-600 hover:bg-purple-700 py-3 rounded-xl font-semibold flex items-center justify-center gap-2"
-                  >
-
-                    <Video size={19} />
-
-                    {status === "In Progress"
-                      ? "Join Meeting"
-                      : status === "Completed"
-                      ? "View Meeting"
-                      : "Join Meeting"}
-
-                  </button>
-
-                </div>
-
-              );
-
-            })}
-
-          </div>
-
         )}
 
-      </div>
+      </main>
 
     </div>
   );

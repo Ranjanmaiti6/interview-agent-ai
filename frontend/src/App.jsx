@@ -47,6 +47,23 @@ function App() {
             </ProtectedRoute>
           }
         />
+        <Route
+  path="/admin/meetings"
+  element={
+    <ProtectedRoute role="admin">
+      <Meetings />
+    </ProtectedRoute>
+  }
+/>
+
+<Route
+  path="/admin/reports"
+  element={
+    <ProtectedRoute role="admin">
+      <Report />
+    </ProtectedRoute>
+  }
+/>
 
         {/* ============================== */}
         {/* Employee */}

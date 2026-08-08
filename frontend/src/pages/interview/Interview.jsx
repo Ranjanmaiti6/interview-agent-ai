@@ -7,12 +7,12 @@ import {
 import {
   useSearchParams,
   useNavigate,
+  useLocation,
 } from "react-router-dom";
 
 import InterviewHeader from "../../components/interview/InterviewHeader";
 import ChatMessage from "../../components/interview/ChatMessage";
 import InterviewInput from "../../components/interview/InterviewInput";
-
 
 // ==========================================
 // API URL
@@ -21,7 +21,6 @@ import InterviewInput from "../../components/interview/InterviewInput";
 const API_URL =
   import.meta.env.VITE_API_URL ||
   "http://localhost:5001";
-
 
 // ==========================================
 // Interview topics
@@ -38,7 +37,6 @@ const topics = [
   "System Design",
 ];
 
-
 // ==========================================
 // Difficulty
 // ==========================================
@@ -54,15 +52,39 @@ const difficulties = [
   "Hard",
 ];
 
-
 export default function Interview() {
-
   const [searchParams] =
     useSearchParams();
 
   const navigate =
     useNavigate();
 
+  const location =
+    useLocation();
+
+  // ========================================
+  // Logged-in user
+  // ========================================
+
+  const user = JSON.parse(
+    localStorage.getItem("user") || "{}"
+  );
+
+  // ========================================
+  // Meeting information
+  // ========================================
+
+  const meetingId =
+    location.state?.meetingId || null;
+
+  const meetingEmployeeEmail =
+    location.state?.employeeEmail ||
+    user.email ||
+    null;
+
+  const meetingTitle =
+    location.state?.meetingTitle ||
+    "AI Interview";
 
   // ========================================
   // Candidate
@@ -71,19 +93,15 @@ export default function Interview() {
   const candidateId =
     searchParams.get("id");
 
-
   const candidateName =
-    candidateId === "1"
-      ? "Riya Sharma"
-      : "Arjun Patel";
-
+    user.name ||
+    "Employee";
 
   // ========================================
   // Interview configuration
   // ========================================
 
   const totalQuestions = 8;
-
 
   // ========================================
   // State
@@ -94,18 +112,15 @@ export default function Interview() {
     setQuestionNumber,
   ] = useState(1);
 
-
   const [
     loading,
     setLoading,
   ] = useState(false);
 
-
   const [
     completed,
     setCompleted,
   ] = useState(false);
-
 
   const [
     score,
@@ -116,12 +131,10 @@ export default function Interview() {
     problemSolving: 0,
   });
 
-
   const [
     allScores,
     setAllScores,
   ] = useState([]);
-
 
   // ========================================
   // Chat messages
@@ -135,12 +148,12 @@ export default function Interview() {
       role: "ai",
 
       text:
-        "Welcome to your AI Technical Interview.\n\n" +
-        "Let's begin.\n\n" +
-        "Explain how Retrieval-Augmented Generation (RAG) works in an AI application.",
+        `Welcome to your AI Technical Interview.\n\n` +
+        `Meeting: ${meetingTitle}\n\n` +
+        `Let's begin.\n\n` +
+        `Explain how Retrieval-Augmented Generation (RAG) works in an AI application.`,
     },
   ]);
-
 
   // ========================================
   // Bottom reference
@@ -149,22 +162,18 @@ export default function Interview() {
   const bottomRef =
     useRef(null);
 
-
   // ========================================
   // Auto scroll
   // ========================================
 
   useEffect(() => {
-
     bottomRef.current?.scrollIntoView({
       behavior: "smooth",
     });
-
   }, [
     messages,
     loading,
   ]);
-
 
   // ========================================
   // Send answer
@@ -173,7 +182,6 @@ export default function Interview() {
   const sendAnswer = async (
     answer
   ) => {
-
     // --------------------------------------
     // Prevent invalid submissions
     // --------------------------------------
@@ -187,28 +195,22 @@ export default function Interview() {
       return;
     }
 
-
     // --------------------------------------
     // Add candidate answer
     // --------------------------------------
 
     setMessages((prev) => [
-
       ...prev,
 
       {
         role: "user",
         text: answer.trim(),
       },
-
     ]);
-
 
     setLoading(true);
 
-
     try {
-
       // ====================================
       // API endpoint
       // ====================================
@@ -216,12 +218,17 @@ export default function Interview() {
       const endpoint =
         `${API_URL}/api/interview/answer`;
 
-
       console.log(
         "Sending interview answer to:",
         endpoint
       );
 
+      // ====================================
+      // Authentication
+      // ====================================
+
+      const token =
+        localStorage.getItem("token");
 
       // ====================================
       // Backend request
@@ -236,10 +243,16 @@ export default function Interview() {
             headers: {
               "Content-Type":
                 "application/json",
+
+              ...(token
+                ? {
+                    Authorization:
+                      `Bearer ${token}`,
+                  }
+                : {}),
             },
 
             body: JSON.stringify({
-
               answer:
                 answer.trim(),
 
@@ -249,22 +262,23 @@ export default function Interview() {
 
               candidateId,
 
+              meetingId,
+
+              employeeEmail:
+                meetingEmployeeEmail,
             }),
           }
         );
-
 
       // ====================================
       // HTTP error
       // ====================================
 
       if (!response.ok) {
-
         let errorMessage =
           `Backend returned ${response.status}`;
 
         try {
-
           const errorData =
             await response.json();
 
@@ -274,7 +288,6 @@ export default function Interview() {
             errorMessage =
               errorData.message;
           }
-
         } catch {
           // Ignore JSON parsing error
         }
@@ -284,7 +297,6 @@ export default function Interview() {
         );
       }
 
-
       // ====================================
       // Parse response
       // ====================================
@@ -292,12 +304,10 @@ export default function Interview() {
       const data =
         await response.json();
 
-
       console.log(
         "Interview response:",
         data
       );
-
 
       // ====================================
       // Latest score
@@ -310,11 +320,9 @@ export default function Interview() {
           problemSolving: 0,
         };
 
-
       setScore(
         latestScore
       );
-
 
       // ====================================
       // Store all question scores
@@ -325,18 +333,15 @@ export default function Interview() {
         latestScore,
       ];
 
-
       setAllScores(
         updatedScores
       );
-
 
       // ====================================
       // Feedback
       // ====================================
 
       setMessages((prev) => [
-
         ...prev,
 
         {
@@ -348,9 +353,7 @@ export default function Interview() {
               "Good answer."
             }`,
         },
-
       ]);
-
 
       // ====================================
       // Interview completed
@@ -360,12 +363,9 @@ export default function Interview() {
         questionNumber >=
         totalQuestions
       ) {
-
         setCompleted(true);
 
-
         setMessages((prev) => [
-
           ...prev,
 
           {
@@ -376,21 +376,17 @@ export default function Interview() {
               "Your answers have been evaluated. " +
               "We're now preparing your personalized AI report.",
           },
-
         ]);
-
 
         // ----------------------------------
         // Go to report
         // ----------------------------------
 
         setTimeout(() => {
-
           navigate(
             "/report",
             {
               state: {
-
                 score:
                   latestScore,
 
@@ -411,23 +407,25 @@ export default function Interview() {
 
                 candidateName,
 
+                meetingId,
+
+                meetingTitle,
+
+                employeeEmail:
+                  meetingEmployeeEmail,
               },
             }
           );
-
         }, 2500);
-
 
         return;
       }
-
 
       // ====================================
       // Next question
       // ====================================
 
       setMessages((prev) => [
-
         ...prev,
 
         {
@@ -439,9 +437,7 @@ export default function Interview() {
               "Let's continue with the next question."
             }`,
         },
-
       ]);
-
 
       // ====================================
       // Increment question
@@ -452,7 +448,6 @@ export default function Interview() {
       );
 
     } catch (error) {
-
       // ====================================
       // Error handling
       // ====================================
@@ -462,9 +457,7 @@ export default function Interview() {
         error
       );
 
-
       setMessages((prev) => [
-
         ...prev,
 
         {
@@ -472,29 +465,22 @@ export default function Interview() {
 
           text:
             `⚠️ Backend error.\n\n` +
-            `Unable to connect to ${API_URL}.\n\n` +
+            `${error.message}\n\n` +
             `Please check that the backend is running and the API URL is configured correctly.`,
         },
-
       ]);
 
     } finally {
-
       setLoading(false);
-
     }
-
   };
-
 
   // ==========================================
   // Completion screen
   // ==========================================
 
   if (completed) {
-
     return (
-
       <div className="min-h-screen bg-slate-950 flex items-center justify-center px-6">
 
         <div className="text-center max-w-xl w-full">
@@ -503,16 +489,13 @@ export default function Interview() {
             🎉
           </div>
 
-
           <h1 className="text-4xl md:text-5xl font-black text-white">
             Interview Completed
           </h1>
 
-
           <p className="text-slate-400 text-lg mt-4">
             Great work, {candidateName}.
           </p>
-
 
           <div className="mt-8 bg-slate-900 border border-slate-800 rounded-2xl p-8">
 
@@ -520,11 +503,9 @@ export default function Interview() {
               🤖
             </div>
 
-
             <h2 className="text-xl font-bold text-white">
               Generating Your AI Report...
             </h2>
-
 
             <p className="text-slate-400 mt-4 leading-7">
               We're analyzing your
@@ -534,13 +515,11 @@ export default function Interview() {
               performance.
             </p>
 
-
             <div className="mt-8 w-full bg-slate-800 rounded-full h-2 overflow-hidden">
 
               <div className="bg-blue-500 h-2 rounded-full animate-pulse w-full" />
 
             </div>
-
 
             <p className="text-slate-500 text-sm mt-4">
               Please wait...
@@ -551,23 +530,19 @@ export default function Interview() {
         </div>
 
       </div>
-
     );
   }
-
 
   // ==========================================
   // Interview screen
   // ==========================================
 
   return (
-
     <div className="min-h-screen bg-slate-950 flex flex-col">
 
       {/* Header */}
 
       <InterviewHeader
-
         questionNumber={
           questionNumber
         }
@@ -591,9 +566,7 @@ export default function Interview() {
             questionNumber - 1
           ]
         }
-
       />
-
 
       {/* Chat area */}
 
@@ -606,29 +579,21 @@ export default function Interview() {
               message,
               index
             ) => (
-
               <ChatMessage
-
                 key={index}
-
                 role={
                   message.role
                 }
-
                 text={
                   message.text
                 }
-
               />
-
             )
           )}
-
 
           {/* Loading */}
 
           {loading && (
-
             <div className="flex justify-start">
 
               <div className="bg-slate-800 rounded-xl px-5 py-3 text-blue-400 italic animate-pulse">
@@ -638,9 +603,7 @@ export default function Interview() {
               </div>
 
             </div>
-
           )}
-
 
           <div
             ref={bottomRef}
@@ -649,7 +612,6 @@ export default function Interview() {
         </div>
 
       </div>
-
 
       {/* Input */}
 
@@ -660,7 +622,5 @@ export default function Interview() {
       />
 
     </div>
-
-
   );
-} 
+}

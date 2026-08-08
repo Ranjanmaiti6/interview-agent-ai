@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 const API_URL =
@@ -12,6 +12,10 @@ export default function EmployeeDashboard() {
     localStorage.getItem("user") || "{}"
   );
 
+  // ==========================================
+  // State
+  // ==========================================
+
   const [requestStatus, setRequestStatus] =
     useState("");
 
@@ -21,6 +25,11 @@ export default function EmployeeDashboard() {
   const [resume, setResume] =
     useState(null);
 
+  const [myRequest, setMyRequest] =
+    useState(null);
+
+  const [requestLoading, setRequestLoading] =
+    useState(true);
 
   // ==========================================
   // Logout
@@ -33,13 +42,72 @@ export default function EmployeeDashboard() {
     navigate("/login");
   };
 
+  // ==========================================
+  // Load my interview request
+  // ==========================================
+
+  const loadMyRequest = async () => {
+    try {
+      setRequestLoading(true);
+
+      const token =
+        localStorage.getItem("token");
+
+      const response = await fetch(
+        `${API_URL}/api/employee/my-request`,
+        {
+          method: "GET",
+
+          headers: {
+            Authorization:
+              `Bearer ${token}`,
+          },
+        }
+      );
+
+      const data =
+        await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data.message ||
+            "Unable to load interview request."
+        );
+      }
+
+      setMyRequest(
+        data.request || null
+      );
+
+    } catch (error) {
+
+      console.error(
+        "Load my request error:",
+        error
+      );
+
+    } finally {
+
+      setRequestLoading(false);
+
+    }
+  };
+
+  // ==========================================
+  // Load request when dashboard opens
+  // ==========================================
+
+  useEffect(() => {
+    loadMyRequest();
+  }, []);
 
   // ==========================================
   // Select Resume
   // ==========================================
 
   const handleResumeChange = (event) => {
-    const file = event.target.files?.[0];
+    const file =
+      event.target.files?.[0];
 
     if (!file) {
       setResume(null);
@@ -66,7 +134,10 @@ export default function EmployeeDashboard() {
     }
 
     // Maximum 5 MB
-    if (file.size > 5 * 1024 * 1024) {
+    if (
+      file.size >
+      5 * 1024 * 1024
+    ) {
       setResume(null);
 
       setRequestStatus(
@@ -83,119 +154,146 @@ export default function EmployeeDashboard() {
     setRequestStatus("");
   };
 
-
   // ==========================================
   // Submit Interview Request
   // ==========================================
 
-  const submitInterviewRequest = async () => {
+  const submitInterviewRequest =
+    async () => {
 
-    if (!resume) {
-      setRequestStatus(
-        "Please upload your resume before submitting the request."
-      );
+      if (!resume) {
+        setRequestStatus(
+          "Please upload your resume before submitting the request."
+        );
 
-      return;
-    }
+        return;
+      }
 
-    setLoading(true);
-    setRequestStatus("");
+      setLoading(true);
+      setRequestStatus("");
 
+      try {
 
-    try {
-      const token =
-        localStorage.getItem("token");
+        const token =
+          localStorage.getItem("token");
 
+        // ========================================
+        // Create multipart form data
+        // ========================================
 
-      // ========================================
-      // Create multipart form data
-      // ========================================
+        const formData =
+          new FormData();
 
-      const formData = new FormData();
+        formData.append(
+          "name",
+          user.name || "Employee"
+        );
 
-      formData.append(
-        "name",
-        user.name || "Employee"
-      );
+        formData.append(
+          "email",
+          user.email || ""
+        );
 
-      formData.append(
-        "email",
-        user.email || ""
-      );
+        formData.append(
+          "resume",
+          resume
+        );
 
-      formData.append(
-        "resume",
-        resume
-      );
+        // ========================================
+        // Send request
+        // ========================================
 
+        const response =
+          await fetch(
+            `${API_URL}/api/employee/request`,
+            {
+              method: "POST",
 
-      // ========================================
-      // Send request
-      // ========================================
+              headers: {
+                Authorization:
+                  `Bearer ${token}`,
+              },
 
-      const response = await fetch(
-        `${API_URL}/api/employee/request`,
-        {
-          method: "POST",
+              body: formData,
+            }
+          );
 
-          headers: {
-            Authorization:
-              `Bearer ${token}`,
-          },
+        const data =
+          await response.json();
 
-          body: formData,
+        if (!response.ok) {
+          throw new Error(
+            data.message ||
+              "Unable to submit request."
+          );
         }
-      );
 
+        setRequestStatus(
+          "Request submitted successfully. The admin will review your resume and request."
+        );
 
-      const data =
-        await response.json();
+        setResume(null);
 
+        // ========================================
+        // Reload request status
+        // ========================================
 
-      if (!response.ok) {
-        throw new Error(
-          data.message ||
+        await loadMyRequest();
+
+        // ========================================
+        // Reset file input
+        // ========================================
+
+        const fileInput =
+          document.getElementById(
+            "resume-upload"
+          );
+
+        if (fileInput) {
+          fileInput.value = "";
+        }
+
+      } catch (error) {
+
+        console.error(
+          "Request error:",
+          error
+        );
+
+        setRequestStatus(
+          error.message ||
             "Unable to submit request."
         );
+
+      } finally {
+
+        setLoading(false);
+
       }
+    };
 
+  // ==========================================
+  // Request status helper
+  // ==========================================
 
-      setRequestStatus(
-        "Request submitted successfully. The admin will review your resume and request."
-      );
+  const getStatusClasses = () => {
 
-      setResume(null);
-
-
-      // Reset file input
-      const fileInput =
-        document.getElementById(
-          "resume-upload"
-        );
-
-      if (fileInput) {
-        fileInput.value = "";
-      }
-
-    } catch (error) {
-
-      console.error(
-        "Request error:",
-        error
-      );
-
-      setRequestStatus(
-        error.message ||
-          "Unable to submit request."
-      );
-
-    } finally {
-
-      setLoading(false);
-
+    if (
+      myRequest?.status ===
+      "accepted"
+    ) {
+      return "bg-green-500/10 text-green-400 border-green-500/20";
     }
-  };
 
+    if (
+      myRequest?.status ===
+      "rejected"
+    ) {
+      return "bg-red-500/10 text-red-400 border-red-500/20";
+    }
+
+    return "bg-yellow-500/10 text-yellow-400 border-yellow-500/20";
+  };
 
   return (
     <div className="min-h-screen bg-slate-950 text-white">
@@ -231,7 +329,6 @@ export default function EmployeeDashboard() {
 
       </header>
 
-
       {/* ================================= */}
       {/* Main */}
       {/* ================================= */}
@@ -239,7 +336,8 @@ export default function EmployeeDashboard() {
       <main className="max-w-7xl mx-auto px-6 py-10">
 
         <h2 className="text-4xl font-black">
-          Welcome, {user.name || "Employee"}
+          Welcome,{" "}
+          {user.name || "Employee"}
         </h2>
 
         <p className="text-slate-400 mt-2">
@@ -247,6 +345,140 @@ export default function EmployeeDashboard() {
           your interviews.
         </p>
 
+        {/* ================================= */}
+        {/* My Interview Request Status */}
+        {/* ================================= */}
+
+        <div className="mt-10 bg-slate-900 border border-slate-800 rounded-2xl p-8">
+
+          <p className="text-purple-400 text-sm font-semibold uppercase">
+            Request Status
+          </p>
+
+          <h3 className="text-2xl font-bold mt-2">
+            My Interview Request
+          </h3>
+
+          {requestLoading ? (
+
+            <div className="mt-6 text-slate-400">
+              Loading request status...
+            </div>
+
+          ) : !myRequest ? (
+
+            <div className="mt-6">
+
+              <p className="text-slate-400">
+                You have not submitted an
+                interview request yet.
+              </p>
+
+            </div>
+
+          ) : (
+
+            <div className="mt-6">
+
+              {/* Status */}
+
+              <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+
+                <span className="text-slate-400">
+                  Current status:
+                </span>
+
+                <span
+                  className={`inline-flex w-fit px-4 py-2 rounded-full border text-sm font-semibold capitalize ${getStatusClasses()}`}
+                >
+                  {myRequest.status ||
+                    "pending"}
+                </span>
+
+              </div>
+
+              {/* Submitted date */}
+
+              <p className="text-slate-500 text-sm mt-4">
+
+                Submitted:{" "}
+
+                {myRequest.createdAt
+                  ? new Date(
+                      myRequest.createdAt
+                    ).toLocaleString()
+                  : "Unknown"}
+
+              </p>
+
+              {/* Pending */}
+
+              {myRequest.status ===
+                "pending" && (
+
+                <div className="mt-5 bg-yellow-500/10 border border-yellow-500/20 rounded-xl p-4">
+
+                  <p className="text-yellow-400 font-semibold">
+                    Waiting for admin review
+                  </p>
+
+                  <p className="text-slate-400 text-sm mt-1">
+                    Your resume and interview
+                    request are currently being
+                    reviewed by the admin.
+                  </p>
+
+                </div>
+
+              )}
+
+              {/* Accepted */}
+
+              {myRequest.status ===
+                "accepted" && (
+
+                <div className="mt-5 bg-green-500/10 border border-green-500/20 rounded-xl p-4">
+
+                  <p className="text-green-400 font-semibold">
+                    Interview request accepted
+                  </p>
+
+                  <p className="text-slate-400 text-sm mt-1">
+                    Your interview request has
+                    been accepted. You can now
+                    proceed with the interview
+                    process.
+                  </p>
+
+                </div>
+
+              )}
+
+              {/* Rejected */}
+
+              {myRequest.status ===
+                "rejected" && (
+
+                <div className="mt-5 bg-red-500/10 border border-red-500/20 rounded-xl p-4">
+
+                  <p className="text-red-400 font-semibold">
+                    Interview request rejected
+                  </p>
+
+                  <p className="text-slate-400 text-sm mt-1">
+                    Your interview request was
+                    rejected by the admin.
+                  </p>
+
+                </div>
+
+              )}
+
+            </div>
+
+          )}
+
+        </div>
 
         {/* ================================= */}
         {/* Interview Request */}
@@ -269,7 +501,6 @@ export default function EmployeeDashboard() {
             the interview.
           </p>
 
-
           {/* ================================= */}
           {/* Resume Upload */}
           {/* ================================= */}
@@ -287,7 +518,9 @@ export default function EmployeeDashboard() {
               id="resume-upload"
               type="file"
               accept=".pdf,.doc,.docx"
-              onChange={handleResumeChange}
+              onChange={
+                handleResumeChange
+              }
               className="block w-full text-sm text-slate-400
                 file:mr-4
                 file:py-3
@@ -309,10 +542,10 @@ export default function EmployeeDashboard() {
               Maximum size: 5 MB.
             </p>
 
-
             {/* Selected file */}
 
             {resume && (
+
               <div className="mt-4 bg-green-500/10 border border-green-500/20 rounded-xl p-4">
 
                 <p className="text-green-400 font-semibold">
@@ -324,10 +557,10 @@ export default function EmployeeDashboard() {
                 </p>
 
               </div>
+
             )}
 
           </div>
-
 
           {/* ================================= */}
           {/* Submit */}
@@ -351,26 +584,27 @@ export default function EmployeeDashboard() {
 
           </div>
 
-
           {/* ================================= */}
           {/* Request message */}
           {/* ================================= */}
 
           {requestStatus && (
+
             <div className="mt-6 bg-blue-500/10 border border-blue-500/20 text-blue-400 rounded-xl p-4">
+
               {requestStatus}
+
             </div>
+
           )}
 
         </div>
-
 
         {/* ================================= */}
         {/* Dashboard Cards */}
         {/* ================================= */}
 
         <div className="grid md:grid-cols-3 gap-6 mt-10">
-
 
           {/* AI Interview */}
 
@@ -391,7 +625,6 @@ export default function EmployeeDashboard() {
 
           </button>
 
-
           {/* Meetings */}
 
           <button
@@ -410,7 +643,6 @@ export default function EmployeeDashboard() {
             </p>
 
           </button>
-
 
           {/* Results */}
 
