@@ -1,13 +1,11 @@
+require("dotenv").config();
+
 const express = require("express");
 const cors = require("cors");
-<<<<<<< HEAD
 const http = require("http");
 const { Server } = require("socket.io");
 
 const interviewRoute = require("./routes/interview");
-=======
-require("dotenv").config();
->>>>>>> 82dce38c5188180c8da0fa2af14b941e129b826a
 
 const app = express();
 
@@ -17,12 +15,6 @@ const PORT = process.env.PORT || 5001;
 // ==========================================
 // CORS
 // ==========================================
-<<<<<<< HEAD
-
-app.use(
-  cors({
-    origin: true,
-=======
 
 const allowedOrigins = [
   "http://localhost:5173",
@@ -34,7 +26,7 @@ app.use(
   cors({
     origin: function (origin, callback) {
 
-      // Allow requests from curl/Postman/server-side requests
+      // Allow curl, Postman and server-to-server requests
       if (!origin) {
         return callback(null, true);
       }
@@ -46,11 +38,12 @@ app.use(
       console.log("CORS blocked:", origin);
 
       return callback(
-        new Error(`CORS blocked origin: ${origin}`)
+        new Error(
+          `CORS blocked origin: ${origin}`
+        )
       );
     },
 
->>>>>>> 82dce38c5188180c8da0fa2af14b941e129b826a
     methods: [
       "GET",
       "POST",
@@ -58,19 +51,13 @@ app.use(
       "DELETE",
       "OPTIONS",
     ],
-<<<<<<< HEAD
-=======
 
->>>>>>> 82dce38c5188180c8da0fa2af14b941e129b826a
     allowedHeaders: [
       "Content-Type",
       "Authorization",
     ],
-<<<<<<< HEAD
-=======
 
     credentials: false,
->>>>>>> 82dce38c5188180c8da0fa2af14b941e129b826a
   })
 );
 
@@ -83,7 +70,6 @@ app.use(express.json());
 
 
 // ==========================================
-<<<<<<< HEAD
 // Interview Routes
 // ==========================================
 
@@ -95,28 +81,21 @@ app.use(
 
 // ==========================================
 // Health Check
-=======
-// Health check
->>>>>>> 82dce38c5188180c8da0fa2af14b941e129b826a
 // ==========================================
 
 app.get("/", (req, res) => {
   res.json({
     success: true,
-<<<<<<< HEAD
     message:
       "AI Interview Agent Backend Running 🚀",
-=======
-    message: "Interview Agent AI backend is running",
-    environment: process.env.NODE_ENV || "development",
->>>>>>> 82dce38c5188180c8da0fa2af14b941e129b826a
+    environment:
+      process.env.NODE_ENV || "development",
   });
 });
 
 
 // ==========================================
-<<<<<<< HEAD
-// Create HTTP Server
+// HTTP Server
 // ==========================================
 
 const server = http.createServer(app);
@@ -128,45 +107,21 @@ const server = http.createServer(app);
 
 const io = new Server(server, {
   cors: {
-    origin: true,
+    origin: allowedOrigins,
     methods: [
       "GET",
       "POST",
     ],
   },
-=======
-// Interview routes
-// ==========================================
-
-const interviewRoutes =
-  require("./routes/interview");
-
-app.use(
-  "/api/interview",
-  interviewRoutes
-);
-
-
-// ==========================================
-// 404 handler
-// ==========================================
-
-app.use((req, res) => {
-  res.status(404).json({
-    success: false,
-    message: "Route not found",
-    path: req.originalUrl,
-  });
->>>>>>> 82dce38c5188180c8da0fa2af14b941e129b826a
 });
 
 
 // ==========================================
-<<<<<<< HEAD
 // Socket.IO Meeting System
 // ==========================================
 
 io.on("connection", (socket) => {
+
   console.log(
     "Socket connected:",
     socket.id
@@ -180,6 +135,7 @@ io.on("connection", (socket) => {
   socket.on(
     "join-meeting",
     (meetingId) => {
+
       if (!meetingId) {
         return;
       }
@@ -201,6 +157,7 @@ io.on("connection", (socket) => {
 
       // First participant
       if (participantCount === 1) {
+
         socket.emit(
           "meeting-status",
           {
@@ -212,6 +169,7 @@ io.on("connection", (socket) => {
 
       // Second participant
       if (participantCount >= 2) {
+
         socket.emit(
           "meeting-status",
           {
@@ -248,6 +206,7 @@ io.on("connection", (socket) => {
       meetingId,
       offer,
     }) => {
+
       if (!meetingId || !offer) {
         return;
       }
@@ -274,6 +233,7 @@ io.on("connection", (socket) => {
       meetingId,
       answer,
     }) => {
+
       if (!meetingId || !answer) {
         return;
       }
@@ -300,6 +260,7 @@ io.on("connection", (socket) => {
       meetingId,
       candidate,
     }) => {
+
       if (!meetingId || !candidate) {
         return;
       }
@@ -323,6 +284,7 @@ io.on("connection", (socket) => {
   socket.on(
     "leave-meeting",
     (meetingId) => {
+
       if (!meetingId) {
         return;
       }
@@ -358,59 +320,87 @@ io.on("connection", (socket) => {
   socket.on(
     "disconnect",
     () => {
+
       console.log(
         "Socket disconnected:",
         socket.id
       );
+
     }
   );
-=======
-// Error handler
-// ==========================================
 
-app.use((err, req, res, next) => {
-
-  console.error("Backend error:", err);
-
-  if (
-    err.message &&
-    err.message.startsWith("CORS blocked")
-  ) {
-    return res.status(403).json({
-      success: false,
-      message: err.message,
-    });
-  }
-
-  res.status(500).json({
-    success: false,
-    message: "Internal server error",
-  });
->>>>>>> 82dce38c5188180c8da0fa2af14b941e129b826a
 });
 
 
 // ==========================================
-<<<<<<< HEAD
+// 404 Handler
+// ==========================================
+
+app.use((req, res) => {
+
+  res.status(404).json({
+    success: false,
+    message: "Route not found",
+    path: req.originalUrl,
+  });
+
+});
+
+
+// ==========================================
+// Error Handler
+// ==========================================
+
+app.use(
+  (err, req, res, next) => {
+
+    console.error(
+      "Backend error:",
+      err
+    );
+
+
+    if (
+      err.message &&
+      err.message.startsWith(
+        "CORS blocked"
+      )
+    ) {
+
+      return res.status(403).json({
+        success: false,
+        message: err.message,
+      });
+
+    }
+
+
+    res.status(500).json({
+      success: false,
+      message:
+        "Internal server error",
+    });
+
+  }
+);
+
+
+// ==========================================
 // Start Server
 // ==========================================
 
-server.listen(PORT, () => {
-  console.log(
-    `Server running on port ${PORT}`
-  );
+server.listen(
+  PORT,
+  "0.0.0.0",
+  () => {
 
-  console.log(
-    `Socket.IO running on port ${PORT}`
-  );
-});
-=======
-// Start server
-// ==========================================
+    console.log(
+      `Server running on port ${PORT}`
+    );
 
-app.listen(PORT, "0.0.0.0", () => {
-  console.log(
-    `Server running on port ${PORT}`
-  );
-}); 
->>>>>>> 82dce38c5188180c8da0fa2af14b941e129b826a
+    console.log(
+      `Socket.IO running on port ${PORT}`
+    );
+
+  }
+);
