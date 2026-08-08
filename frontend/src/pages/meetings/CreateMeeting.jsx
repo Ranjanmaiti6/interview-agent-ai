@@ -8,7 +8,9 @@ const API_URL =
 export default function CreateMeeting() {
   const navigate = useNavigate();
 
-  const [requests, setRequests] = useState([]);
+  const [requests, setRequests] =
+    useState([]);
+
   const [loadingRequests, setLoadingRequests] =
     useState(true);
 
@@ -18,8 +20,17 @@ export default function CreateMeeting() {
   const [employeeEmail, setEmployeeEmail] =
     useState("");
 
+  const [employeeRequestId, setEmployeeRequestId] =
+    useState("");
+
+  const [employeeName, setEmployeeName] =
+    useState("");
+
   const [scheduledAt, setScheduledAt] =
     useState("");
+
+  const [durationMinutes, setDurationMinutes] =
+    useState("30");
 
   const [meetingUrl, setMeetingUrl] =
     useState("");
@@ -43,17 +54,30 @@ export default function CreateMeeting() {
       setError("");
 
       const token =
-        localStorage.getItem("token");
+        localStorage.getItem(
+          "token"
+        );
 
-      const response = await fetch(
-        `${API_URL}/api/employee/requests`,
-        {
-          headers: {
-            Authorization:
-              `Bearer ${token}`,
-          },
-        }
-      );
+      if (!token) {
+        navigate("/login");
+        return;
+      }
+
+      const response =
+        await fetch(
+          `${API_URL}/api/employee/requests`,
+          {
+            method: "GET",
+
+            headers: {
+              Authorization:
+                `Bearer ${token}`,
+
+              Accept:
+                "application/json",
+            },
+          }
+        );
 
       const data =
         await response.json();
@@ -61,17 +85,23 @@ export default function CreateMeeting() {
       if (!response.ok) {
         throw new Error(
           data.message ||
-            "Unable to load employees."
+          "Unable to load employees."
         );
       }
 
       const accepted =
-        (data.requests || []).filter(
+        (
+          data.requests ||
+          []
+        ).filter(
           (request) =>
-            request.status === "accepted"
+            request.status ===
+            "accepted"
         );
 
-      setRequests(accepted);
+      setRequests(
+        accepted
+      );
 
     } catch (error) {
       console.error(
@@ -81,8 +111,9 @@ export default function CreateMeeting() {
 
       setError(
         error.message ||
-          "Unable to load employees."
+        "Unable to load employees."
       );
+
     } finally {
       setLoadingRequests(false);
     }
@@ -93,10 +124,48 @@ export default function CreateMeeting() {
   }, []);
 
   // ==========================================
+  // Employee selection
+  // ==========================================
+
+  const handleEmployeeChange = (
+    event
+  ) => {
+    const selectedEmail =
+      event.target.value;
+
+    setEmployeeEmail(
+      selectedEmail
+    );
+
+    const selectedRequest =
+      requests.find(
+        (request) =>
+          request.email ===
+          selectedEmail
+      );
+
+    if (selectedRequest) {
+      setEmployeeRequestId(
+        selectedRequest.id || ""
+      );
+
+      setEmployeeName(
+        selectedRequest.name ||
+        "Employee"
+      );
+    } else {
+      setEmployeeRequestId("");
+      setEmployeeName("");
+    }
+  };
+
+  // ==========================================
   // Create meeting
   // ==========================================
 
-  const handleSubmit = async (event) => {
+  const handleSubmit = async (
+    event
+  ) => {
     event.preventDefault();
 
     setError("");
@@ -117,30 +186,64 @@ export default function CreateMeeting() {
 
     try {
       const token =
-        localStorage.getItem("token");
+        localStorage.getItem(
+          "token"
+        );
 
-      const response = await fetch(
-        `${API_URL}/api/meetings`,
-        {
-          method: "POST",
+      if (!token) {
+        navigate("/login");
+        return;
+      }
 
-          headers: {
-            "Content-Type":
-              "application/json",
+      const response =
+        await fetch(
+          `${API_URL}/api/meetings`,
+          {
+            method: "POST",
 
-            Authorization:
-              `Bearer ${token}`,
-          },
+            headers: {
+              "Content-Type":
+                "application/json",
 
-          body: JSON.stringify({
-            title: title.trim(),
-            employeeEmail,
-            scheduledAt,
-            meetingUrl:
-              meetingUrl.trim() || null,
-          }),
-        }
-      );
+              Authorization:
+                `Bearer ${token}`,
+
+              Accept:
+                "application/json",
+            },
+
+            body: JSON.stringify({
+              employeeRequestId:
+                employeeRequestId ||
+                null,
+
+              employeeName:
+                employeeName ||
+                "Employee",
+
+              employeeEmail:
+                employeeEmail,
+
+              title:
+                title.trim(),
+
+              description:
+                null,
+
+              scheduledAt:
+                scheduledAt,
+
+              durationMinutes:
+                Number(
+                  durationMinutes
+                ) || 30,
+
+              meetingUrl:
+                meetingUrl.trim() ||
+                null,
+            }),
+          }
+        );
 
       const data =
         await response.json();
@@ -148,7 +251,7 @@ export default function CreateMeeting() {
       if (!response.ok) {
         throw new Error(
           data.message ||
-            "Unable to create meeting."
+          "Unable to create meeting."
         );
       }
 
@@ -156,9 +259,15 @@ export default function CreateMeeting() {
         "Meeting scheduled successfully."
       );
 
-      setTitle("AI Interview");
+      setTitle(
+        "AI Interview"
+      );
+
       setEmployeeEmail("");
+      setEmployeeRequestId("");
+      setEmployeeName("");
       setScheduledAt("");
+      setDurationMinutes("30");
       setMeetingUrl("");
 
     } catch (error) {
@@ -169,19 +278,20 @@ export default function CreateMeeting() {
 
       setError(
         error.message ||
-          "Unable to create meeting."
+        "Unable to create meeting."
       );
+
     } finally {
       setLoading(false);
     }
   };
 
+  // ==========================================
+  // Render
+  // ==========================================
+
   return (
     <div className="min-h-screen bg-slate-950 text-white">
-
-      {/* ================================= */}
-      {/* Header */}
-      {/* ================================= */}
 
       <header className="border-b border-slate-800 bg-slate-900">
 
@@ -199,7 +309,9 @@ export default function CreateMeeting() {
 
           <button
             onClick={() =>
-              navigate("/meetings")
+              navigate(
+                "/meetings"
+              )
             }
             className="border border-slate-700 hover:bg-slate-800 px-4 py-2 rounded-lg"
           >
@@ -209,10 +321,6 @@ export default function CreateMeeting() {
         </div>
 
       </header>
-
-      {/* ================================= */}
-      {/* Main */}
-      {/* ================================= */}
 
       <main className="max-w-4xl mx-auto px-6 py-10">
 
@@ -229,19 +337,11 @@ export default function CreateMeeting() {
 
         </div>
 
-        {/* ================================= */}
-        {/* Error */}
-        {/* ================================= */}
-
         {error && (
           <div className="mb-6 bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl p-4">
             {error}
           </div>
         )}
-
-        {/* ================================= */}
-        {/* Success */}
-        {/* ================================= */}
 
         {success && (
           <div className="mb-6 bg-green-500/10 border border-green-500/20 text-green-400 rounded-xl p-4">
@@ -249,12 +349,10 @@ export default function CreateMeeting() {
           </div>
         )}
 
-        {/* ================================= */}
-        {/* Form */}
-        {/* ================================= */}
-
         <form
-          onSubmit={handleSubmit}
+          onSubmit={
+            handleSubmit
+          }
           className="bg-slate-900 border border-slate-800 rounded-2xl p-8"
         >
 
@@ -270,7 +368,9 @@ export default function CreateMeeting() {
               type="text"
               value={title}
               onChange={(event) =>
-                setTitle(event.target.value)
+                setTitle(
+                  event.target.value
+                )
               }
               placeholder="AI Interview"
               required
@@ -291,18 +391,19 @@ export default function CreateMeeting() {
               <div className="bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-slate-400">
                 Loading accepted employees...
               </div>
-            ) : requests.length === 0 ? (
+            ) : requests.length ===
+              0 ? (
               <div className="bg-yellow-500/10 border border-yellow-500/20 text-yellow-400 rounded-xl p-4">
-                No accepted employee requests
-                are available.
+                No accepted employee
+                requests are available.
               </div>
             ) : (
               <select
-                value={employeeEmail}
-                onChange={(event) =>
-                  setEmployeeEmail(
-                    event.target.value
-                  )
+                value={
+                  employeeEmail
+                }
+                onChange={
+                  handleEmployeeChange
                 }
                 required
                 className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 outline-none focus:border-purple-500"
@@ -315,11 +416,20 @@ export default function CreateMeeting() {
                 {requests.map(
                   (request) => (
                     <option
-                      key={request.id}
-                      value={request.email}
+                      key={
+                        request.id
+                      }
+                      value={
+                        request.email
+                      }
                     >
-                      {request.name} —{" "}
-                      {request.email}
+                      {
+                        request.name
+                      }{" "}
+                      —{" "}
+                      {
+                        request.email
+                      }
                     </option>
                   )
                 )}
@@ -339,7 +449,9 @@ export default function CreateMeeting() {
 
             <input
               type="datetime-local"
-              value={scheduledAt}
+              value={
+                scheduledAt
+              }
               onChange={(event) =>
                 setScheduledAt(
                   event.target.value
@@ -351,6 +463,48 @@ export default function CreateMeeting() {
 
           </div>
 
+          {/* Duration */}
+
+          <div className="mb-6">
+
+            <label className="block text-sm font-semibold text-slate-300 mb-2">
+              Duration
+            </label>
+
+            <select
+              value={
+                durationMinutes
+              }
+              onChange={(event) =>
+                setDurationMinutes(
+                  event.target.value
+                )
+              }
+              className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 outline-none focus:border-purple-500"
+            >
+              <option value="15">
+                15 minutes
+              </option>
+
+              <option value="30">
+                30 minutes
+              </option>
+
+              <option value="45">
+                45 minutes
+              </option>
+
+              <option value="60">
+                60 minutes
+              </option>
+
+              <option value="90">
+                90 minutes
+              </option>
+            </select>
+
+          </div>
+
           {/* Meeting URL */}
 
           <div className="mb-8">
@@ -358,26 +512,24 @@ export default function CreateMeeting() {
             <label className="block text-sm font-semibold text-slate-300 mb-2">
               Meeting URL
               <span className="text-slate-500 font-normal">
-                {" "} (optional)
+                {" "}
+                (optional)
               </span>
             </label>
 
             <input
               type="url"
-              value={meetingUrl}
+              value={
+                meetingUrl
+              }
               onChange={(event) =>
                 setMeetingUrl(
                   event.target.value
                 )
               }
-              placeholder="https://..."
+              placeholder="https://meet.google.com/..."
               className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 outline-none focus:border-purple-500"
             />
-
-            <p className="text-slate-500 text-sm mt-2">
-              You can add a meeting link now or
-              leave it empty for the moment.
-            </p>
 
           </div>
 
@@ -388,7 +540,9 @@ export default function CreateMeeting() {
             <button
               type="button"
               onClick={() =>
-                navigate("/meetings")
+                navigate(
+                  "/meetings"
+                )
               }
               className="border border-slate-700 hover:bg-slate-800 px-5 py-3 rounded-xl"
             >

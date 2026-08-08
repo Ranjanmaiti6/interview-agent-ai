@@ -4,11 +4,6 @@ const express = require("express");
 const cors = require("cors");
 const path = require("path");
 
-
-// ==========================================
-// Routes
-// ==========================================
-
 const interviewRoute =
   require("./routes/interview");
 
@@ -21,50 +16,32 @@ const meetingsRoute =
 const authRoute =
   require("./routes/auth");
 
-
-// ==========================================
-// App
-// ==========================================
-
 const app = express();
 
 const PORT =
   process.env.PORT || 5001;
 
-
 // ==========================================
-// Allowed Frontend Origins
+// CORS
 // ==========================================
 
 const allowedOrigins = [
-
-  // Local development
   "http://localhost:5173",
   "http://127.0.0.1:5173",
 
   "http://localhost:5174",
   "http://127.0.0.1:5174",
 
-  // Production
   "https://interview-agent-ai-frontend.vercel.app",
 ];
 
-
-// ==========================================
-// CORS
-// ==========================================
-
 app.use(
   cors({
-
     origin: (origin, callback) => {
-
-      // Allow requests with no origin
-      // Postman, curl, server-to-server, etc.
+      // Allow Postman / curl / server requests
       if (!origin) {
         return callback(null, true);
       }
-
 
       if (
         allowedOrigins.includes(origin)
@@ -72,12 +49,10 @@ app.use(
         return callback(null, true);
       }
 
-
       console.log(
         "CORS blocked origin:",
         origin
       );
-
 
       return callback(
         new Error(
@@ -85,7 +60,6 @@ app.use(
         )
       );
     },
-
 
     methods: [
       "GET",
@@ -95,20 +69,18 @@ app.use(
       "OPTIONS",
     ],
 
-
     allowedHeaders: [
       "Content-Type",
       "Authorization",
+      "Accept",
     ],
-
 
     credentials: true,
   })
 );
 
-
 // ==========================================
-// Body Middleware
+// Middleware
 // ==========================================
 
 app.use(
@@ -121,9 +93,22 @@ app.use(
   })
 );
 
+// ==========================================
+// Request logger
+// ==========================================
+
+app.use(
+  (req, res, next) => {
+    console.log(
+      `${new Date().toISOString()} ${req.method} ${req.originalUrl}`
+    );
+
+    next();
+  }
+);
 
 // ==========================================
-// Uploaded Files
+// Uploaded files
 // ==========================================
 
 app.use(
@@ -136,62 +121,38 @@ app.use(
   )
 );
 
-
 // ==========================================
-// API ROUTES
+// API routes
 // ==========================================
-
-
-// ------------------------------------------
-// Authentication
-// ------------------------------------------
 
 app.use(
   "/api/auth",
   authRoute
 );
 
-
-// ------------------------------------------
-// AI Interview
-// ------------------------------------------
-
 app.use(
   "/api/interview",
   interviewRoute
 );
-
-
-// ------------------------------------------
-// Employee Requests
-// ------------------------------------------
 
 app.use(
   "/api/employee",
   employeeRoute
 );
 
-
-// ------------------------------------------
-// Meetings
-// ------------------------------------------
-
 app.use(
   "/api/meetings",
   meetingsRoute
 );
 
-
 // ==========================================
-// Health Check
+// Health check
 // ==========================================
 
 app.get(
   "/",
   (req, res) => {
-
     res.json({
-
       success: true,
 
       message:
@@ -200,7 +161,6 @@ app.get(
       port: PORT,
 
       services: {
-
         auth:
           "/api/auth",
 
@@ -213,9 +173,6 @@ app.get(
         meetings:
           "/api/meetings",
 
-        myMeetings:
-          "/api/meetings/my",
-
         uploads:
           "/uploads",
       },
@@ -223,43 +180,34 @@ app.get(
   }
 );
 
-
 // ==========================================
-// API Test
+// Meetings health check
 // ==========================================
 
 app.get(
-  "/api/test",
+  "/api/meetings/health",
   (req, res) => {
-
     res.json({
-
       success: true,
-
       message:
-        "API is working correctly.",
-
+        "Meetings API is running.",
     });
   }
 );
 
-
 // ==========================================
-// 404 Handler
+// 404
 // ==========================================
 
 app.use(
   (req, res) => {
-
     console.log(
       "404:",
       req.method,
       req.originalUrl
     );
 
-
     res.status(404).json({
-
       success: false,
 
       message:
@@ -267,14 +215,12 @@ app.use(
 
       path:
         req.originalUrl,
-
     });
   }
 );
 
-
 // ==========================================
-// Global Error Handler
+// Global error handler
 // ==========================================
 
 app.use(
@@ -284,36 +230,30 @@ app.use(
     res,
     next
   ) => {
-
     console.error(
       "Server error:",
       error
     );
 
-
     res.status(
       error.status || 500
     ).json({
-
       success: false,
 
       message:
         error.message ||
         "Internal server error.",
-
     });
   }
 );
 
-
 // ==========================================
-// Start Server
+// Start server
 // ==========================================
 
 app.listen(
   PORT,
   () => {
-
     console.log(
       "=========================================="
     );
@@ -331,15 +271,11 @@ app.listen(
     );
 
     console.log(
-      `Uploads: http://localhost:${PORT}/uploads`
-    );
-
-    console.log(
       `Meetings: http://localhost:${PORT}/api/meetings`
     );
 
     console.log(
-      `My Meetings: http://localhost:${PORT}/api/meetings/my`
+      `Uploads: http://localhost:${PORT}/uploads`
     );
 
     console.log(

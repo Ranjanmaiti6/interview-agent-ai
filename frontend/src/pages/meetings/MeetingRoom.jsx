@@ -1,13 +1,19 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import {
+  useNavigate,
+  useParams,
+} from "react-router-dom";
 
 const API_URL =
   import.meta.env.VITE_API_URL ||
   "http://localhost:5001";
 
 export default function MeetingRoom() {
-  const { id } = useParams();
-  const navigate = useNavigate();
+  const { id } =
+    useParams();
+
+  const navigate =
+    useNavigate();
 
   const [meeting, setMeeting] =
     useState(null);
@@ -26,55 +32,70 @@ export default function MeetingRoom() {
   // ==========================================
 
   useEffect(() => {
-    const loadMeeting = async () => {
-      try {
-        const token =
-          localStorage.getItem("token");
+    const loadMeeting =
+      async () => {
+        try {
+          const token =
+            localStorage.getItem(
+              "token"
+            );
 
-        if (!token) {
-          navigate("/login");
-          return;
-        }
-
-        const response = await fetch(
-          `${API_URL}/api/meetings/${id}`,
-          {
-            headers: {
-              Authorization:
-                `Bearer ${token}`,
-            },
+          if (!token) {
+            navigate("/login");
+            return;
           }
-        );
 
-        const data =
-          await response.json();
+          const response =
+            await fetch(
+              `${API_URL}/api/meetings/${id}`,
+              {
+                method: "GET",
 
-        if (!response.ok) {
-          throw new Error(
-            data.message ||
+                headers: {
+                  Authorization:
+                    `Bearer ${token}`,
+
+                  Accept:
+                    "application/json",
+                },
+              }
+            );
+
+          const data =
+            await response.json();
+
+          if (!response.ok) {
+            throw new Error(
+              data.message ||
               "Unable to load meeting."
+            );
+          }
+
+          setMeeting(
+            data.meeting
           );
-        }
 
-        setMeeting(data.meeting);
+        } catch (error) {
+          console.error(
+            "Load meeting error:",
+            error
+          );
 
-      } catch (error) {
-        console.error(
-          "Load meeting error:",
-          error
-        );
-
-        setError(
-          error.message ||
+          setError(
+            error.message ||
             "Unable to load meeting."
-        );
-      } finally {
-        setLoading(false);
-      }
-    };
+          );
+
+        } finally {
+          setLoading(false);
+        }
+      };
 
     loadMeeting();
-  }, [id, navigate]);
+  }, [
+    id,
+    navigate,
+  ]);
 
   // ==========================================
   // Join meeting
@@ -87,11 +108,12 @@ export default function MeetingRoom() {
 
     setJoining(true);
 
-    // If an external meeting URL exists,
-    // open it in a new tab.
-    if (meeting.meetingUrl) {
+    // Backend uses meeting_url
+    if (
+      meeting.meeting_url
+    ) {
       window.open(
-        meeting.meetingUrl,
+        meeting.meeting_url,
         "_blank",
         "noopener,noreferrer"
       );
@@ -100,16 +122,25 @@ export default function MeetingRoom() {
       return;
     }
 
-    // Otherwise continue to the AI interview.
-    navigate("/interview", {
-      state: {
-        meetingId: meeting.id,
-        employeeEmail:
-          meeting.employeeEmail,
-        meetingTitle:
-          meeting.title,
-      },
-    });
+    // No external URL:
+    // open AI interview
+    navigate(
+      "/interview",
+      {
+        state: {
+          meetingId:
+            meeting.id,
+
+          employeeEmail:
+            meeting.employee_email,
+
+          meetingTitle:
+            meeting.title,
+        },
+      }
+    );
+
+    setJoining(false);
   };
 
   // ==========================================
@@ -156,7 +187,9 @@ export default function MeetingRoom() {
 
           <button
             onClick={() =>
-              navigate("/meetings")
+              navigate(
+                "/meetings"
+              )
             }
             className="mt-6 w-full bg-blue-600 hover:bg-blue-700 py-3 rounded-xl font-semibold"
           >
@@ -176,10 +209,6 @@ export default function MeetingRoom() {
   return (
     <div className="min-h-screen bg-slate-950 text-white">
 
-      {/* ================================= */}
-      {/* Header */}
-      {/* ================================= */}
-
       <header className="border-b border-slate-800 bg-slate-900">
 
         <div className="max-w-6xl mx-auto px-6 py-5 flex items-center justify-between">
@@ -198,7 +227,9 @@ export default function MeetingRoom() {
 
           <button
             onClick={() =>
-              navigate("/meetings")
+              navigate(
+                "/meetings"
+              )
             }
             className="border border-slate-700 hover:bg-slate-800 px-4 py-2 rounded-lg"
           >
@@ -208,10 +239,6 @@ export default function MeetingRoom() {
         </div>
 
       </header>
-
-      {/* ================================= */}
-      {/* Meeting */}
-      {/* ================================= */}
 
       <main className="max-w-6xl mx-auto px-6 py-10">
 
@@ -239,8 +266,20 @@ export default function MeetingRoom() {
                   </p>
 
                   <p className="text-slate-200 mt-1">
-                    {meeting.employeeEmail}
+                    {
+                      meeting.employee_name ||
+                      meeting.employee_email
+                    }
                   </p>
+
+                  {meeting.employee_name &&
+                    meeting.employee_email && (
+                      <p className="text-slate-500 text-sm mt-1">
+                        {
+                          meeting.employee_email
+                        }
+                      </p>
+                    )}
                 </div>
 
                 <div>
@@ -249,9 +288,24 @@ export default function MeetingRoom() {
                   </p>
 
                   <p className="text-slate-200 mt-1">
-                    {new Date(
-                      meeting.scheduledAt
-                    ).toLocaleString()}
+                    {meeting.scheduled_at
+                      ? new Date(
+                          meeting.scheduled_at
+                        ).toLocaleString()
+                      : "Not scheduled"}
+                  </p>
+                </div>
+
+                <div>
+                  <p className="text-slate-500 text-sm">
+                    Duration
+                  </p>
+
+                  <p className="text-slate-200 mt-1">
+                    {
+                      meeting.duration_minutes
+                    }{" "}
+                    minutes
                   </p>
                 </div>
 
@@ -270,7 +324,7 @@ export default function MeetingRoom() {
 
             </div>
 
-            {/* Join area */}
+            {/* Join */}
 
             <div className="bg-slate-800 rounded-2xl p-8 flex flex-col justify-center">
 
@@ -290,8 +344,12 @@ export default function MeetingRoom() {
                 </p>
 
                 <button
-                  onClick={handleJoin}
-                  disabled={joining}
+                  onClick={
+                    handleJoin
+                  }
+                  disabled={
+                    joining
+                  }
                   className="mt-6 w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 py-3 rounded-xl font-semibold"
                 >
                   {joining
