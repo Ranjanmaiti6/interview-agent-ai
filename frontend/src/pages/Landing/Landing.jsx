@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 
 import Navbar from "../../components/layout/Navbar";
+
 import Hero from "../../components/landing/Hero";
 import Features from "../../components/landing/Features";
 import Workflow from "../../components/landing/Workflow";
@@ -8,6 +9,7 @@ import Capabilities from "../../components/landing/Capabilities";
 import Stats from "../../components/landing/Stats";
 import Testimonials from "../../components/landing/Testimonials";
 import CTA from "../../components/landing/CTA";
+
 import About from "../../components/about/About";
 
 export default function Landing() {
@@ -15,16 +17,31 @@ export default function Landing() {
 
   return (
     <>
+
+      {/* ========================================= */}
+      {/* Navbar */}
+      {/* ========================================= */}
+
+      <Navbar />
+
+
+      {/* ========================================= */}
+      {/* Hero */}
+      {/* ========================================= */}
+
       <Hero />
+
 
       {/* ========================================= */}
       {/* Login Portal Selection */}
       {/* ========================================= */}
 
       <section className="bg-slate-950 text-white py-16">
+
         <div className="max-w-6xl mx-auto px-6">
 
           <div className="text-center mb-10">
+
             <p className="text-blue-400 text-sm font-semibold uppercase tracking-wider">
               Choose Your Portal
             </p>
@@ -36,14 +53,20 @@ export default function Landing() {
             <p className="text-slate-400 mt-3">
               Select the portal that matches your role.
             </p>
+
           </div>
 
 
+          {/* ================================= */}
           {/* Login Cards */}
+          {/* ================================= */}
 
           <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
 
+
+            {/* ================================= */}
             {/* Employee */}
+            {/* ================================= */}
 
             <div className="bg-slate-900 border border-blue-500/20 rounded-2xl p-8">
 
@@ -73,7 +96,9 @@ export default function Landing() {
             </div>
 
 
+            {/* ================================= */}
             {/* Admin */}
+            {/* ================================= */}
 
             <div className="bg-slate-900 border border-purple-500/20 rounded-2xl p-8">
 
@@ -105,26 +130,58 @@ export default function Landing() {
           </div>
 
         </div>
+
       </section>
 
 
       {/* ========================================= */}
-      {/* Existing Landing Page */}
+      {/* About */}
       {/* ========================================= */}
 
       <About />
 
+
+      {/* ========================================= */}
+      {/* Features */}
+      {/* ========================================= */}
+
       <Features />
+
+
+      {/* ========================================= */}
+      {/* Workflow */}
+      {/* ========================================= */}
 
       <Workflow />
 
+
+      {/* ========================================= */}
+      {/* Capabilities */}
+      {/* ========================================= */}
+
       <Capabilities />
+
+
+      {/* ========================================= */}
+      {/* Stats */}
+      {/* ========================================= */}
 
       <Stats />
 
+
+      {/* ========================================= */}
+      {/* Testimonials */}
+      {/* ========================================= */}
+
       <Testimonials />
 
+
+      {/* ========================================= */}
+      {/* CTA */}
+      {/* ========================================= */}
+
       <CTA />
+
     </>
   );
 }
