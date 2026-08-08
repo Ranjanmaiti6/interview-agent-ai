@@ -6,6 +6,7 @@ const path = require("path");
 
 const interviewRoute = require("./routes/interview");
 const employeeRoute = require("./routes/employee");
+const meetingsRoute = require("./routes/meetings");
 const authRoute = require("./routes/auth");
 
 const app = express();
@@ -121,6 +122,10 @@ app.use(
   employeeRoute
 );
 
+app.use(
+  "/api/meetings",
+  meetingsRoute
+);
 
 // ==========================================
 // Health Check

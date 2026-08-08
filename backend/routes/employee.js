@@ -5,6 +5,11 @@ const fs = require("fs");
 
 const db = require("../database");
 
+const {
+  authenticateToken,
+  requireRole,
+} = require("../middleware/auth");
+
 const router = express.Router();
 
 // ==========================================
@@ -136,9 +141,13 @@ function formatRequest(row) {
 // ==========================================
 // Submit employee interview request
 // ==========================================
+// EMPLOYEE ONLY
+// ==========================================
 
 router.post(
   "/request",
+  authenticateToken,
+  requireRole("employee"),
   upload.single("resume"),
   (req, res) => {
     try {
@@ -405,9 +414,13 @@ router.post(
 // ==========================================
 // Get all employee requests
 // ==========================================
+// ADMIN ONLY
+// ==========================================
 
 router.get(
   "/requests",
+  authenticateToken,
+  requireRole("admin"),
   (req, res) => {
     try {
       const rows =
@@ -444,9 +457,13 @@ router.get(
 // ==========================================
 // Accept / Reject request
 // ==========================================
+// ADMIN ONLY
+// ==========================================
 
 router.put(
   "/requests/:id",
+  authenticateToken,
+  requireRole("admin"),
   (req, res) => {
     try {
       const { id } =
@@ -554,9 +571,13 @@ router.put(
 // ==========================================
 // Get single request
 // ==========================================
+// ADMIN ONLY
+// ==========================================
 
 router.get(
   "/requests/:id",
+  authenticateToken,
+  requireRole("admin"),
   (req, res) => {
     try {
       const { id } =

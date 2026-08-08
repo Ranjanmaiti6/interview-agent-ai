@@ -32,6 +32,38 @@ db.exec(`
   )
 `);
 
+// ==========================================
+// Meetings
+// ==========================================
+
+db.exec(`
+  CREATE TABLE IF NOT EXISTS meetings (
+    id TEXT PRIMARY KEY,
+
+    employee_request_id TEXT NOT NULL,
+
+    employee_name TEXT NOT NULL,
+    employee_email TEXT NOT NULL,
+
+    title TEXT NOT NULL,
+    description TEXT DEFAULT NULL,
+
+    scheduled_at TEXT NOT NULL,
+    duration_minutes INTEGER NOT NULL DEFAULT 30,
+
+    status TEXT NOT NULL DEFAULT 'scheduled',
+
+    meeting_link TEXT DEFAULT NULL,
+
+    created_at TEXT NOT NULL,
+    updated_at TEXT DEFAULT NULL,
+
+    FOREIGN KEY (employee_request_id)
+      REFERENCES employee_requests(id)
+      ON DELETE CASCADE
+  )
+`);
+
 console.log("SQLite database ready.");
 
 module.exports = db;
