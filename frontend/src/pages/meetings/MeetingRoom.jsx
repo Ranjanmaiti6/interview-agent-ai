@@ -16,7 +16,6 @@ const SOCKET_URL =
 
 console.log("SOCKET URL:", SOCKET_URL);
 
-
 export default function MeetingRoom() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -43,84 +42,110 @@ export default function MeetingRoom() {
 
   const [error, setError] = useState("");
 
-
   // ==========================================
-  // Start camera and microphone
+  // Start camera + microphone
   // ==========================================
 
   useEffect(() => {
     let mounted = true;
 
-   const startMedia = async () => {
-  let stream = null;
+    const startMedia = async () => {
+      let stream = null;
 
-  // Try camera + microphone
-  try {
-    stream =
-      await navigator.mediaDevices.getUserMedia({
-        video: true,
-        audio: true,
-      });
+      // --------------------------------------
+      // Try camera + microphone
+      // --------------------------------------
 
-    localStreamRef.current = stream;
+      try {
+        stream =
+          await navigator.mediaDevices.getUserMedia({
+            video: true,
+            audio: true,
+          });
 
-    if (localVideoRef.current) {
-      localVideoRef.current.srcObject =
-        stream;
-    }
+        if (!mounted) {
+          stream
+            .getTracks()
+            .forEach((track) => track.stop());
 
-    setCameraEnabled(true);
-    setMicEnabled(true);
+          return;
+        }
 
-    console.log(
-      "Camera and microphone available."
-    );
+        localStreamRef.current = stream;
 
-    return;
-  } catch (error) {
-    console.warn(
-      "Camera + microphone unavailable:",
-      error
-    );
-  }
+        if (localVideoRef.current) {
+          localVideoRef.current.srcObject =
+            stream;
+        }
 
+        setCameraEnabled(true);
+        setMicEnabled(true);
 
-  // Try microphone only
-  try {
-    stream =
-      await navigator.mediaDevices.getUserMedia({
-        video: false,
-        audio: true,
-      });
+        console.log(
+          "Camera and microphone available."
+        );
 
-    localStreamRef.current = stream;
+        return;
+      } catch (err) {
+        console.warn(
+          "Camera + microphone unavailable:",
+          err
+        );
+      }
 
-    setCameraEnabled(false);
-    setMicEnabled(true);
+      // --------------------------------------
+      // Try microphone only
+      // --------------------------------------
 
-    console.log(
-      "Microphone available. Camera unavailable."
-    );
+      try {
+        stream =
+          await navigator.mediaDevices.getUserMedia({
+            video: false,
+            audio: true,
+          });
 
-    return;
-  } catch (error) {
-    console.warn(
-      "Microphone unavailable:",
-      error
-    );
-  }
+        if (!mounted) {
+          stream
+            .getTracks()
+            .forEach((track) => track.stop());
 
+          return;
+        }
 
-  // No camera or microphone
-  localStreamRef.current = null;
+        localStreamRef.current = stream;
 
-  setCameraEnabled(false);
-  setMicEnabled(false);
+        setCameraEnabled(false);
+        setMicEnabled(true);
 
-  console.log(
-    "No camera or microphone available. Continuing without media."
-  );
-};
+        console.log(
+          "Microphone available. Camera unavailable."
+        );
+
+        return;
+      } catch (err) {
+        console.warn(
+          "Microphone unavailable:",
+          err
+        );
+      }
+
+      // --------------------------------------
+      // No media
+      // --------------------------------------
+
+      if (!mounted) {
+        return;
+      }
+
+      localStreamRef.current = null;
+
+      setCameraEnabled(false);
+      setMicEnabled(false);
+
+      console.log(
+        "No camera or microphone available."
+      );
+    };
 
     startMedia();
 
@@ -134,9 +159,12 @@ export default function MeetingRoom() {
 
         localStreamRef.current = null;
       }
+
+      if (localVideoRef.current) {
+        localVideoRef.current.srcObject = null;
+      }
     };
   }, []);
-
 
   // ==========================================
   // Create WebRTC peer connection
@@ -150,6 +178,10 @@ export default function MeetingRoom() {
     const socket = socketRef.current;
 
     if (!socket) {
+      console.warn(
+        "Cannot create peer connection: socket unavailable."
+      );
+
       return null;
     }
 
@@ -157,13 +189,16 @@ export default function MeetingRoom() {
       new RTCPeerConnection({
         iceServers: [
           {
-            urls: "stun:stun.l.google.com:19302",
+            urls:
+              "stun:stun.l.google.com:19302",
           },
         ],
       });
 
+    // ----------------------------------------
+    // Add local tracks
+    // ----------------------------------------
 
-    // Add local camera and microphone
     if (localStreamRef.current) {
       localStreamRef.current
         .getTracks()
@@ -175,11 +210,13 @@ export default function MeetingRoom() {
         });
     }
 
-
+    // ----------------------------------------
     // Receive remote stream
+    // ----------------------------------------
+
     peer.ontrack = (event) => {
       console.log(
-        "Remote stream received"
+        "Remote stream received."
       );
 
       if (
@@ -195,22 +232,24 @@ export default function MeetingRoom() {
       }
     };
 
+    // ----------------------------------------
+    // ICE candidates
+    // ----------------------------------------
 
-    // Send ICE candidates
     peer.onicecandidate = (event) => {
       if (!event.candidate) {
         return;
       }
 
-      socket.emit(
-        "ice-candidate",
-        {
-          meetingId: id,
-          candidate: event.candidate,
-        }
-      );
+      socket.emit("ice-candidate", {
+        meetingId: id,
+        candidate: event.candidate,
+      });
     };
 
+    // ----------------------------------------
+    // Connection state
+    // ----------------------------------------
 
     peer.onconnectionstatechange = () => {
       console.log(
@@ -224,22 +263,17 @@ export default function MeetingRoom() {
         peer.connectionState ===
           "closed"
       ) {
-        if (
-          remoteVideoRef.current
-        ) {
+        if (remoteVideoRef.current) {
           remoteVideoRef.current.srcObject =
             null;
         }
       }
     };
 
-
-    peerConnectionRef.current =
-      peer;
+    peerConnectionRef.current = peer;
 
     return peer;
   };
-
 
   // ==========================================
   // Socket connection
@@ -251,14 +285,15 @@ export default function MeetingRoom() {
       return;
     }
 
-    const socket = io(SOCKET_URL);
+    const socket = io(SOCKET_URL, {
+      transports: ["websocket", "polling"],
+    });
 
     socketRef.current = socket;
 
-
-    // ========================================
+    // ----------------------------------------
     // Connected
-    // ========================================
+    // ----------------------------------------
 
     socket.on("connect", () => {
       console.log(
@@ -266,16 +301,17 @@ export default function MeetingRoom() {
         socket.id
       );
 
+      setError("");
+
       socket.emit(
         "join-meeting",
         id
       );
     });
 
-
-    // ========================================
+    // ----------------------------------------
     // Meeting status
-    // ========================================
+    // ----------------------------------------
 
     socket.on(
       "meeting-status",
@@ -307,10 +343,9 @@ export default function MeetingRoom() {
       }
     );
 
-
-    // ========================================
+    // ----------------------------------------
     // Another participant joined
-    // ========================================
+    // ----------------------------------------
 
     socket.on(
       "user-joined",
@@ -356,10 +391,9 @@ export default function MeetingRoom() {
       }
     );
 
-
-    // ========================================
+    // ----------------------------------------
     // Receive offer
-    // ========================================
+    // ----------------------------------------
 
     socket.on(
       "offer",
@@ -401,10 +435,9 @@ export default function MeetingRoom() {
       }
     );
 
-
-    // ========================================
+    // ----------------------------------------
     // Receive answer
-    // ========================================
+    // ----------------------------------------
 
     socket.on(
       "answer",
@@ -431,10 +464,9 @@ export default function MeetingRoom() {
       }
     );
 
-
-    // ========================================
+    // ----------------------------------------
     // Receive ICE candidate
-    // ========================================
+    // ----------------------------------------
 
     socket.on(
       "ice-candidate",
@@ -461,10 +493,9 @@ export default function MeetingRoom() {
       }
     );
 
-
-    // ========================================
+    // ----------------------------------------
     // Participant left
-    // ========================================
+    // ----------------------------------------
 
     socket.on(
       "user-left",
@@ -479,16 +510,12 @@ export default function MeetingRoom() {
 
         setParticipantCount(1);
 
-        if (
-          remoteVideoRef.current
-        ) {
+        if (remoteVideoRef.current) {
           remoteVideoRef.current.srcObject =
             null;
         }
 
-        if (
-          peerConnectionRef.current
-        ) {
+        if (peerConnectionRef.current) {
           peerConnectionRef.current.close();
 
           peerConnectionRef.current =
@@ -497,10 +524,9 @@ export default function MeetingRoom() {
       }
     );
 
-
-    // ========================================
+    // ----------------------------------------
     // Socket error
-    // ========================================
+    // ----------------------------------------
 
     socket.on(
       "connect_error",
@@ -516,12 +542,15 @@ export default function MeetingRoom() {
       }
     );
 
-
-    // ========================================
+    // ----------------------------------------
     // Cleanup
-    // ========================================
+    // ----------------------------------------
 
     return () => {
+      console.log(
+        "Cleaning up meeting socket."
+      );
+
       socket.emit(
         "leave-meeting",
         id
@@ -541,7 +570,6 @@ export default function MeetingRoom() {
       socketRef.current = null;
     };
   }, [id]);
-
 
   // ==========================================
   // Toggle microphone
@@ -570,7 +598,6 @@ export default function MeetingRoom() {
     );
   };
 
-
   // ==========================================
   // Toggle camera
   // ==========================================
@@ -598,7 +625,6 @@ export default function MeetingRoom() {
     );
   };
 
-
   // ==========================================
   // End meeting
   // ==========================================
@@ -607,7 +633,6 @@ export default function MeetingRoom() {
     console.log(
       "Ending meeting..."
     );
-
 
     // Tell other participant
     if (socketRef.current) {
@@ -621,7 +646,6 @@ export default function MeetingRoom() {
       socketRef.current = null;
     }
 
-
     // Close WebRTC
     if (
       peerConnectionRef.current
@@ -631,7 +655,6 @@ export default function MeetingRoom() {
       peerConnectionRef.current =
         null;
     }
-
 
     // Stop camera + microphone
     if (localStreamRef.current) {
@@ -644,22 +667,20 @@ export default function MeetingRoom() {
       localStreamRef.current = null;
     }
 
-
-    // Clear video
+    // Clear local video
     if (localVideoRef.current) {
       localVideoRef.current.srcObject =
         null;
     }
 
+    // Clear remote video
     if (remoteVideoRef.current) {
       remoteVideoRef.current.srcObject =
         null;
     }
 
-
     navigate("/meetings");
   };
-
 
   // ==========================================
   // Status text
@@ -682,7 +703,6 @@ export default function MeetingRoom() {
     return "Connecting...";
   };
 
-
   // ==========================================
   // UI
   // ==========================================
@@ -690,7 +710,9 @@ export default function MeetingRoom() {
   return (
     <div className="min-h-screen bg-slate-950 text-white flex flex-col">
 
+      {/* ====================================== */}
       {/* Header */}
+      {/* ====================================== */}
 
       <header className="border-b border-slate-800 bg-slate-900">
 
@@ -727,8 +749,9 @@ export default function MeetingRoom() {
 
       </header>
 
-
+      {/* ====================================== */}
       {/* Main */}
+      {/* ====================================== */}
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-6 py-8">
 
@@ -752,7 +775,6 @@ export default function MeetingRoom() {
 
         </div>
 
-
         {/* Error */}
 
         {error && (
@@ -761,13 +783,15 @@ export default function MeetingRoom() {
           </div>
         )}
 
-
+        {/* ==================================== */}
         {/* Video Grid */}
+        {/* ==================================== */}
 
         <div className="grid md:grid-cols-2 gap-6">
 
-
+          {/* ================================= */}
           {/* Your Video */}
+          {/* ================================= */}
 
           <div className="aspect-video bg-black border border-slate-800 rounded-2xl overflow-hidden relative">
 
@@ -778,7 +802,7 @@ export default function MeetingRoom() {
               playsInline
               className={`w-full h-full object-cover ${
                 cameraEnabled
-                  ? ""
+                  ? "scale-x-[-1]"
                   : "hidden"
               }`}
             />
@@ -808,8 +832,9 @@ export default function MeetingRoom() {
 
           </div>
 
-
+          {/* ================================= */}
           {/* Participant Video */}
+          {/* ================================= */}
 
           <div className="aspect-video bg-black border border-slate-800 rounded-2xl overflow-hidden relative">
 
@@ -850,15 +875,15 @@ export default function MeetingRoom() {
 
       </main>
 
-
+      {/* ====================================== */}
       {/* Controls */}
+      {/* ====================================== */}
 
       <div className="border-t border-slate-800 bg-slate-900">
 
         <div className="max-w-7xl mx-auto px-6 py-5">
 
           <div className="flex justify-center items-center gap-4">
-
 
             {/* Microphone */}
 
@@ -875,15 +900,12 @@ export default function MeetingRoom() {
                   : "bg-red-600 hover:bg-red-700"
               }`}
             >
-
               {micEnabled ? (
                 <Mic size={20} />
               ) : (
                 <MicOff size={20} />
               )}
-
             </button>
-
 
             {/* Camera */}
 
@@ -900,15 +922,12 @@ export default function MeetingRoom() {
                   : "bg-red-600 hover:bg-red-700"
               }`}
             >
-
               {cameraEnabled ? (
                 <Video size={20} />
               ) : (
                 <VideoOff size={20} />
               )}
-
             </button>
-
 
             {/* End Meeting */}
 
@@ -917,9 +936,7 @@ export default function MeetingRoom() {
               title="End meeting"
               className="w-14 h-12 rounded-full bg-red-600 hover:bg-red-700 flex items-center justify-center"
             >
-
               <PhoneOff size={20} />
-
             </button>
 
           </div>
