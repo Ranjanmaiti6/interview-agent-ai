@@ -10,6 +10,21 @@ import {
   useLocation,
 } from "react-router-dom";
 
+import {
+  ArrowUpRight,
+  BrainCircuit,
+  CheckCircle2,
+  Clock3,
+  Cpu,
+  Database,
+  Loader2,
+  MessageSquareText,
+  ShieldCheck,
+  Sparkles,
+  Target,
+  Zap,
+} from "lucide-react";
+
 import InterviewHeader from "../../components/interview/InterviewHeader";
 import ChatMessage from "../../components/interview/ChatMessage";
 import InterviewInput from "../../components/interview/InterviewInput";
@@ -51,6 +66,23 @@ const difficulties = [
   "Hard",
   "Hard",
 ];
+
+// ==========================================
+// Total questions
+// ==========================================
+
+const totalQuestions = 8;
+
+// ==========================================
+// Initial question
+// ==========================================
+
+const initialQuestion =
+  "Explain how Retrieval-Augmented Generation (RAG) works in an AI application.";
+
+// ==========================================
+// Main component
+// ==========================================
 
 export default function Interview() {
   const [searchParams] =
@@ -96,12 +128,6 @@ export default function Interview() {
   const candidateName =
     user.name ||
     "Employee";
-
-  // ========================================
-  // Interview configuration
-  // ========================================
-
-  const totalQuestions = 8;
 
   // ========================================
   // State
@@ -151,7 +177,7 @@ export default function Interview() {
         `Welcome to your AI Technical Interview.\n\n` +
         `Meeting: ${meetingTitle}\n\n` +
         `Let's begin.\n\n` +
-        `Explain how Retrieval-Augmented Generation (RAG) works in an AI application.`,
+        initialQuestion,
     },
   ]);
 
@@ -195,6 +221,9 @@ export default function Interview() {
       return;
     }
 
+    const cleanAnswer =
+      answer.trim();
+
     // --------------------------------------
     // Add candidate answer
     // --------------------------------------
@@ -204,7 +233,7 @@ export default function Interview() {
 
       {
         role: "user",
-        text: answer.trim(),
+        text: cleanAnswer,
       },
     ]);
 
@@ -254,7 +283,7 @@ export default function Interview() {
 
             body: JSON.stringify({
               answer:
-                answer.trim(),
+                cleanAnswer,
 
               // Backend uses zero-based index
               questionNumber:
@@ -348,7 +377,7 @@ export default function Interview() {
           role: "ai",
 
           text:
-            `✅ Feedback\n\n${
+            `Feedback\n\n${
               data.feedback ||
               "Good answer."
             }`,
@@ -372,7 +401,7 @@ export default function Interview() {
             role: "ai",
 
             text:
-              "🎉 Interview completed!\n\n" +
+              "Interview completed.\n\n" +
               "Your answers have been evaluated. " +
               "We're now preparing your personalized AI report.",
           },
@@ -432,7 +461,7 @@ export default function Interview() {
           role: "ai",
 
           text:
-            `🎯 Next Question\n\n${
+            `Next Question\n\n${
               data.nextQuestion ||
               "Let's continue with the next question."
             }`,
@@ -464,7 +493,7 @@ export default function Interview() {
           role: "ai",
 
           text:
-            `⚠️ Backend error.\n\n` +
+            `Backend error.\n\n` +
             `${error.message}\n\n` +
             `Please check that the backend is running and the API URL is configured correctly.`,
         },
@@ -481,49 +510,98 @@ export default function Interview() {
 
   if (completed) {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center px-6">
+      <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#05070a] px-6 text-white">
 
-        <div className="text-center max-w-xl w-full">
+        {/* Ambient lighting */}
 
-          <div className="text-6xl mb-6">
-            🎉
+        <div className="pointer-events-none absolute inset-0">
+          <div className="absolute left-1/2 top-1/2 h-[600px] w-[600px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-blue-500/[0.07] blur-[160px]" />
+
+          <div className="absolute inset-0 opacity-[0.025] bg-[radial-gradient(circle_at_1px_1px,rgba(255,255,255,0.8)_1px,transparent_0)] [background-size:34px_34px]" />
+        </div>
+
+        <div className="relative z-10 w-full max-w-2xl">
+
+          {/* Status */}
+
+          <div className="mb-8 flex justify-center">
+            <div className="inline-flex items-center gap-2 rounded-full border border-emerald-400/15 bg-emerald-400/[0.05] px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.24em] text-emerald-300">
+              <CheckCircle2
+                size={14}
+              />
+
+              Interview complete
+            </div>
           </div>
 
-          <h1 className="text-4xl md:text-5xl font-black text-white">
-            Interview Completed
-          </h1>
+          {/* Main card */}
 
-          <p className="text-slate-400 text-lg mt-4">
-            Great work, {candidateName}.
-          </p>
+          <div className="relative overflow-hidden rounded-[28px] border border-white/[0.09] bg-white/[0.025] p-8 text-center shadow-[0_40px_120px_rgba(0,0,0,0.45)] backdrop-blur-2xl sm:p-12">
 
-          <div className="mt-8 bg-slate-900 border border-slate-800 rounded-2xl p-8">
+            <div className="pointer-events-none absolute left-1/2 top-0 h-40 w-80 -translate-x-1/2 rounded-full bg-blue-500/[0.10] blur-[80px]" />
 
-            <div className="text-4xl mb-5">
-              🤖
+            <div className="relative">
+
+              <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-3xl border border-blue-300/15 bg-blue-500/[0.08] shadow-[0_0_60px_rgba(59,130,246,0.15)]">
+                <BrainCircuit
+                  size={38}
+                  strokeWidth={1.3}
+                  className="text-blue-300"
+                />
+              </div>
+
+              <h1 className="mt-8 text-4xl font-semibold tracking-[-0.045em] text-white sm:text-5xl">
+                Interview Completed
+              </h1>
+
+              <p className="mt-4 text-base leading-7 text-white/45">
+                Great work, {candidateName}.
+              </p>
+
+              {/* Analysis status */}
+
+              <div className="mt-10 rounded-2xl border border-white/[0.07] bg-black/20 p-6 text-left">
+
+                <div className="flex items-center gap-3">
+
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-blue-400/15 bg-blue-400/[0.06]">
+                    <Sparkles
+                      size={18}
+                      className="text-blue-300"
+                    />
+                  </div>
+
+                  <div>
+                    <p className="text-sm font-semibold text-white">
+                      Generating your AI report
+                    </p>
+
+                    <p className="mt-1 text-xs text-white/35">
+                      Analyzing technical performance and knowledge gaps
+                    </p>
+                  </div>
+
+                </div>
+
+                <div className="mt-7 h-1.5 overflow-hidden rounded-full bg-white/[0.06]">
+                  <div className="h-full w-full animate-pulse rounded-full bg-gradient-to-r from-blue-500 via-blue-300 to-blue-500" />
+                </div>
+
+                <div className="mt-4 flex items-center justify-between text-[10px] uppercase tracking-[0.18em] text-white/25">
+
+                  <span>
+                    Processing
+                  </span>
+
+                  <span>
+                    Please wait
+                  </span>
+
+                </div>
+
+              </div>
+
             </div>
-
-            <h2 className="text-xl font-bold text-white">
-              Generating Your AI Report...
-            </h2>
-
-            <p className="text-slate-400 mt-4 leading-7">
-              We're analyzing your
-              technical answers,
-              strengths, knowledge gaps,
-              and overall interview
-              performance.
-            </p>
-
-            <div className="mt-8 w-full bg-slate-800 rounded-full h-2 overflow-hidden">
-
-              <div className="bg-blue-500 h-2 rounded-full animate-pulse w-full" />
-
-            </div>
-
-            <p className="text-slate-500 text-sm mt-4">
-              Please wait...
-            </p>
 
           </div>
 
@@ -534,92 +612,592 @@ export default function Interview() {
   }
 
   // ==========================================
+  // Current topic
+  // ==========================================
+
+  const currentTopic =
+    topics[
+      questionNumber - 1
+    ];
+
+  const currentDifficulty =
+    difficulties[
+      questionNumber - 1
+    ];
+
+  const progress =
+    (questionNumber /
+      totalQuestions) *
+    100;
+
+  // ==========================================
   // Interview screen
   // ==========================================
 
   return (
-    <div className="min-h-screen bg-slate-950 flex flex-col">
+    <div className="relative flex min-h-screen flex-col overflow-hidden bg-[#05070a] text-white">
 
+      {/* ====================================== */}
+      {/* Ambient background */}
+      {/* ====================================== */}
+
+      <div className="pointer-events-none fixed inset-0 z-0">
+
+        <div className="absolute left-[20%] top-[-20%] h-[500px] w-[500px] rounded-full bg-blue-500/[0.035] blur-[150px]" />
+
+        <div className="absolute right-[-15%] top-[30%] h-[450px] w-[450px] rounded-full bg-cyan-500/[0.025] blur-[150px]" />
+
+        <div className="absolute bottom-[-20%] left-[10%] h-[500px] w-[500px] rounded-full bg-indigo-500/[0.025] blur-[150px]" />
+
+        <div className="absolute inset-0 opacity-[0.018] bg-[radial-gradient(circle_at_1px_1px,rgba(255,255,255,0.8)_1px,transparent_0)] [background-size:34px_34px]" />
+
+      </div>
+
+      {/* ====================================== */}
       {/* Header */}
+      {/* ====================================== */}
 
-      <InterviewHeader
-        questionNumber={
-          questionNumber
-        }
+      <div className="relative z-20">
 
-        totalQuestions={
-          totalQuestions
-        }
+        <InterviewHeader
+          questionNumber={
+            questionNumber
+          }
 
-        candidateName={
-          candidateName
-        }
+          totalQuestions={
+            totalQuestions
+          }
 
-        topic={
-          topics[
-            questionNumber - 1
-          ]
-        }
+          candidateName={
+            candidateName
+          }
 
-        difficulty={
-          difficulties[
-            questionNumber - 1
-          ]
-        }
-      />
+          topic={
+            currentTopic
+          }
 
-      {/* Chat area */}
+          difficulty={
+            currentDifficulty
+          }
+        />
 
-      <div className="flex-1 overflow-y-auto">
+      </div>
 
-        <div className="max-w-5xl mx-auto px-6 py-8 space-y-6">
+      {/* ====================================== */}
+      {/* Main workspace */}
+      {/* ====================================== */}
 
-          {messages.map(
-            (
-              message,
-              index
-            ) => (
-              <ChatMessage
-                key={index}
-                role={
-                  message.role
-                }
-                text={
-                  message.text
-                }
-              />
-            )
-          )}
+      <main className="relative z-10 flex min-h-0 flex-1">
 
-          {/* Loading */}
+        <div className="mx-auto flex w-full max-w-[1500px] flex-1 flex-col px-4 pb-36 pt-6 sm:px-6 lg:px-8">
 
-          {loading && (
-            <div className="flex justify-start">
+          {/* ================================== */}
+          {/* Session information */}
+          {/* ================================== */}
 
-              <div className="bg-slate-800 rounded-xl px-5 py-3 text-blue-400 italic animate-pulse">
+          <div className="mb-6 grid gap-3 sm:grid-cols-3">
 
-                🤖 AI is thinking...
+            {/* Session */}
+
+            <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] px-4 py-3 backdrop-blur-xl">
+
+              <div className="flex items-center gap-3">
+
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-blue-400/10 bg-blue-400/[0.05]">
+                  <Cpu
+                    size={15}
+                    className="text-blue-300/80"
+                  />
+                </div>
+
+                <div className="min-w-0">
+
+                  <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-white/25">
+                    Interview engine
+                  </p>
+
+                  <p className="mt-0.5 truncate text-xs text-white/65">
+                    Adaptive AI
+                  </p>
+
+                </div>
 
               </div>
 
             </div>
-          )}
 
-          <div
-            ref={bottomRef}
-          />
+            {/* Context */}
+
+            <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] px-4 py-3 backdrop-blur-xl">
+
+              <div className="flex items-center gap-3">
+
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-blue-400/10 bg-blue-400/[0.05]">
+                  <Database
+                    size={15}
+                    className="text-blue-300/80"
+                  />
+                </div>
+
+                <div className="min-w-0">
+
+                  <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-white/25">
+                    Context
+                  </p>
+
+                  <p className="mt-0.5 truncate text-xs text-white/65">
+                    Candidate-aware
+                  </p>
+
+                </div>
+
+              </div>
+
+            </div>
+
+            {/* Status */}
+
+            <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] px-4 py-3 backdrop-blur-xl">
+
+              <div className="flex items-center gap-3">
+
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-emerald-400/10 bg-emerald-400/[0.05]">
+                  <ShieldCheck
+                    size={15}
+                    className="text-emerald-300/80"
+                  />
+                </div>
+
+                <div className="min-w-0">
+
+                  <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-white/25">
+                    Session status
+                  </p>
+
+                  <p className="mt-0.5 flex items-center gap-2 text-xs text-white/65">
+
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.8)]" />
+
+                    Live
+
+                  </p>
+
+                </div>
+
+              </div>
+
+            </div>
+
+          </div>
+
+          {/* ================================== */}
+          {/* Interview content */}
+          {/* ================================== */}
+
+          <div className="grid min-h-0 flex-1 gap-6 lg:grid-cols-[minmax(0,1fr)_280px]">
+
+            {/* ================================= */}
+            {/* Conversation */}
+            {/* ================================= */}
+
+            <section className="relative flex min-h-[520px] flex-1 flex-col overflow-hidden rounded-[26px] border border-white/[0.07] bg-white/[0.018] shadow-[0_30px_100px_rgba(0,0,0,0.28)] backdrop-blur-xl">
+
+              {/* Conversation header */}
+
+              <div className="flex shrink-0 items-center justify-between border-b border-white/[0.06] px-5 py-4 sm:px-6">
+
+                <div className="flex items-center gap-3">
+
+                  <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-blue-400/15 bg-blue-400/[0.06]">
+                    <MessageSquareText
+                      size={17}
+                      className="text-blue-300"
+                    />
+                  </div>
+
+                  <div>
+
+                    <p className="text-sm font-semibold text-white/90">
+                      Interview conversation
+                    </p>
+
+                    <p className="mt-0.5 text-[10px] uppercase tracking-[0.18em] text-white/25">
+                      Live technical assessment
+                    </p>
+
+                  </div>
+
+                </div>
+
+                <div className="hidden items-center gap-2 text-[9px] font-semibold uppercase tracking-[0.18em] text-white/25 sm:flex">
+
+                  <Clock3
+                    size={12}
+                  />
+
+                  Question{" "}
+                  {questionNumber}{" "}
+                  of{" "}
+                  {totalQuestions}
+
+                </div>
+
+              </div>
+
+              {/* Messages */}
+
+              <div className="min-h-0 flex-1 overflow-y-auto">
+
+                <div className="mx-auto w-full max-w-4xl px-4 py-6 sm:px-6 sm:py-8">
+
+                  <div className="space-y-5">
+
+                    {messages.map(
+                      (
+                        message,
+                        index
+                      ) => (
+                        <div
+                          key={index}
+                          className="animate-[fadeIn_0.45s_ease-out]"
+                        >
+                          <ChatMessage
+                            role={
+                              message.role
+                            }
+                            text={
+                              message.text
+                            }
+                          />
+                        </div>
+                      )
+                    )}
+
+                    {/* Loading state */}
+
+                    {loading && (
+                      <div className="flex justify-start">
+
+                        <div className="flex max-w-[85%] items-center gap-3 rounded-2xl border border-blue-400/10 bg-blue-400/[0.035] px-5 py-4 shadow-[0_15px_50px_rgba(37,99,235,0.06)]">
+
+                          <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-blue-300/10 bg-blue-300/[0.05]">
+
+                            <Loader2
+                              size={15}
+                              className="animate-spin text-blue-300"
+                            />
+
+                          </div>
+
+                          <div>
+
+                            <p className="text-xs font-semibold text-white/75">
+                              AI is analyzing your answer
+                            </p>
+
+                            <p className="mt-1 text-[10px] uppercase tracking-[0.15em] text-white/25">
+                              Preparing next evaluation
+                            </p>
+
+                          </div>
+
+                        </div>
+
+                      </div>
+                    )}
+
+                    <div
+                      ref={
+                        bottomRef
+                      }
+                    />
+
+                  </div>
+
+                </div>
+
+              </div>
+
+            </section>
+
+            {/* ================================= */}
+            {/* Right intelligence panel */}
+            {/* ================================= */}
+
+            <aside className="hidden lg:block">
+
+              <div className="sticky top-6 space-y-4">
+
+                {/* Progress */}
+
+                <div className="overflow-hidden rounded-[22px] border border-white/[0.07] bg-white/[0.02] p-5 backdrop-blur-xl">
+
+                  <div className="flex items-center justify-between">
+
+                    <div className="flex items-center gap-2">
+
+                      <Target
+                        size={15}
+                        className="text-blue-300"
+                      />
+
+                      <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/40">
+                        Progress
+                      </span>
+
+                    </div>
+
+                    <span className="font-mono text-xs text-white/35">
+                      {Math.round(
+                        progress
+                      )}
+                      %
+                    </span>
+
+                  </div>
+
+                  <div className="mt-5 h-1.5 overflow-hidden rounded-full bg-white/[0.06]">
+
+                    <div
+                      className="h-full rounded-full bg-gradient-to-r from-blue-500 via-blue-300 to-cyan-300 transition-all duration-700"
+                      style={{
+                        width: `${progress}%`,
+                      }}
+                    />
+
+                  </div>
+
+                  <div className="mt-4 flex items-center justify-between text-[10px] text-white/25">
+
+                    <span>
+                      Current
+                    </span>
+
+                    <span>
+                      {questionNumber} /{" "}
+                      {totalQuestions}
+                    </span>
+
+                  </div>
+
+                </div>
+
+                {/* Current topic */}
+
+                <div className="rounded-[22px] border border-white/[0.07] bg-white/[0.02] p-5 backdrop-blur-xl">
+
+                  <div className="flex items-center gap-2">
+
+                    <Zap
+                      size={15}
+                      className="text-blue-300"
+                    />
+
+                    <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/40">
+                      Current focus
+                    </span>
+
+                  </div>
+
+                  <h3 className="mt-5 text-lg font-semibold leading-6 tracking-[-0.025em] text-white">
+                    {currentTopic}
+                  </h3>
+
+                  <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-white/[0.07] bg-white/[0.025] px-3 py-1.5">
+
+                    <span className="h-1.5 w-1.5 rounded-full bg-blue-300" />
+
+                    <span className="text-[9px] font-semibold uppercase tracking-[0.18em] text-white/40">
+                      {currentDifficulty} difficulty
+                    </span>
+
+                  </div>
+
+                </div>
+
+                {/* Latest score */}
+
+                <div className="rounded-[22px] border border-white/[0.07] bg-white/[0.02] p-5 backdrop-blur-xl">
+
+                  <div className="flex items-center justify-between">
+
+                    <div className="flex items-center gap-2">
+
+                      <Sparkles
+                        size={15}
+                        className="text-blue-300"
+                      />
+
+                      <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/40">
+                        Latest evaluation
+                      </span>
+
+                    </div>
+
+                  </div>
+
+                  <div className="mt-5 grid grid-cols-3 gap-2">
+
+                    <ScoreItem
+                      label="Tech"
+                      value={
+                        score.technical
+                      }
+                    />
+
+                    <ScoreItem
+                      label="Comm"
+                      value={
+                        score.communication
+                      }
+                    />
+
+                    <ScoreItem
+                      label="Solve"
+                      value={
+                        score.problemSolving
+                      }
+                    />
+
+                  </div>
+
+                  <p className="mt-4 text-[10px] leading-5 text-white/25">
+                    Scores update after each submitted answer.
+                  </p>
+
+                </div>
+
+                {/* System */}
+
+                <div className="rounded-[22px] border border-white/[0.07] bg-gradient-to-br from-blue-500/[0.06] to-transparent p-5">
+
+                  <div className="flex items-center gap-3">
+
+                    <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-blue-300/10 bg-blue-300/[0.05]">
+
+                      <BrainCircuit
+                        size={17}
+                        className="text-blue-300"
+                      />
+
+                    </div>
+
+                    <div>
+
+                      <p className="text-xs font-semibold text-white/75">
+                        Adaptive AI
+                      </p>
+
+                      <p className="mt-0.5 text-[10px] text-white/25">
+                        Context-aware evaluation
+                      </p>
+
+                    </div>
+
+                  </div>
+
+                  <div className="mt-5 flex items-center gap-2 text-[9px] font-semibold uppercase tracking-[0.16em] text-emerald-300/70">
+
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.8)]" />
+
+                    System operational
+
+                  </div>
+
+                </div>
+
+              </div>
+
+            </aside>
+
+          </div>
 
         </div>
 
+      </main>
+
+      {/* ====================================== */}
+      {/* Answer input */}
+      {/* ====================================== */}
+
+      <div className="relative z-30">
+
+        <div className="pointer-events-none absolute inset-x-0 bottom-full h-20 bg-gradient-to-t from-[#05070a] to-transparent" />
+
+        <InterviewInput
+          onSend={
+            sendAnswer
+          }
+        />
+
       </div>
 
-      {/* Input */}
+      {/* ====================================== */}
+      {/* Bottom status */}
+      {/* ====================================== */}
 
-      <InterviewInput
-        onSend={
-          sendAnswer
-        }
-      />
+      <div className="pointer-events-none fixed bottom-3 left-1/2 z-20 hidden -translate-x-1/2 items-center gap-3 text-[8px] font-semibold uppercase tracking-[0.22em] text-white/15 xl:flex">
+
+        <span className="h-px w-8 bg-white/[0.08]" />
+
+        AI Interview Agent
+
+        <span className="h-px w-8 bg-white/[0.08]" />
+
+      </div>
+
+      {/* ====================================== */}
+      {/* Local animation */}
+      {/* ====================================== */}
+
+      <style>
+        {`
+          @keyframes fadeIn {
+            from {
+              opacity: 0;
+              transform: translateY(8px);
+            }
+
+            to {
+              opacity: 1;
+              transform: translateY(0);
+            }
+          }
+        `}
+      </style>
+
+    </div>
+  );
+}
+
+// ==========================================
+// Score item
+// ==========================================
+
+function ScoreItem({
+  label,
+  value,
+}) {
+  const safeValue =
+    Number.isFinite(
+      Number(value)
+    )
+      ? Number(value)
+      : 0;
+
+  return (
+    <div className="rounded-xl border border-white/[0.06] bg-black/20 p-3 text-center">
+
+      <p className="text-[8px] font-semibold uppercase tracking-[0.14em] text-white/25">
+        {label}
+      </p>
+
+      <p className="mt-2 text-lg font-semibold tracking-[-0.03em] text-white">
+        {safeValue}
+        <span className="text-[10px] text-white/20">
+          /10
+        </span>
+      </p>
 
     </div>
   );
