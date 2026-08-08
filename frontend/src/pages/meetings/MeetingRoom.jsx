@@ -14,6 +14,9 @@ const SOCKET_URL =
   import.meta.env.VITE_API_URL ||
   "http://localhost:5001";
 
+console.log("SOCKET URL:", SOCKET_URL);
+
+
 export default function MeetingRoom() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -48,39 +51,76 @@ export default function MeetingRoom() {
   useEffect(() => {
     let mounted = true;
 
-    const startMedia = async () => {
-      try {
-        const stream =
-          await navigator.mediaDevices.getUserMedia({
-            video: true,
-            audio: true,
-          });
+   const startMedia = async () => {
+  let stream = null;
 
-        if (!mounted) {
-          stream
-            .getTracks()
-            .forEach((track) => track.stop());
+  // Try camera + microphone
+  try {
+    stream =
+      await navigator.mediaDevices.getUserMedia({
+        video: true,
+        audio: true,
+      });
 
-          return;
-        }
+    localStreamRef.current = stream;
 
-        localStreamRef.current = stream;
+    if (localVideoRef.current) {
+      localVideoRef.current.srcObject =
+        stream;
+    }
 
-        if (localVideoRef.current) {
-          localVideoRef.current.srcObject =
-            stream;
-        }
-      } catch (err) {
-        console.error(
-          "Camera/microphone error:",
-          err
-        );
+    setCameraEnabled(true);
+    setMicEnabled(true);
 
-        setError(
-          "Camera or microphone permission was denied. Please allow access and refresh the page."
-        );
-      }
-    };
+    console.log(
+      "Camera and microphone available."
+    );
+
+    return;
+  } catch (error) {
+    console.warn(
+      "Camera + microphone unavailable:",
+      error
+    );
+  }
+
+
+  // Try microphone only
+  try {
+    stream =
+      await navigator.mediaDevices.getUserMedia({
+        video: false,
+        audio: true,
+      });
+
+    localStreamRef.current = stream;
+
+    setCameraEnabled(false);
+    setMicEnabled(true);
+
+    console.log(
+      "Microphone available. Camera unavailable."
+    );
+
+    return;
+  } catch (error) {
+    console.warn(
+      "Microphone unavailable:",
+      error
+    );
+  }
+
+
+  // No camera or microphone
+  localStreamRef.current = null;
+
+  setCameraEnabled(false);
+  setMicEnabled(false);
+
+  console.log(
+    "No camera or microphone available. Continuing without media."
+  );
+};
 
     startMedia();
 
