@@ -30,7 +30,7 @@ export default function EmployeeDashboard() {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
 
-    navigate("/login?role=employee");
+    navigate("/login");
   };
 
 

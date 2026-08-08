@@ -5,31 +5,19 @@ export default function ProtectedRoute({
   role,
 }) {
   const token = localStorage.getItem("token");
-  const userData = localStorage.getItem("user");
 
-  // Not logged in
-  if (!token || !userData) {
-    return <Navigate to="/login" replace />;
-  }
-
-  let user;
+  let user = {};
 
   try {
-    user = JSON.parse(userData);
+    user = JSON.parse(
+      localStorage.getItem("user") || "{}"
+    );
   } catch (error) {
     console.error("Invalid user data:", error);
-
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-
-    return <Navigate to="/login" replace />;
   }
 
-  // User has no valid role
-  if (!user.role) {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-
+  // Not logged in
+  if (!token || !user.role) {
     return <Navigate to="/login" replace />;
   }
 
@@ -42,9 +30,6 @@ export default function ProtectedRoute({
     if (user.role === "employee") {
       return <Navigate to="/employee" replace />;
     }
-
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
 
     return <Navigate to="/login" replace />;
   }
