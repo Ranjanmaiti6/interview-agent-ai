@@ -18,6 +18,14 @@ export default function EmployeeDashboard() {
   const [loading, setLoading] =
     useState(false);
 
+  const [resume, setResume] =
+    useState(null);
+
+
+  // ==========================================
+  // Logout
+  // ==========================================
+
   const logout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
@@ -25,13 +33,105 @@ export default function EmployeeDashboard() {
     navigate("/login?role=employee");
   };
 
+
+  // ==========================================
+  // Select Resume
+  // ==========================================
+
+  const handleResumeChange = (event) => {
+    const file = event.target.files?.[0];
+
+    if (!file) {
+      setResume(null);
+      return;
+    }
+
+    // Allowed file types
+    const allowedTypes = [
+      "application/pdf",
+      "application/msword",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    ];
+
+    if (!allowedTypes.includes(file.type)) {
+      setResume(null);
+
+      setRequestStatus(
+        "Please upload a PDF, DOC, or DOCX resume."
+      );
+
+      event.target.value = "";
+
+      return;
+    }
+
+    // Maximum 5 MB
+    if (file.size > 5 * 1024 * 1024) {
+      setResume(null);
+
+      setRequestStatus(
+        "Resume must be smaller than 5 MB."
+      );
+
+      event.target.value = "";
+
+      return;
+    }
+
+    setResume(file);
+
+    setRequestStatus("");
+  };
+
+
+  // ==========================================
+  // Submit Interview Request
+  // ==========================================
+
   const submitInterviewRequest = async () => {
+
+    if (!resume) {
+      setRequestStatus(
+        "Please upload your resume before submitting the request."
+      );
+
+      return;
+    }
+
     setLoading(true);
     setRequestStatus("");
+
 
     try {
       const token =
         localStorage.getItem("token");
+
+
+      // ========================================
+      // Create multipart form data
+      // ========================================
+
+      const formData = new FormData();
+
+      formData.append(
+        "name",
+        user.name || "Employee"
+      );
+
+      formData.append(
+        "email",
+        user.email || ""
+      );
+
+      formData.append(
+        "resume",
+        resume
+      );
+
+
+      // ========================================
+      // Send request
+      // ========================================
 
       const response = await fetch(
         `${API_URL}/api/employee/request`,
@@ -39,21 +139,18 @@ export default function EmployeeDashboard() {
           method: "POST",
 
           headers: {
-            "Content-Type": "application/json",
-
             Authorization:
               `Bearer ${token}`,
           },
 
-          body: JSON.stringify({
-            name: user.name || "Employee",
-            email: user.email || "",
-          }),
+          body: formData,
         }
       );
 
+
       const data =
         await response.json();
+
 
       if (!response.ok) {
         throw new Error(
@@ -62,11 +159,26 @@ export default function EmployeeDashboard() {
         );
       }
 
+
       setRequestStatus(
-        "Request submitted successfully. The admin will review it."
+        "Request submitted successfully. The admin will review your resume and request."
       );
 
+      setResume(null);
+
+
+      // Reset file input
+      const fileInput =
+        document.getElementById(
+          "resume-upload"
+        );
+
+      if (fileInput) {
+        fileInput.value = "";
+      }
+
     } catch (error) {
+
       console.error(
         "Request error:",
         error
@@ -76,10 +188,14 @@ export default function EmployeeDashboard() {
         error.message ||
           "Unable to submit request."
       );
+
     } finally {
+
       setLoading(false);
+
     }
   };
+
 
   return (
     <div className="min-h-screen bg-slate-950 text-white">
@@ -93,6 +209,7 @@ export default function EmployeeDashboard() {
         <div className="max-w-7xl mx-auto px-6 py-5 flex justify-between items-center">
 
           <div>
+
             <p className="text-blue-400 text-sm font-semibold">
               EMPLOYEE
             </p>
@@ -100,6 +217,7 @@ export default function EmployeeDashboard() {
             <h1 className="text-2xl font-bold">
               Employee Dashboard
             </h1>
+
           </div>
 
           <button
@@ -136,44 +254,107 @@ export default function EmployeeDashboard() {
 
         <div className="mt-10 bg-slate-900 border border-slate-800 rounded-2xl p-8">
 
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+          <p className="text-blue-400 text-sm font-semibold uppercase">
+            Interview Request
+          </p>
 
-            <div>
+          <h3 className="text-2xl font-bold mt-2">
+            Request an Interview
+          </h3>
 
-              <p className="text-blue-400 text-sm font-semibold uppercase">
-                Interview Request
-              </p>
+          <p className="text-slate-400 mt-2 max-w-2xl">
+            Submit your resume and request an
+            interview. The admin will review your
+            profile and resume before scheduling
+            the interview.
+          </p>
 
-              <h3 className="text-2xl font-bold mt-2">
-                Request an Interview
-              </h3>
 
-              <p className="text-slate-400 mt-2 max-w-2xl">
-                Submit a request to the admin to begin
-                the interview process. The admin can
-                review your profile and schedule your
-                interview.
-              </p>
+          {/* ================================= */}
+          {/* Resume Upload */}
+          {/* ================================= */}
 
-            </div>
+          <div className="mt-8">
 
+            <label
+              htmlFor="resume-upload"
+              className="block text-sm font-semibold text-slate-300 mb-3"
+            >
+              Upload Resume
+            </label>
+
+            <input
+              id="resume-upload"
+              type="file"
+              accept=".pdf,.doc,.docx"
+              onChange={handleResumeChange}
+              className="block w-full text-sm text-slate-400
+                file:mr-4
+                file:py-3
+                file:px-5
+                file:rounded-xl
+                file:border-0
+                file:bg-blue-600
+                file:text-white
+                file:font-semibold
+                hover:file:bg-blue-700
+                file:cursor-pointer
+                bg-slate-800
+                border border-slate-700
+                rounded-xl"
+            />
+
+            <p className="text-slate-500 text-sm mt-2">
+              Accepted formats: PDF, DOC, DOCX.
+              Maximum size: 5 MB.
+            </p>
+
+
+            {/* Selected file */}
+
+            {resume && (
+              <div className="mt-4 bg-green-500/10 border border-green-500/20 rounded-xl p-4">
+
+                <p className="text-green-400 font-semibold">
+                  Resume selected
+                </p>
+
+                <p className="text-slate-300 text-sm mt-1">
+                  {resume.name}
+                </p>
+
+              </div>
+            )}
+
+          </div>
+
+
+          {/* ================================= */}
+          {/* Submit */}
+          {/* ================================= */}
+
+          <div className="mt-8 flex justify-end">
 
             <button
               onClick={
                 submitInterviewRequest
               }
               disabled={loading}
-              className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 px-6 py-3 rounded-xl font-semibold whitespace-nowrap"
+              className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed px-6 py-3 rounded-xl font-semibold"
             >
+
               {loading
                 ? "Submitting..."
                 : "Request Interview"}
+
             </button>
 
           </div>
 
 
+          {/* ================================= */}
           {/* Request message */}
+          {/* ================================= */}
 
           {requestStatus && (
             <div className="mt-6 bg-blue-500/10 border border-blue-500/20 text-blue-400 rounded-xl p-4">
@@ -189,6 +370,7 @@ export default function EmployeeDashboard() {
         {/* ================================= */}
 
         <div className="grid md:grid-cols-3 gap-6 mt-10">
+
 
           {/* AI Interview */}
 
@@ -236,7 +418,7 @@ export default function EmployeeDashboard() {
             onClick={() =>
               navigate("/report")
             }
-            className="text-left bg-slate-900 border border-slate-800 rounded-2xl p-6 hover:border-blue-500 transition"
+            className="text-left bg-slate-900 border border-slate-800 rounded-2xl p-6 hover:border-green-500 transition"
           >
 
             <h3 className="text-xl font-bold">
