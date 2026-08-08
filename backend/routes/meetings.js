@@ -21,12 +21,6 @@ router.get(
   requireRole("admin"),
   (req, res) => {
     try {
-      console.log(
-        "GET /api/meetings",
-        "Admin:",
-        req.user?.email
-      );
-
       const meetings = db
         .prepare(`
           SELECT
@@ -54,15 +48,11 @@ router.get(
       });
 
     } catch (error) {
-      console.error(
-        "Get meetings error:",
-        error
-      );
+      console.error("Get meetings error:", error);
 
       return res.status(500).json({
         success: false,
-        message:
-          "Unable to load meetings.",
+        message: "Unable to load meetings.",
       });
     }
   }
@@ -159,15 +149,6 @@ router.post(
         meetingUrl,
       } = req.body;
 
-      console.log(
-        "POST /api/meetings",
-        req.body
-      );
-
-      // ========================================
-      // Validation
-      // ========================================
-
       if (
         !employeeEmail ||
         !title ||
@@ -180,38 +161,18 @@ router.post(
         });
       }
 
-      const cleanEmail =
-        String(employeeEmail)
-          .trim()
-          .toLowerCase();
+      const cleanEmail = String(
+        employeeEmail
+      )
+        .trim()
+        .toLowerCase();
 
       const cleanTitle =
         String(title).trim();
 
-      const cleanName =
-        employeeName
-          ? String(employeeName).trim()
-          : "Employee";
-
-      if (!cleanEmail) {
-        return res.status(400).json({
-          success: false,
-          message:
-            "Employee email is required.",
-        });
-      }
-
-      if (!cleanTitle) {
-        return res.status(400).json({
-          success: false,
-          message:
-            "Meeting title is required.",
-        });
-      }
-
-      // ========================================
-      // Validate date
-      // ========================================
+      const cleanName = employeeName
+        ? String(employeeName).trim()
+        : "Employee";
 
       const scheduledDate =
         new Date(scheduledAt);
@@ -228,9 +189,10 @@ router.post(
         });
       }
 
-      // ========================================
-      // Meeting ID
-      // ========================================
+      const duration =
+        Number(durationMinutes) > 0
+          ? Number(durationMinutes)
+          : 30;
 
       const id =
         `${Date.now()}-${Math.round(
@@ -239,15 +201,6 @@ router.post(
 
       const createdAt =
         new Date().toISOString();
-
-      const duration =
-        Number(durationMinutes) > 0
-          ? Number(durationMinutes)
-          : 30;
-
-      // ========================================
-      // Insert
-      // ========================================
 
       db.prepare(`
         INSERT INTO meetings (
@@ -317,10 +270,6 @@ router.post(
         createdAt,
       });
 
-      // ========================================
-      // Get created meeting
-      // ========================================
-
       const meeting =
         db.prepare(`
           SELECT
@@ -366,18 +315,16 @@ router.post(
 
 // ==========================================
 // GET SINGLE MEETING
-// Admin only
+// Admin OR owning employee
 // GET /api/meetings/:id
 // ==========================================
 
 router.get(
   "/:id",
   authenticateToken,
-  requireRole("admin"),
-  (req, res) => {
+  async (req, res) => {
     try {
-      const { id } =
-        req.params;
+      const { id } = req.params;
 
       const meeting =
         db.prepare(`
@@ -407,9 +354,56 @@ router.get(
         });
       }
 
-      return res.json({
-        success: true,
-        meeting,
+      // ========================================
+      // Admin can access any meeting
+      // ========================================
+
+      if (req.user?.role === "admin") {
+        return res.json({
+          success: true,
+          meeting,
+        });
+      }
+
+      // ========================================
+      // Employee can only access own meeting
+      // ========================================
+
+      if (req.user?.role === "employee") {
+        const loggedInEmail =
+          String(
+            req.user?.email || ""
+          )
+            .trim()
+            .toLowerCase();
+
+        const meetingEmail =
+          String(
+            meeting.employee_email || ""
+          )
+            .trim()
+            .toLowerCase();
+
+        if (
+          !loggedInEmail ||
+          loggedInEmail !== meetingEmail
+        ) {
+          return res.status(403).json({
+            success: false,
+            message:
+              "You are not allowed to access this meeting.",
+          });
+        }
+
+        return res.json({
+          success: true,
+          meeting,
+        });
+      }
+
+      return res.status(403).json({
+        success: false,
+        message: "Access denied.",
       });
 
     } catch (error) {
@@ -439,8 +433,7 @@ router.put(
   requireRole("admin"),
   (req, res) => {
     try {
-      const { id } =
-        req.params;
+      const { id } = req.params;
 
       const {
         employeeRequestId,
@@ -469,10 +462,6 @@ router.put(
         });
       }
 
-      // ========================================
-      // Validate status
-      // ========================================
-
       const allowedStatuses = [
         "scheduled",
         "completed",
@@ -493,10 +482,6 @@ router.put(
             "Invalid meeting status.",
         });
       }
-
-      // ========================================
-      // Validate date if supplied
-      // ========================================
 
       let nextScheduledAt =
         existing.scheduled_at;
@@ -520,9 +505,6 @@ router.put(
         nextScheduledAt =
           date.toISOString();
       }
-
-      const updatedAt =
-        new Date().toISOString();
 
       const nextEmail =
         employeeEmail
@@ -553,12 +535,13 @@ router.put(
 
       const nextMeetingUrl =
         meetingUrl !== undefined
-          ? (
-              meetingUrl
-                ? String(meetingUrl).trim()
-                : null
-            )
+          ? meetingUrl
+            ? String(meetingUrl).trim()
+            : null
           : existing.meeting_url;
+
+      const updatedAt =
+        new Date().toISOString();
 
       db.prepare(`
         UPDATE meetings
@@ -580,23 +563,14 @@ router.put(
           : existing.employee_request_id,
 
         nextName,
-
         nextEmail,
-
         nextTitle,
-
         nextDescription,
-
         nextScheduledAt,
-
         nextDuration,
-
         nextStatus,
-
         nextMeetingUrl,
-
         updatedAt,
-
         id
       );
 
@@ -655,8 +629,7 @@ router.delete(
   requireRole("admin"),
   (req, res) => {
     try {
-      const { id } =
-        req.params;
+      const { id } = req.params;
 
       const result =
         db.prepare(`

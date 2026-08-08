@@ -1,5 +1,8 @@
-const curriculum = require("../data/curriculum.json");
-const candidates = require("../data/candidates.json");
+const curriculum =
+  require("../data/curriculum.json");
+
+const candidates =
+  require("../data/candidates.json");
 
 const {
   addMessage,
@@ -11,6 +14,9 @@ const {
   evaluateAnswer,
 } = require("./aiService");
 
+// ==========================================
+// Interview questions
+// ==========================================
 
 const questions = [
   "Explain Retrieval-Augmented Generation (RAG).",
@@ -30,59 +36,94 @@ const questions = [
   "Design a production-ready AI architecture.",
 ];
 
+// ==========================================
+// Generate interview question/evaluation
+// ==========================================
 
 async function generateQuestion(
   answer,
   questionNumber,
   candidateId
 ) {
+  // ========================================
+  // Validate identifier
+  // ========================================
+
+  const interviewId =
+    String(candidateId);
+
+  // ========================================
+  // Find candidate
+  // ========================================
 
   const candidate =
     candidates.find(
-      (candidate) =>
-        candidate.id == candidateId
-    ) || candidates[0];
+      (item) =>
+        String(item.id) ===
+        interviewId
+    ) || {
+      id: interviewId,
 
+      name:
+        "Employee Candidate",
+
+      email:
+        interviewId.includes("@")
+          ? interviewId
+          : "",
+    };
+
+  // ========================================
+  // Current curriculum topic
+  // ========================================
 
   const topic =
     curriculum[questionNumber] ||
-    curriculum[0];
+    curriculum[0] ||
+    {};
 
+  // ========================================
+  // Current question
+  // ========================================
 
-  // ==========================================
+  const currentQuestion =
+    questions[questionNumber] ||
+    questions[0];
+
+  // ========================================
   // 1. Retrieve previous interview memory
-  // ==========================================
+  // ========================================
 
   const previousConversation =
-    await getConversation(candidateId);
+    await getConversation(
+      interviewId
+    );
 
-
-  // ==========================================
-  // 2. Save current candidate answer
-  // ==========================================
+  // ========================================
+  // 2. Save candidate answer
+  // ========================================
 
   await addMessage(
-    candidateId,
+    interviewId,
     "user",
     answer
   );
 
-
-  // ==========================================
+  // ========================================
   // 3. Get updated conversation
-  // ==========================================
+  // ========================================
 
   const conversation =
-    await getConversation(candidateId);
+    await getConversation(
+      interviewId
+    );
 
-
-  // ==========================================
-  // 4. Evaluate using interview history
-  // ==========================================
+  // ========================================
+  // 4. Evaluate answer
+  // ========================================
 
   const evaluation =
     await evaluateAnswer({
-
       candidate,
 
       topic:
@@ -91,40 +132,39 @@ async function generateQuestion(
         "AI Engineering",
 
       question:
-        questions[questionNumber],
+        currentQuestion,
 
       answer,
 
       conversation,
 
       previousConversation,
-
     });
 
-
-  // ==========================================
-  // 5. Save AI feedback to memory
-  // ==========================================
+  // ========================================
+  // 5. Save AI feedback
+  // ========================================
 
   await addMessage(
-    candidateId,
+    interviewId,
     "assistant",
-    evaluation.feedback
+    evaluation.feedback ||
+      "Good answer."
   );
 
-
-  // ==========================================
+  // ========================================
   // 6. Determine next question
-  // ==========================================
+  // ========================================
 
   const nextQuestion =
-    questions[questionNumber + 1] ||
+    questions[
+      questionNumber + 1
+    ] ||
     "Interview Completed";
 
-
-  // ==========================================
+  // ========================================
   // 7. Score
-  // ==========================================
+  // ========================================
 
   const score =
     evaluation.score || {
@@ -133,62 +173,58 @@ async function generateQuestion(
       problemSolving: 7,
     };
 
-
-  // ==========================================
-  // 8. Calculate recommendation
-  // ==========================================
+  // ========================================
+  // 8. Calculate average
+  // ========================================
 
   const average =
     (
-      score.technical +
-      score.communication +
-      score.problemSolving
+      Number(score.technical || 0) +
+      Number(score.communication || 0) +
+      Number(score.problemSolving || 0)
     ) / 3;
 
+  // ========================================
+  // 9. Recommendation
+  // ========================================
 
   let recommendation;
 
-
   if (average >= 8.5) {
-
     recommendation =
       "Excellent performance. Recommended for an AI Engineering Internship.";
-
   } else if (average >= 7) {
-
     recommendation =
       "Good performance. Strong fundamentals with room for improvement.";
-
   } else {
-
     recommendation =
       "Needs more practice before technical interviews.";
   }
 
-
-  // ==========================================
-  // 9. Final conversation state
-  // ==========================================
+  // ========================================
+  // 10. Final conversation
+  // ========================================
 
   const finalConversation =
-    await getConversation(candidateId);
+    await getConversation(
+      interviewId
+    );
 
-
-  // ==========================================
-  // 10. Clear local memory after interview
-  // ==========================================
+  // ========================================
+  // 11. Clear memory after final question
+  // ========================================
 
   if (questionNumber >= 7) {
-    clearConversation(candidateId);
+    await clearConversation(
+      interviewId
+    );
   }
 
-
-  // ==========================================
-  // 11. Return interview result
-  // ==========================================
+  // ========================================
+  // 12. Return result
+  // ========================================
 
   return {
-
     candidate:
       candidate.name,
 
@@ -198,7 +234,8 @@ async function generateQuestion(
       "AI Engineering",
 
     feedback:
-      evaluation.feedback,
+      evaluation.feedback ||
+      "Good answer.",
 
     nextQuestion,
 
@@ -219,7 +256,6 @@ async function generateQuestion(
       questionNumber + 1,
   };
 }
-
 
 module.exports = {
   generateQuestion,
