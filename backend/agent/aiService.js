@@ -1,5 +1,10 @@
 const OpenAI = require("openai");
 
+
+// ==========================================
+// OpenAI Client
+// ==========================================
+
 let client = null;
 
 if (process.env.OPENAI_API_KEY) {
@@ -10,11 +15,14 @@ if (process.env.OPENAI_API_KEY) {
 
 
 // ==========================================
-// Topic-specific mock evaluation
+// Topic-Specific Mock Evaluation
 // ==========================================
 
-function mockEvaluation({ topic, answer }) {
-
+function mockEvaluation({
+  topic,
+  answer,
+  conversation = [],
+}) {
   const text = answer.trim().toLowerCase();
 
   const length = text.length;
@@ -36,19 +44,17 @@ function mockEvaluation({ topic, answer }) {
     topic.includes("Retrieval-Augmented") ||
     topic.includes("RAG")
   ) {
-
     if (
       text.includes("retriev") &&
       text.includes("document") &&
       text.includes("vector")
     ) {
-
       technical = 9;
       communication = 8;
       problemSolving = 8;
 
       feedback =
-        "Strong RAG explanation. You correctly described retrieving relevant information from a vector-based knowledge source before giving the context to the language model.";
+        "Strong RAG explanation. You correctly described retrieving relevant information from a vector-based knowledge source and providing that context to the language model.";
 
       strengths = [
         "RAG architecture",
@@ -60,15 +66,13 @@ function mockEvaluation({ topic, answer }) {
         "Reranking strategies",
         "Retrieval evaluation",
       ];
-
     } else {
-
       technical = length > 80 ? 7 : 5;
       communication = length > 80 ? 7 : 6;
       problemSolving = 6;
 
       feedback =
-        "You identified part of the RAG concept, but the explanation should clearly cover document ingestion, chunking, embeddings, vector retrieval, context injection, and generation.";
+        "You identified part of the RAG concept, but the explanation should cover document ingestion, chunking, embeddings, vector retrieval, context injection, and generation.";
 
       strengths = [
         "Basic RAG understanding",
@@ -90,7 +94,6 @@ function mockEvaluation({ topic, answer }) {
   else if (
     topic.toLowerCase().includes("chunking")
   ) {
-
     if (
       text.includes("chunk") &&
       (
@@ -99,7 +102,6 @@ function mockEvaluation({ topic, answer }) {
         text.includes("embedding")
       )
     ) {
-
       technical = 9;
       communication = 8;
       problemSolving = 8;
@@ -117,10 +119,10 @@ function mockEvaluation({ topic, answer }) {
         "Chunk overlap",
         "Semantic chunking",
       ];
-
     } else {
-
       technical = length > 80 ? 7 : 5;
+      communication = length > 80 ? 7 : 6;
+      problemSolving = 6;
 
       feedback =
         "Your answer should explain why large documents are divided into smaller chunks and how chunk size affects retrieval quality and LLM context.";
@@ -145,12 +147,10 @@ function mockEvaluation({ topic, answer }) {
   else if (
     topic.toLowerCase().includes("few-shot")
   ) {
-
     if (
       text.includes("example") &&
       text.includes("prompt")
     ) {
-
       technical = 9;
       communication = 8;
       problemSolving = 8;
@@ -168,10 +168,10 @@ function mockEvaluation({ topic, answer }) {
         "Example selection",
         "Prompt token efficiency",
       ];
-
     } else {
-
       technical = length > 80 ? 7 : 5;
+      communication = length > 80 ? 7 : 6;
+      problemSolving = 6;
 
       feedback =
         "Explain few-shot prompting using examples. Describe how providing several input-output examples helps guide the model's expected behavior.";
@@ -195,7 +195,6 @@ function mockEvaluation({ topic, answer }) {
   else if (
     topic.toLowerCase().includes("agent")
   ) {
-
     if (
       text.includes("tool") &&
       (
@@ -204,13 +203,12 @@ function mockEvaluation({ topic, answer }) {
         text.includes("action")
       )
     ) {
-
       technical = 9;
       communication = 8;
       problemSolving = 9;
 
       feedback =
-        "Strong explanation of AI agents. You described the important relationship between reasoning, planning, tool usage, actions, and feedback.";
+        "Strong explanation of AI agents. You described the relationship between reasoning, planning, tool usage, actions, and feedback.";
 
       strengths = [
         "Agent architecture",
@@ -222,10 +220,10 @@ function mockEvaluation({ topic, answer }) {
         "Agent memory",
         "Failure handling",
       ];
-
     } else {
-
       technical = length > 80 ? 7 : 5;
+      communication = length > 80 ? 7 : 6;
+      problemSolving = length > 80 ? 7 : 5;
 
       feedback =
         "Your answer should explain how an AI agent observes a task, reasons about it, selects tools or actions, and uses the results to continue toward a goal.";
@@ -250,18 +248,16 @@ function mockEvaluation({ topic, answer }) {
   else if (
     topic.toLowerCase().includes("mcp")
   ) {
-
     if (
       text.includes("model") &&
       text.includes("context")
     ) {
-
       technical = 8;
       communication = 8;
       problemSolving = 8;
 
       feedback =
-        "Good MCP explanation. You identified its role in connecting models or AI applications with external tools and context in a standardized way.";
+        "Good MCP explanation. You identified its role in connecting AI applications with external tools and context in a standardized way.";
 
       strengths = [
         "MCP fundamentals",
@@ -272,10 +268,10 @@ function mockEvaluation({ topic, answer }) {
         "MCP clients and servers",
         "Resources and tools",
       ];
-
     } else {
-
       technical = length > 80 ? 7 : 5;
+      communication = length > 80 ? 7 : 6;
+      problemSolving = 6;
 
       feedback =
         "Explain MCP more precisely by discussing how it standardizes the way AI applications interact with external tools, resources, and context.";
@@ -299,13 +295,11 @@ function mockEvaluation({ topic, answer }) {
   else if (
     topic.toLowerCase().includes("deploy")
   ) {
-
     if (
       text.includes("docker") ||
       text.includes("cloud") ||
       text.includes("api")
     ) {
-
       technical = 8;
       communication = 8;
       problemSolving = 9;
@@ -324,10 +318,10 @@ function mockEvaluation({ topic, answer }) {
         "Scaling",
         "Security",
       ];
-
     } else {
-
       technical = length > 100 ? 7 : 5;
+      communication = length > 100 ? 7 : 6;
+      problemSolving = length > 100 ? 7 : 5;
 
       feedback =
         "Expand the deployment discussion by covering APIs, containers, cloud infrastructure, secrets management, monitoring, scaling, and reliability.";
@@ -346,19 +340,17 @@ function mockEvaluation({ topic, answer }) {
 
 
   // ==========================================
-  // Evaluation
+  // AI Evaluation
   // ==========================================
 
   else if (
     topic.toLowerCase().includes("evaluate")
   ) {
-
     if (
       text.includes("metric") ||
       text.includes("accuracy") ||
       text.includes("evaluation")
     ) {
-
       technical = 8;
       communication = 8;
       problemSolving = 9;
@@ -376,10 +368,10 @@ function mockEvaluation({ topic, answer }) {
         "LLM-as-a-judge",
         "Evaluation datasets",
       ];
-
     } else {
-
       technical = length > 100 ? 7 : 5;
+      communication = length > 100 ? 7 : 6;
+      problemSolving = length > 100 ? 7 : 5;
 
       feedback =
         "Explain how you would evaluate an AI system using representative test datasets, quality metrics, human evaluation, and production monitoring.";
@@ -405,7 +397,6 @@ function mockEvaluation({ topic, answer }) {
     topic.toLowerCase().includes("architecture") ||
     topic.toLowerCase().includes("system design")
   ) {
-
     if (
       text.includes("api") &&
       (
@@ -413,7 +404,6 @@ function mockEvaluation({ topic, answer }) {
         text.includes("vector")
       )
     ) {
-
       technical = 9;
       communication = 8;
       problemSolving = 9;
@@ -432,10 +422,10 @@ function mockEvaluation({ topic, answer }) {
         "Security",
         "Failure recovery",
       ];
-
     } else {
-
       technical = length > 150 ? 7 : 5;
+      communication = length > 150 ? 7 : 6;
+      problemSolving = length > 150 ? 7 : 5;
 
       feedback =
         "For a production architecture, explain the major components, data flow, APIs, model layer, storage, retrieval, monitoring, security, and failure handling.";
@@ -454,13 +444,11 @@ function mockEvaluation({ topic, answer }) {
 
 
   // ==========================================
-  // Generic fallback
+  // Generic Fallback
   // ==========================================
 
   else {
-
     if (length > 150) {
-
       technical = 8;
       communication = 8;
       problemSolving = 8;
@@ -476,9 +464,7 @@ function mockEvaluation({ topic, answer }) {
       gaps = [
         "Concrete implementation examples",
       ];
-
     } else if (length > 70) {
-
       technical = 7;
       communication = 7;
       problemSolving = 7;
@@ -494,9 +480,7 @@ function mockEvaluation({ topic, answer }) {
         "Implementation details",
         "Examples",
       ];
-
     } else {
-
       technical = 5;
       communication = 6;
       problemSolving = 5;
@@ -512,6 +496,22 @@ function mockEvaluation({ topic, answer }) {
         "Reasoning",
       ];
     }
+  }
+
+
+  // ==========================================
+  // Add memory-aware feedback
+  // ==========================================
+
+  const previousUserMessages =
+    conversation.filter(
+      (message) =>
+        message.role === "user"
+    );
+
+  if (previousUserMessages.length > 1) {
+    feedback +=
+      " Your response is also being considered in the context of your previous interview answers.";
   }
 
 
@@ -532,7 +532,7 @@ function mockEvaluation({ topic, answer }) {
 
 
 // ==========================================
-// Main evaluation function
+// Main Evaluation Function
 // ==========================================
 
 async function evaluateAnswer({
@@ -540,15 +540,14 @@ async function evaluateAnswer({
   topic,
   question,
   answer,
-  conversation,
+  conversation = [],
 }) {
 
-  // ------------------------------------------
-  // No API key → intelligent mock evaluation
-  // ------------------------------------------
+  // ==========================================
+  // No OpenAI API key
+  // ==========================================
 
   if (!client) {
-
     console.log(
       "OPENAI_API_KEY not configured. Using topic-aware mock evaluation."
     );
@@ -556,13 +555,14 @@ async function evaluateAnswer({
     return mockEvaluation({
       topic,
       answer,
+      conversation,
     });
   }
 
 
-  // ------------------------------------------
-  // Real OpenAI evaluation
-  // ------------------------------------------
+  // ==========================================
+  // Real OpenAI Evaluation
+  // ==========================================
 
   const prompt = `
 You are a senior AI engineer conducting a technical interview.
@@ -579,15 +579,20 @@ ${question}
 Candidate Answer:
 ${answer}
 
-Conversation:
-${JSON.stringify(conversation, null, 2)}
+Previous Interview Conversation:
+${JSON.stringify(
+  conversation,
+  null,
+  2
+)}
 
-Evaluate the candidate's answer.
+Evaluate the candidate's answer while considering
+their previous interview responses.
 
-Return ONLY valid JSON:
+Return ONLY valid JSON in this exact structure:
 
 {
-  "feedback": "useful feedback",
+  "feedback": "useful and specific feedback",
   "score": {
     "technical": 0,
     "communication": 0,
@@ -597,52 +602,83 @@ Return ONLY valid JSON:
   "gaps": []
 }
 
-Scores must be between 0 and 10.
+Rules:
+
+- Scores must be between 0 and 10.
+- Give specific feedback.
+- Consider the candidate's previous answers.
+- Identify repeated strengths.
+- Identify knowledge gaps.
+- Do not include markdown.
+- Do not include anything outside the JSON.
 `;
-
-
-  const response =
-    await client.chat.completions.create({
-      model: "gpt-4.1-mini",
-
-      messages: [
-        {
-          role: "system",
-          content:
-            "You are a senior AI engineer evaluating technical interview answers.",
-        },
-        {
-          role: "user",
-          content: prompt,
-        },
-      ],
-
-      temperature: 0.2,
-    });
-
-
-  const content =
-    response.choices[0].message.content;
 
 
   try {
 
-    return JSON.parse(content);
+    const response =
+      await client.chat.completions.create({
+        model: "gpt-4.1-mini",
+
+        messages: [
+          {
+            role: "system",
+            content:
+              "You are a senior AI engineer evaluating technical interview answers.",
+          },
+
+          {
+            role: "user",
+            content: prompt,
+          },
+        ],
+
+        temperature: 0.2,
+      });
+
+
+    const content =
+      response.choices[0].message.content;
+
+
+    try {
+
+      return JSON.parse(content);
+
+    } catch (parseError) {
+
+      console.error(
+        "Failed to parse OpenAI response:"
+      );
+
+      console.error(content);
+
+      return mockEvaluation({
+        topic,
+        answer,
+        conversation,
+      });
+    }
 
   } catch (error) {
 
     console.error(
-      "Failed to parse AI response:",
-      content
+      "OpenAI evaluation failed:",
+      error.message
     );
 
     return mockEvaluation({
       topic,
       answer,
+      conversation,
     });
   }
 }
 
+
+// ==========================================
+// Export
+// ==========================================
 
 module.exports = {
   evaluateAnswer,

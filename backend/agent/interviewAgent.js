@@ -31,10 +31,6 @@ const questions = [
 ];
 
 
-// ==========================================
-// Generate Next Interview Question
-// ==========================================
-
 async function generateQuestion(
   answer,
   questionNumber,
@@ -53,31 +49,40 @@ async function generateQuestion(
     curriculum[0];
 
 
-  // ------------------------------------------
-  // Save candidate answer
-  // ------------------------------------------
+  // ==========================================
+  // 1. Retrieve previous interview memory
+  // ==========================================
 
-  addMessage(
+  const previousConversation =
+    await getConversation(candidateId);
+
+
+  // ==========================================
+  // 2. Save current candidate answer
+  // ==========================================
+
+  await addMessage(
     candidateId,
     "user",
     answer
   );
 
 
-  // ------------------------------------------
-  // Get conversation memory
-  // ------------------------------------------
+  // ==========================================
+  // 3. Get updated conversation
+  // ==========================================
 
   const conversation =
-    getConversation(candidateId);
+    await getConversation(candidateId);
 
 
-  // ------------------------------------------
-  // Evaluate answer
-  // ------------------------------------------
+  // ==========================================
+  // 4. Evaluate using interview history
+  // ==========================================
 
   const evaluation =
     await evaluateAnswer({
+
       candidate,
 
       topic:
@@ -91,32 +96,35 @@ async function generateQuestion(
       answer,
 
       conversation,
+
+      previousConversation,
+
     });
 
 
-  // ------------------------------------------
-  // Save AI feedback
-  // ------------------------------------------
+  // ==========================================
+  // 5. Save AI feedback to memory
+  // ==========================================
 
-  addMessage(
+  await addMessage(
     candidateId,
     "assistant",
     evaluation.feedback
   );
 
 
-  // ------------------------------------------
-  // Next question
-  // ------------------------------------------
+  // ==========================================
+  // 6. Determine next question
+  // ==========================================
 
   const nextQuestion =
     questions[questionNumber + 1] ||
     "Interview Completed";
 
 
-  // ------------------------------------------
-  // Score
-  // ------------------------------------------
+  // ==========================================
+  // 7. Score
+  // ==========================================
 
   const score =
     evaluation.score || {
@@ -126,9 +134,9 @@ async function generateQuestion(
     };
 
 
-  // ------------------------------------------
-  // Recommendation
-  // ------------------------------------------
+  // ==========================================
+  // 8. Calculate recommendation
+  // ==========================================
 
   const average =
     (
@@ -158,26 +166,26 @@ async function generateQuestion(
   }
 
 
-  // ------------------------------------------
-  // Get current conversation
-  // ------------------------------------------
+  // ==========================================
+  // 9. Final conversation state
+  // ==========================================
 
-  const currentConversation =
-    getConversation(candidateId);
+  const finalConversation =
+    await getConversation(candidateId);
 
 
-  // ------------------------------------------
-  // Clear memory after final question
-  // ------------------------------------------
+  // ==========================================
+  // 10. Clear local memory after interview
+  // ==========================================
 
   if (questionNumber >= 7) {
     clearConversation(candidateId);
   }
 
 
-  // ------------------------------------------
-  // Return result
-  // ------------------------------------------
+  // ==========================================
+  // 11. Return interview result
+  // ==========================================
 
   return {
 
@@ -205,7 +213,7 @@ async function generateQuestion(
     recommendation,
 
     conversation:
-      currentConversation,
+      finalConversation,
 
     questionNumber:
       questionNumber + 1,
