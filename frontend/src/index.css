@@ -1,4 +1,377 @@
 @import "tailwindcss";
+
 html {
   scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  background: #05070a;
+  color: #ffffff;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+::selection {
+  background: rgba(59, 130, 246, 0.35);
+  color: #ffffff;
+}
+
+/* =========================================================
+   HERO GRID
+   ========================================================= */
+
+.hero-grid {
+  background-image:
+    linear-gradient(
+      rgba(255, 255, 255, 0.025) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.025) 1px,
+      transparent 1px
+    );
+
+  background-size: 72px 72px;
+
+  mask-image: linear-gradient(
+    to bottom,
+    black 0%,
+    rgba(0, 0, 0, 0.55) 45%,
+    transparent 100%
+  );
+
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    black 0%,
+    rgba(0, 0, 0, 0.55) 45%,
+    transparent 100%
+  );
+}
+
+/* =========================================================
+   HERO ENTRANCE ANIMATION
+   ========================================================= */
+
+.hero-fade-up {
+  opacity: 0;
+  transform: translateY(24px);
+  animation: heroFadeUp 0.9s
+    cubic-bezier(0.22, 1, 0.36, 1)
+    forwards;
+}
+
+.hero-fade-up-delay-1 {
+  animation-delay: 0.08s;
+}
+
+.hero-fade-up-delay-2 {
+  animation-delay: 0.16s;
+}
+
+.hero-fade-up-delay-3 {
+  animation-delay: 0.24s;
+}
+
+.hero-fade-up-delay-4 {
+  animation-delay: 0.34s;
+}
+
+@keyframes heroFadeUp {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* =========================================================
+   HERO CORE
+   ========================================================= */
+
+.hero-core {
+  transform-style: preserve-3d;
+  transition: transform 0.15s ease-out;
+}
+
+/* =========================================================
+   ROTATING RINGS
+   ========================================================= */
+
+.hero-ring {
+  transform: rotateX(64deg);
+  transform-style: preserve-3d;
+  animation: heroRing 16s linear infinite;
+}
+
+.hero-ring-reverse {
+  transform: rotateY(62deg);
+  transform-style: preserve-3d;
+  animation: heroRingReverse 20s linear infinite;
+}
+
+.hero-ring-slow {
+  transform: rotateX(62deg) rotateY(18deg);
+  transform-style: preserve-3d;
+  animation: heroRingSlow 28s linear infinite;
+}
+
+@keyframes heroRing {
+  from {
+    transform: rotateX(64deg) rotateZ(0deg);
+  }
+
+  to {
+    transform: rotateX(64deg) rotateZ(360deg);
+  }
+}
+
+@keyframes heroRingReverse {
+  from {
+    transform: rotateY(62deg) rotateZ(360deg);
+  }
+
+  to {
+    transform: rotateY(62deg) rotateZ(0deg);
+  }
+}
+
+@keyframes heroRingSlow {
+  from {
+    transform: rotateX(62deg)
+      rotateY(18deg)
+      rotateZ(0deg);
+  }
+
+  to {
+    transform: rotateX(62deg)
+      rotateY(18deg)
+      rotateZ(360deg);
+  }
+}
+
+/* =========================================================
+   HERO ORBIT DOTS
+   ========================================================= */
+
+.hero-orbit-dot {
+  transform-origin: 50% 205px;
+  animation: heroOrbit 9s linear infinite;
+}
+
+.hero-orbit-dot-reverse {
+  transform-origin: -65px -150px;
+  animation: heroOrbitReverse 12s linear infinite;
+}
+
+@keyframes heroOrbit {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes heroOrbitReverse {
+  from {
+    transform: rotate(360deg);
+  }
+
+  to {
+    transform: rotate(0deg);
+  }
+}
+
+/* =========================================================
+   HERO DATA POINTS
+   ========================================================= */
+
+.hero-data-1 {
+  animation: heroDataOne 4s ease-in-out infinite;
+}
+
+.hero-data-2 {
+  animation: heroDataTwo 5s ease-in-out infinite;
+}
+
+.hero-data-3 {
+  animation: heroDataThree 4.5s ease-in-out infinite;
+}
+
+@keyframes heroDataOne {
+  0%,
+  100% {
+    opacity: 0.25;
+    transform: translate(0, 0);
+  }
+
+  50% {
+    opacity: 1;
+    transform: translate(10px, -8px);
+  }
+}
+
+@keyframes heroDataTwo {
+  0%,
+  100% {
+    opacity: 0.2;
+    transform: translate(0, 0);
+  }
+
+  50% {
+    opacity: 0.85;
+    transform: translate(-7px, 10px);
+  }
+}
+
+@keyframes heroDataThree {
+  0%,
+  100% {
+    opacity: 0.2;
+    transform: translate(0, 0);
+  }
+
+  50% {
+    opacity: 0.8;
+    transform: translate(8px, 6px);
+  }
+}
+
+/* =========================================================
+   BRAIN PULSE
+   ========================================================= */
+
+.hero-brain-pulse {
+  animation: heroBrainPulse 3s ease-in-out infinite;
+}
+
+@keyframes heroBrainPulse {
+  0%,
+  100% {
+    opacity: 0.7;
+    transform: scale(0.96);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.06);
+  }
+}
+
+/* =========================================================
+   FLOATING LABELS
+   ========================================================= */
+
+.hero-float-a {
+  animation: heroFloatA 6s ease-in-out infinite;
+}
+
+.hero-float-b {
+  animation: heroFloatB 7s ease-in-out infinite;
+}
+
+.hero-float-c {
+  animation: heroFloatC 6.5s ease-in-out infinite;
+}
+
+@keyframes heroFloatA {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+
+  50% {
+    transform: translate3d(0, -9px, 0);
+  }
+}
+
+@keyframes heroFloatB {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+
+  50% {
+    transform: translate3d(0, 10px, 0);
+  }
+}
+
+@keyframes heroFloatC {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+
+  50% {
+    transform: translate3d(7px, -7px, 0);
+  }
+}
+
+/* =========================================================
+   SCROLL INDICATOR
+   ========================================================= */
+
+.hero-scroll-dot {
+  animation: heroScrollDot 1.8s
+    ease-in-out infinite;
+}
+
+@keyframes heroScrollDot {
+  0% {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+
+  30% {
+    opacity: 1;
+  }
+
+  70% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+}
+
+/* =========================================================
+   REDUCED MOTION
+   ========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* =========================================================
+   MOBILE
+   ========================================================= */
+
+@media (max-width: 640px) {
+  .hero-grid {
+    background-size: 48px 48px;
+  }
+
+  .hero-ring,
+  .hero-ring-reverse,
+  .hero-ring-slow {
+    animation-duration: 22s;
+  }
 }
