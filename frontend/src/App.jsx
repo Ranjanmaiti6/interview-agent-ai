@@ -1,8 +1,13 @@
   import { BrowserRouter, Routes, Route } from "react-router-dom";
 
+<<<<<<< HEAD
   import Login from "./pages/Login/Login";
   import AdminDashboard from "./pages/AdminDashboard/AdminDashboard";
   import EmployeeDashboard from "./pages/EmployeeDashboard/EmployeeDashboard";
+import Login from "./pages/Login/login";
+import AdminDashboard from "./pages/AdminDashboard/AdminDashboard";
+import EmployeeDashboard from "./pages/EmployeeDashboard/EmployeeDashboard";
+>>>>>>> af7d66ebfad887a8a839eeffcf0fe530d9b3f8d4
 
   import Landing from "./pages/Landing/Landing";
   import Candidate from "./pages/Candidate/Candidate";
