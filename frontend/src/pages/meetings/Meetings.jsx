@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+
 import {
   ArrowLeft,
   ArrowUpRight,
@@ -22,13 +23,8 @@ const API_URL =
 export default function Meetings() {
   const navigate = useNavigate();
 
-  const [meetings, setMeetings] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [deletingId, setDeletingId] = useState(null);
-
   // ==========================================
-  // Logged-in user
+  // User
   // ==========================================
 
   const getUser = () => {
@@ -43,83 +39,145 @@ export default function Meetings() {
 
   const user = getUser();
 
+  const isAdmin = user.role === "admin";
+  const isEmployee = user.role === "employee";
+
+  // ==========================================
+  // State
+  // ==========================================
+
+  const [meetings, setMeetings] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState("");
+  const [deletingId, setDeletingId] = useState(null);
+
+  // ==========================================
+  // Helpers
+  // ==========================================
+
+  const getToken = () => {
+    return localStorage.getItem("token");
+  };
+
+  const formatDate = (value) => {
+    if (!value) {
+      return "No scheduled time";
+    }
+
+    const date = new Date(value);
+
+    if (Number.isNaN(date.getTime())) {
+      return "Invalid date";
+    }
+
+    return date.toLocaleString(undefined, {
+      dateStyle: "medium",
+      timeStyle: "short",
+    });
+  };
+
   // ==========================================
   // Load meetings
   // ==========================================
 
-  const loadMeetings = async () => {
-    try {
-      setLoading(true);
-      setError("");
+  const loadMeetings = useCallback(
+    async ({ silent = false } = {}) => {
+      try {
+        if (silent) {
+          setRefreshing(true);
+        } else {
+          setLoading(true);
+        }
 
-      const token =
-        localStorage.getItem("token");
+        setError("");
 
-      if (!token) {
-        navigate("/login");
-        return;
-      }
+        const token = getToken();
 
-      const endpoint =
-        user.role === "employee"
+        if (!token) {
+          navigate("/login");
+          return;
+        }
+
+        const endpoint = isEmployee
           ? "/api/meetings/my"
           : "/api/meetings";
 
-      const response = await fetch(
-        `${API_URL}${endpoint}`,
-        {
-          method: "GET",
-          headers: {
-            Authorization:
-              `Bearer ${token}`,
-            Accept: "application/json",
-          },
-        }
-      );
+        const response = await fetch(
+          `${API_URL}${endpoint}`,
+          {
+            method: "GET",
 
-      const data =
-        await response.json();
-
-      if (!response.ok) {
-        throw new Error(
-          data.message ||
-            `Unable to load meetings. HTTP ${response.status}`
+            headers: {
+              Authorization:
+                `Bearer ${token}`,
+              Accept: "application/json",
+            },
+          }
         );
+
+        let data = {};
+
+        try {
+          data = await response.json();
+        } catch {
+          data = {};
+        }
+
+        if (response.status === 401) {
+          localStorage.removeItem("token");
+          localStorage.removeItem("user");
+
+          navigate("/login");
+          return;
+        }
+
+        if (!response.ok) {
+          throw new Error(
+            data.message ||
+              `Unable to load meetings. HTTP ${response.status}`
+          );
+        }
+
+        setMeetings(
+          Array.isArray(data.meetings)
+            ? data.meetings
+            : []
+        );
+      } catch (error) {
+        console.error(
+          "Load meetings error:",
+          error
+        );
+
+        setError(
+          error.message ||
+            "Unable to load meetings."
+        );
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
       }
+    },
+    [navigate, isEmployee]
+  );
 
-      setMeetings(
-        Array.isArray(data.meetings)
-          ? data.meetings
-          : []
-      );
-    } catch (error) {
-      console.error(
-        "Load meetings error:",
-        error
-      );
-
-      setError(
-        error.message ||
-          "Unable to load meetings."
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
+  // ==========================================
+  // Initial load
+  // ==========================================
 
   useEffect(() => {
     loadMeetings();
-  }, []);
+  }, [loadMeetings]);
 
   // ==========================================
   // Delete meeting
   // ==========================================
 
   const deleteMeeting = async (id) => {
-    const confirmed =
-      window.confirm(
-        "Are you sure you want to delete this meeting?"
-      );
+    const confirmed = window.confirm(
+      "Are you sure you want to delete this meeting?"
+    );
 
     if (!confirmed) {
       return;
@@ -129,30 +187,43 @@ export default function Meetings() {
       setDeletingId(id);
       setError("");
 
-      const token =
-        localStorage.getItem("token");
+      const token = getToken();
 
       if (!token) {
         navigate("/login");
         return;
       }
 
-      const response =
-        await fetch(
-          `${API_URL}/api/meetings/${id}`,
-          {
-            method: "DELETE",
-            headers: {
-              Authorization:
-                `Bearer ${token}`,
-              Accept:
-                "application/json",
-            },
-          }
-        );
+      const response = await fetch(
+        `${API_URL}/api/meetings/${encodeURIComponent(
+          id
+        )}`,
+        {
+          method: "DELETE",
 
-      const data =
-        await response.json();
+          headers: {
+            Authorization:
+              `Bearer ${token}`,
+            Accept: "application/json",
+          },
+        }
+      );
+
+      let data = {};
+
+      try {
+        data = await response.json();
+      } catch {
+        data = {};
+      }
+
+      if (response.status === 401) {
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+
+        navigate("/login");
+        return;
+      }
 
       if (!response.ok) {
         throw new Error(
@@ -161,7 +232,12 @@ export default function Meetings() {
         );
       }
 
-      await loadMeetings();
+      setMeetings((previous) =>
+        previous.filter(
+          (meeting) =>
+            meeting.id !== id
+        )
+      );
     } catch (error) {
       console.error(
         "Delete meeting error:",
@@ -178,11 +254,15 @@ export default function Meetings() {
   };
 
   // ==========================================
-  // Status config
+  // Status configuration
   // ==========================================
 
   const getStatusConfig = (status) => {
-    if (status === "completed") {
+    const normalized =
+      String(status || "scheduled")
+        .toLowerCase();
+
+    if (normalized === "completed") {
       return {
         label: "Completed",
         classes:
@@ -191,7 +271,10 @@ export default function Meetings() {
       };
     }
 
-    if (status === "cancelled") {
+    if (
+      normalized === "cancelled" ||
+      normalized === "canceled"
+    ) {
       return {
         label: "Cancelled",
         classes:
@@ -209,42 +292,66 @@ export default function Meetings() {
   };
 
   // ==========================================
-  // Stats
+  // Statistics
   // ==========================================
 
   const stats = useMemo(() => {
+    const scheduled = meetings.filter(
+      (meeting) => {
+        const status =
+          String(
+            meeting.status ||
+              "scheduled"
+          ).toLowerCase();
+
+        return (
+          status === "scheduled" ||
+          status === "pending"
+        );
+      }
+    ).length;
+
+    const completed = meetings.filter(
+      (meeting) =>
+        String(
+          meeting.status || ""
+        ).toLowerCase() ===
+        "completed"
+    ).length;
+
+    const cancelled = meetings.filter(
+      (meeting) => {
+        const status =
+          String(
+            meeting.status || ""
+          ).toLowerCase();
+
+        return (
+          status === "cancelled" ||
+          status === "canceled"
+        );
+      }
+    ).length;
+
     return {
       total: meetings.length,
-
-      scheduled: meetings.filter(
-        (meeting) =>
-          !meeting.status ||
-          meeting.status === "scheduled"
-      ).length,
-
-      completed: meetings.filter(
-        (meeting) =>
-          meeting.status === "completed"
-      ).length,
-
-      cancelled: meetings.filter(
-        (meeting) =>
-          meeting.status === "cancelled"
-      ).length,
+      scheduled,
+      completed,
+      cancelled,
     };
   }, [meetings]);
 
   // ==========================================
-  // Dashboard
+  // Dashboard navigation
   // ==========================================
 
   const goToDashboard = () => {
-    if (user.role === "admin") {
+    if (isAdmin) {
       navigate("/admin");
       return;
     }
 
-    if (user.role === "employee") {
+    if (isEmployee) {
       navigate("/employee");
       return;
     }
@@ -258,7 +365,9 @@ export default function Meetings() {
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-[#05070a] text-white">
+      {/* ====================================== */}
       {/* Ambient background */}
+      {/* ====================================== */}
 
       <div className="pointer-events-none fixed inset-0">
         <div className="absolute left-[8%] top-[-15%] h-[520px] w-[520px] rounded-full bg-blue-500/[0.04] blur-[150px]" />
@@ -279,7 +388,9 @@ export default function Meetings() {
 
       <div className="pointer-events-none absolute left-0 right-0 top-0 h-px bg-gradient-to-r from-transparent via-blue-400/30 to-transparent" />
 
+      {/* ====================================== */}
       {/* Header */}
+      {/* ====================================== */}
 
       <header className="relative z-20 border-b border-white/[0.06] bg-[#07090d]/80 backdrop-blur-2xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5 lg:px-8">
@@ -298,7 +409,7 @@ export default function Meetings() {
               </p>
 
               <h1 className="mt-0.5 text-lg font-semibold tracking-[-0.02em]">
-                {user.role === "admin"
+                {isAdmin
                   ? "Meeting Control"
                   : "My Meetings"}
               </h1>
@@ -317,10 +428,14 @@ export default function Meetings() {
         </div>
       </header>
 
+      {/* ====================================== */}
       {/* Main */}
+      {/* ====================================== */}
 
       <main className="relative z-10 mx-auto max-w-7xl px-6 py-10 lg:px-8 lg:py-14">
+        {/* ==================================== */}
         {/* Heading */}
+        {/* ==================================== */}
 
         <div className="flex flex-col gap-8 border-b border-white/[0.07] pb-10 lg:flex-row lg:items-end lg:justify-between">
           <div>
@@ -328,26 +443,26 @@ export default function Meetings() {
               <span className="h-px w-10 bg-blue-500" />
 
               <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-blue-400">
-                {user.role === "admin"
+                {isAdmin
                   ? "Scheduling"
                   : "Interview Calendar"}
               </span>
             </div>
 
             <h2 className="mt-7 text-5xl font-semibold tracking-[-0.055em] text-white sm:text-6xl">
-              {user.role === "admin"
+              {isAdmin
                 ? "Manage meetings."
                 : "Your interview schedule."}
             </h2>
 
             <p className="mt-5 max-w-2xl text-base leading-7 text-white/35">
-              {user.role === "admin"
+              {isAdmin
                 ? "Schedule, monitor, and manage employee interview sessions."
                 : "View your upcoming interview sessions and join when they are ready."}
             </p>
           </div>
 
-          {user.role === "admin" && (
+          {isAdmin && (
             <button
               type="button"
               onClick={() =>
@@ -369,7 +484,9 @@ export default function Meetings() {
           )}
         </div>
 
+        {/* ==================================== */}
         {/* Stats */}
+        {/* ==================================== */}
 
         <div className="mt-8 grid gap-px overflow-hidden border border-white/[0.07] bg-white/[0.07] sm:grid-cols-2 lg:grid-cols-4">
           <MeetingStat
@@ -401,7 +518,9 @@ export default function Meetings() {
           />
         </div>
 
+        {/* ==================================== */}
         {/* Error */}
+        {/* ==================================== */}
 
         {error && (
           <div className="mt-6 flex items-start gap-3 rounded-2xl border border-red-400/15 bg-red-400/[0.05] p-5 text-sm text-red-300">
@@ -410,7 +529,7 @@ export default function Meetings() {
               className="mt-0.5 shrink-0"
             />
 
-            <div>
+            <div className="min-w-0 flex-1">
               <p className="font-semibold">
                 Meeting error
               </p>
@@ -419,16 +538,28 @@ export default function Meetings() {
                 {error}
               </p>
             </div>
+
+            <button
+              type="button"
+              onClick={() =>
+                setError("")
+              }
+              className="text-red-300/40 transition hover:text-red-300"
+            >
+              <XCircle size={16} />
+            </button>
           </div>
         )}
 
-        {/* Section */}
+        {/* ==================================== */}
+        {/* Meeting pipeline */}
+        {/* ==================================== */}
 
         <section className="mt-14">
           <div className="flex items-center justify-between border-b border-white/[0.07] pb-5">
             <div>
               <p className="text-[10px] font-semibold uppercase tracking-[0.25em] text-white/20">
-                {user.role === "admin"
+                {isAdmin
                   ? "All sessions"
                   : "Scheduled sessions"}
               </p>
@@ -440,14 +571,21 @@ export default function Meetings() {
 
             <button
               type="button"
-              onClick={loadMeetings}
-              disabled={loading}
+              onClick={() =>
+                loadMeetings({
+                  silent: true,
+                })
+              }
+              disabled={
+                loading ||
+                refreshing
+              }
               className="group inline-flex items-center gap-2 rounded-xl border border-white/[0.07] bg-white/[0.02] px-4 py-2.5 text-xs font-semibold text-white/40 transition-all duration-300 hover:border-white/[0.14] hover:bg-white/[0.05] hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
             >
               <RefreshCw
                 size={14}
                 className={
-                  loading
+                  refreshing
                     ? "animate-spin"
                     : "transition-transform duration-300 group-hover:rotate-180"
                 }
@@ -457,7 +595,9 @@ export default function Meetings() {
             </button>
           </div>
 
+          {/* ================================== */}
           {/* Loading */}
+          {/* ================================== */}
 
           {loading && (
             <div className="mt-6 flex min-h-[280px] items-center justify-center rounded-[24px] border border-white/[0.07] bg-white/[0.018]">
@@ -474,7 +614,9 @@ export default function Meetings() {
             </div>
           )}
 
+          {/* ================================== */}
           {/* Empty */}
+          {/* ================================== */}
 
           {!loading &&
             meetings.length === 0 && (
@@ -491,13 +633,12 @@ export default function Meetings() {
                 </h3>
 
                 <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-white/30">
-                  {user.role === "admin"
+                  {isAdmin
                     ? "Create a meeting to schedule an employee interview."
                     : "You do not have any scheduled meetings yet."}
                 </p>
 
-                {user.role ===
-                  "admin" && (
+                {isAdmin && (
                   <button
                     type="button"
                     onClick={() =>
@@ -515,7 +656,9 @@ export default function Meetings() {
               </div>
             )}
 
+          {/* ================================== */}
           {/* Meetings */}
+          {/* ================================== */}
 
           {!loading &&
             meetings.length > 0 && (
@@ -537,11 +680,13 @@ export default function Meetings() {
                         }
                         className="group relative overflow-hidden rounded-[24px] border border-white/[0.07] bg-white/[0.018] transition-all duration-500 hover:border-white/[0.12] hover:bg-white/[0.025]"
                       >
+                        {/* Hover glow */}
+
                         <div className="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full bg-blue-500/[0.045] opacity-0 blur-[80px] transition-opacity duration-700 group-hover:opacity-100" />
 
                         <div className="relative p-6 sm:p-7">
                           <div className="flex flex-col gap-6 lg:flex-row lg:items-center">
-                            {/* Icon */}
+                            {/* Meeting icon */}
 
                             <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-blue-300/10 bg-blue-500/[0.06]">
                               <Video
@@ -551,7 +696,7 @@ export default function Meetings() {
                               />
                             </div>
 
-                            {/* Main information */}
+                            {/* Information */}
 
                             <div className="min-w-0 flex-1">
                               <div className="flex flex-wrap items-center gap-3">
@@ -571,21 +716,26 @@ export default function Meetings() {
                                 </span>
                               </div>
 
-                              {user.role ===
-                                "admin" && (
+                              {/* Admin employee details */}
+
+                              {isAdmin && (
                                 <div className="mt-3">
                                   <p className="text-sm font-medium text-white/55">
                                     {meeting.employee_name ||
                                       "Employee"}
                                   </p>
 
-                                  <p className="mt-0.5 text-xs text-white/25">
-                                    {
-                                      meeting.employee_email
-                                    }
-                                  </p>
+                                  {meeting.employee_email && (
+                                    <p className="mt-0.5 text-xs text-white/25">
+                                      {
+                                        meeting.employee_email
+                                      }
+                                    </p>
+                                  )}
                                 </div>
                               )}
+
+                              {/* Date / duration */}
 
                               <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-white/30">
                                 <span className="inline-flex items-center gap-2">
@@ -593,11 +743,9 @@ export default function Meetings() {
                                     size={13}
                                   />
 
-                                  {meeting.scheduled_at
-                                    ? new Date(
-                                        meeting.scheduled_at
-                                      ).toLocaleString()
-                                    : "No scheduled time"}
+                                  {formatDate(
+                                    meeting.scheduled_at
+                                  )}
                                 </span>
 
                                 <span className="inline-flex items-center gap-2">
@@ -610,6 +758,8 @@ export default function Meetings() {
                                   minutes
                                 </span>
                               </div>
+
+                              {/* Description */}
 
                               {meeting.description && (
                                 <p className="mt-4 max-w-2xl text-sm leading-6 text-white/25">
@@ -627,7 +777,9 @@ export default function Meetings() {
                                 type="button"
                                 onClick={() =>
                                   navigate(
-                                    `/meetings/${meeting.id}`
+                                    `/meetings/${encodeURIComponent(
+                                      meeting.id
+                                    )}`
                                   )
                                 }
                                 className="group/button inline-flex items-center gap-2 rounded-xl bg-blue-500 px-4 py-2.5 text-xs font-semibold text-white transition-all duration-300 hover:-translate-y-0.5 hover:bg-blue-400"
@@ -646,8 +798,9 @@ export default function Meetings() {
                                 />
                               </button>
 
-                              {user.role ===
-                                "admin" && (
+                              {/* Admin delete */}
+
+                              {isAdmin && (
                                 <button
                                   type="button"
                                   onClick={() =>
@@ -664,25 +817,26 @@ export default function Meetings() {
                                   {deletingId ===
                                   meeting.id ? (
                                     <Loader2
-                                      size={
-                                        14
-                                      }
+                                      size={14}
                                       className="animate-spin"
                                     />
                                   ) : (
                                     <Trash2
-                                      size={
-                                        14
-                                      }
+                                      size={14}
                                     />
                                   )}
 
-                                  Delete
+                                  {deletingId ===
+                                  meeting.id
+                                    ? "Deleting..."
+                                    : "Delete"}
                                 </button>
                               )}
                             </div>
                           </div>
                         </div>
+
+                        {/* Bottom hover accent */}
 
                         <div className="absolute bottom-0 left-0 h-px w-0 bg-blue-500 transition-all duration-700 group-hover:w-full" />
                       </article>
@@ -693,7 +847,9 @@ export default function Meetings() {
             )}
         </section>
 
-        {/* Security / system note */}
+        {/* ==================================== */}
+        {/* Security note */}
+        {/* ==================================== */}
 
         <div className="mt-10 flex flex-col gap-4 rounded-2xl border border-white/[0.06] bg-white/[0.018] p-5 sm:flex-row sm:items-center">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-emerald-400/10 bg-emerald-400/[0.04]">
@@ -720,7 +876,7 @@ export default function Meetings() {
 }
 
 // ==========================================
-// Meeting stat
+// Meeting Stat
 // ==========================================
 
 function MeetingStat({
