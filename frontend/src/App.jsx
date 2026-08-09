@@ -14,6 +14,7 @@ import CandidateDashboard from "./pages/CandidateDashboard/CandidateDashboard";
 import Meetings from "./pages/meetings/Meetings";
 import CreateMeeting from "./pages/meetings/CreateMeeting";
 import MeetingRoom from "./pages/meetings/MeetingRoom";
+import Signup from "./pages/Signup/Signup";
 
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 
@@ -30,6 +31,10 @@ function App() {
           path="/"
           element={<Landing />}
         />
+        <Route
+  path="/signup"
+  element={<Signup />}
+/>
 
         <Route
           path="/login"

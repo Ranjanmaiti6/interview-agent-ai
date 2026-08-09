@@ -10,6 +10,7 @@ import CTA from "../../components/landing/CTA";
 
 import About from "../../components/about/About";
 
+
 export default function Landing() {
   return (
     <>

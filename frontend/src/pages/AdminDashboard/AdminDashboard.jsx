@@ -16,11 +16,11 @@ import {
   Users,
   X,
   XCircle,
+  Video,
 } from "lucide-react";
 
 const API_URL = (
-  import.meta.env.VITE_API_URL ||
-  "http://localhost:5001"
+  import.meta.env.VITE_API_URL || "http://localhost:5001"
 ).replace(/\/$/, "");
 
 export default function AdminDashboard() {
@@ -32,9 +32,7 @@ export default function AdminDashboard() {
 
   const getUser = () => {
     try {
-      return JSON.parse(
-        localStorage.getItem("user") || "{}"
-      );
+      return JSON.parse(localStorage.getItem("user") || "{}");
     } catch {
       return {};
     }
@@ -54,8 +52,7 @@ export default function AdminDashboard() {
   // Schedule modal
   // ==========================================
 
-  const [selectedRequest, setSelectedRequest] =
-    useState(null);
+  const [selectedRequest, setSelectedRequest] = useState(null);
 
   const [meetingTitle, setMeetingTitle] =
     useState("AI Interview");
@@ -63,14 +60,12 @@ export default function AdminDashboard() {
   const [meetingDescription, setMeetingDescription] =
     useState("");
 
-  const [scheduledAt, setScheduledAt] =
-    useState("");
+  const [scheduledAt, setScheduledAt] = useState("");
 
   const [durationMinutes, setDurationMinutes] =
     useState("30");
 
-  const [scheduling, setScheduling] =
-    useState(false);
+  const [scheduling, setScheduling] = useState(false);
 
   const [scheduleMessage, setScheduleMessage] =
     useState("");
@@ -102,8 +97,7 @@ export default function AdminDashboard() {
       setLoading(true);
       setError("");
 
-      const token =
-        localStorage.getItem("token");
+      const token = localStorage.getItem("token");
 
       if (!token) {
         navigate("/login");
@@ -115,10 +109,8 @@ export default function AdminDashboard() {
         {
           method: "GET",
           headers: {
-            Authorization:
-              `Bearer ${token}`,
-            Accept:
-              "application/json",
+            Authorization: `Bearer ${token}`,
+            Accept: "application/json",
           },
         }
       );
@@ -174,8 +166,7 @@ export default function AdminDashboard() {
       setUpdatingRequestId(requestId);
       setError("");
 
-      const token =
-        localStorage.getItem("token");
+      const token = localStorage.getItem("token");
 
       if (!token) {
         navigate("/login");
@@ -187,16 +178,10 @@ export default function AdminDashboard() {
         {
           method: "PUT",
           headers: {
-            "Content-Type":
-              "application/json",
-
-            Authorization:
-              `Bearer ${token}`,
-
-            Accept:
-              "application/json",
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+            Accept: "application/json",
           },
-
           body: JSON.stringify({
             status,
           }),
@@ -235,17 +220,41 @@ export default function AdminDashboard() {
   };
 
   // ==========================================
+  // START AI INTERVIEW
+  // ==========================================
+
+  const startInterview = (request) => {
+    if (!request?.id) {
+      setError("Candidate ID is missing.");
+      return;
+    }
+
+    navigate(
+      `/interview?id=${encodeURIComponent(
+        request.id
+      )}`,
+      {
+        state: {
+          candidateId: request.id,
+          employeeRequestId: request.id,
+          employeeEmail: request.email,
+          employeeName:
+            request.name || "Candidate",
+          meetingTitle:
+            "AI Technical Interview",
+        },
+      }
+    );
+  };
+
+  // ==========================================
   // Open schedule modal
   // ==========================================
 
-  const openScheduleModal = (
-    request
-  ) => {
+  const openScheduleModal = (request) => {
     setSelectedRequest(request);
 
-    setMeetingTitle(
-      "AI Interview"
-    );
+    setMeetingTitle("AI Interview");
 
     setMeetingDescription("");
 
@@ -273,9 +282,7 @@ export default function AdminDashboard() {
   // Schedule meeting
   // ==========================================
 
-  const scheduleMeeting = async (
-    event
-  ) => {
+  const scheduleMeeting = async (event) => {
     event.preventDefault();
 
     if (!selectedRequest) {
@@ -286,7 +293,6 @@ export default function AdminDashboard() {
       setScheduleMessage(
         "Please select a date and time."
       );
-
       return;
     }
 
@@ -294,7 +300,6 @@ export default function AdminDashboard() {
       setScheduleMessage(
         "Employee email is missing from the request."
       );
-
       return;
     }
 
@@ -303,8 +308,7 @@ export default function AdminDashboard() {
       setScheduleMessage("");
       setError("");
 
-      const token =
-        localStorage.getItem("token");
+      const token = localStorage.getItem("token");
 
       if (!token) {
         throw new Error(
@@ -318,14 +322,9 @@ export default function AdminDashboard() {
           method: "POST",
 
           headers: {
-            "Content-Type":
-              "application/json",
-
-            Authorization:
-              `Bearer ${token}`,
-
-            Accept:
-              "application/json",
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+            Accept: "application/json",
           },
 
           body: JSON.stringify({
@@ -349,9 +348,7 @@ export default function AdminDashboard() {
             scheduledAt,
 
             durationMinutes:
-              Number(
-                durationMinutes
-              ) || 30,
+              Number(durationMinutes) || 30,
           }),
         }
       );
@@ -401,26 +398,21 @@ export default function AdminDashboard() {
   // ==========================================
 
   const stats = useMemo(() => {
-    const pending =
-      requests.filter(
-        (request) =>
-          request.status === "pending" ||
-          !request.status
-      ).length;
+    const pending = requests.filter(
+      (request) =>
+        request.status === "pending" ||
+        !request.status
+    ).length;
 
-    const accepted =
-      requests.filter(
-        (request) =>
-          request.status ===
-          "accepted"
-      ).length;
+    const accepted = requests.filter(
+      (request) =>
+        request.status === "accepted"
+    ).length;
 
-    const rejected =
-      requests.filter(
-        (request) =>
-          request.status ===
-          "rejected"
-      ).length;
+    const rejected = requests.filter(
+      (request) =>
+        request.status === "rejected"
+    ).length;
 
     return {
       total: requests.length,
@@ -434,17 +426,14 @@ export default function AdminDashboard() {
   // Status
   // ==========================================
 
-  const getStatusConfig = (
-    status
-  ) => {
+  const getStatusConfig = (status) => {
     if (status === "accepted") {
       return {
         label: "Accepted",
         classes:
           "border-emerald-400/15 bg-emerald-400/[0.06] text-emerald-300",
         icon: CheckCircle2,
-        dot:
-          "bg-emerald-400",
+        dot: "bg-emerald-400",
       };
     }
 
@@ -454,8 +443,7 @@ export default function AdminDashboard() {
         classes:
           "border-red-400/15 bg-red-400/[0.06] text-red-300",
         icon: XCircle,
-        dot:
-          "bg-red-400",
+        dot: "bg-red-400",
       };
     }
 
@@ -464,8 +452,7 @@ export default function AdminDashboard() {
       classes:
         "border-amber-400/15 bg-amber-400/[0.06] text-amber-300",
       icon: Clock3,
-      dot:
-        "bg-amber-400",
+      dot: "bg-amber-400",
     };
   };
 
@@ -473,18 +460,12 @@ export default function AdminDashboard() {
   // Initials
   // ==========================================
 
-  const getInitials = (
-    name
-  ) => {
+  const getInitials = (name) => {
     return (
-      name ||
-      "Employee"
+      name || "Employee"
     )
       .split(" ")
-      .map(
-        (part) =>
-          part.charAt(0)
-      )
+      .map((part) => part.charAt(0))
       .join("")
       .slice(0, 2)
       .toUpperCase();
@@ -495,7 +476,7 @@ export default function AdminDashboard() {
   // ==========================================
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[#030507] text-white">
+    <div className="min-h-screen bg-[#05070a] text-white">
 
       {/* ================================================= */}
       {/* BACKGROUND */}
@@ -514,8 +495,7 @@ export default function AdminDashboard() {
           style={{
             backgroundImage:
               "radial-gradient(circle at 1px 1px, rgba(255,255,255,0.8) 1px, transparent 0)",
-            backgroundSize:
-              "34px 34px",
+            backgroundSize: "34px 34px",
           }}
         />
       </div>
@@ -530,11 +510,9 @@ export default function AdminDashboard() {
 
         <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4 sm:px-6 lg:px-8">
 
-          {/* Brand */}
-
           <div className="flex items-center gap-3">
 
-            <div className="relative flex h-11 w-11 items-center justify-center rounded-2xl border border-blue-300/15 bg-blue-400/[0.06] shadow-[0_10px_40px_rgba(37,99,235,0.08)]">
+            <div className="relative flex h-11 w-11 items-center justify-center rounded-2xl border border-blue-300/15 bg-blue-400/[0.06]">
 
               <BrainCircuit
                 size={21}
@@ -560,8 +538,6 @@ export default function AdminDashboard() {
 
           </div>
 
-          {/* Right */}
-
           <div className="flex items-center gap-3">
 
             <div className="hidden items-center gap-2 rounded-full border border-emerald-400/10 bg-emerald-400/[0.035] px-3 py-2 sm:flex">
@@ -585,15 +561,11 @@ export default function AdminDashboard() {
               onClick={logout}
               className="group inline-flex items-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.025] px-3.5 py-2.5 text-xs font-semibold text-white/50 transition-all duration-300 hover:border-red-400/20 hover:bg-red-400/[0.05] hover:text-red-300"
             >
-
-              <LogOut
-                size={14}
-              />
+              <LogOut size={14} />
 
               <span className="hidden sm:inline">
                 Logout
               </span>
-
             </button>
 
           </div>
@@ -608,9 +580,7 @@ export default function AdminDashboard() {
 
       <main className="relative z-10 mx-auto max-w-7xl px-5 py-10 sm:px-6 sm:py-12 lg:px-8 lg:py-16">
 
-        {/* ================================================= */}
         {/* HERO */}
-        {/* ================================================= */}
 
         <section className="relative overflow-hidden rounded-[30px] border border-white/[0.07] bg-white/[0.018] p-7 shadow-[0_40px_120px_rgba(0,0,0,0.30)] backdrop-blur-xl sm:p-10 lg:p-12">
 
@@ -640,8 +610,7 @@ export default function AdminDashboard() {
                 Welcome back,{" "}
 
                 <span className="text-white/35">
-                  {user.name ||
-                    "Admin"}
+                  {user.name || "Admin"}
                 </span>
 
               </h2>
@@ -649,34 +618,31 @@ export default function AdminDashboard() {
               <p className="mt-6 max-w-2xl text-sm leading-7 text-white/35 sm:text-base">
                 Manage candidate requests,
                 review resumes, approve
-                interviews, and schedule
+                interviews, and start
                 AI-powered interview sessions
                 from one centralized workspace.
               </p>
 
             </div>
 
-            {/* Admin profile */}
+            <div className="flex min-w-[240px] items-center gap-4 rounded-2xl border border-white/[0.07] bg-black/20 p-4">
 
-            <div className="flex min-w-[240px] items-center gap-4 rounded-2xl border border-white/[0.07] bg-black/20 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-blue-300/15 bg-blue-400/[0.07] text-sm font-semibold text-blue-200">
 
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-blue-300/15 bg-blue-400/[0.07] text-sm font-semibold text-blue-200 shadow-[0_10px_30px_rgba(37,99,235,0.08)]">
                 {getInitials(
-                  user.name ||
-                    "Admin"
+                  user.name || "Admin"
                 )}
+
               </div>
 
               <div className="min-w-0">
 
                 <p className="truncate text-sm font-semibold text-white/80">
-                  {user.name ||
-                    "Admin"}
+                  {user.name || "Admin"}
                 </p>
 
                 <p className="mt-1 truncate text-xs text-white/30">
-                  {user.email ||
-                    "Administrator"}
+                  {user.email || "Administrator"}
                 </p>
 
               </div>
@@ -705,16 +671,14 @@ export default function AdminDashboard() {
             label="Pending review"
             value={stats.pending}
             description="Awaiting decision"
-            highlight={
-              stats.pending > 0
-            }
+            highlight={stats.pending > 0}
           />
 
           <MetricCard
             icon={CheckCircle2}
             label="Accepted"
             value={stats.accepted}
-            description="Ready to schedule"
+            description="Ready for interview"
           />
 
           <MetricCard
@@ -744,12 +708,9 @@ export default function AdminDashboard() {
             accent="blue"
             onClick={() =>
               document
-                .getElementById(
-                  "employee-requests"
-                )
+                .getElementById("employee-requests")
                 ?.scrollIntoView({
-                  behavior:
-                    "smooth",
+                  behavior: "smooth",
                 })
             }
           />
@@ -760,11 +721,7 @@ export default function AdminDashboard() {
             description="View and manage scheduled interview sessions."
             value="Open meetings"
             accent="violet"
-            onClick={() =>
-              navigate(
-                "/meetings"
-              )
-            }
+            onClick={() => navigate("/meetings")}
           />
 
           <ActionCard
@@ -773,11 +730,7 @@ export default function AdminDashboard() {
             description="Review interview scores and candidate results."
             value="Open reports"
             accent="emerald"
-            onClick={() =>
-              navigate(
-                "/report"
-              )
-            }
+            onClick={() => navigate("/report")}
           />
 
         </section>
@@ -811,17 +764,15 @@ export default function AdminDashboard() {
 
               <p className="mt-3 max-w-2xl text-sm leading-6 text-white/30">
                 Review employee applications,
-                make decisions, and schedule
-                accepted candidates.
+                make decisions, and start or
+                schedule interviews.
               </p>
 
             </div>
 
             <button
               type="button"
-              onClick={
-                loadRequests
-              }
+              onClick={loadRequests}
               disabled={loading}
               className="group inline-flex w-fit items-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.025] px-4 py-2.5 text-xs font-semibold text-white/45 transition-all duration-300 hover:border-white/[0.15] hover:bg-white/[0.05] hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
             >
@@ -894,8 +845,7 @@ export default function AdminDashboard() {
           {/* Empty */}
 
           {!loading &&
-            requests.length ===
-              0 && (
+            requests.length === 0 && (
               <div className="mt-6 rounded-[26px] border border-white/[0.07] bg-white/[0.018] p-12 text-center">
 
                 <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl border border-white/[0.07] bg-white/[0.025]">
@@ -923,293 +873,290 @@ export default function AdminDashboard() {
           {/* Requests */}
 
           {!loading &&
-            requests.length >
-              0 && (
+            requests.length > 0 && (
               <div className="mt-6 space-y-4">
 
-                {requests.map(
-                  (request) => {
-                    const status =
-                      getStatusConfig(
-                        request.status
-                      );
+                {requests.map((request) => {
 
-                    const StatusIcon =
-                      status.icon;
+                  const status =
+                    getStatusConfig(
+                      request.status
+                    );
 
-                    const isUpdating =
-                      updatingRequestId ===
-                      request.id;
+                  const StatusIcon =
+                    status.icon;
 
-                    return (
-                      <article
-                        key={
-                          request.id
-                        }
-                        className="group relative overflow-hidden rounded-[26px] border border-white/[0.07] bg-white/[0.018] shadow-[0_20px_70px_rgba(0,0,0,0.16)] backdrop-blur-xl transition-all duration-500 hover:-translate-y-0.5 hover:border-white/[0.13] hover:bg-white/[0.025]"
-                      >
+                  const isUpdating =
+                    updatingRequestId ===
+                    request.id;
 
-                        {/* Hover glow */}
+                  return (
+                    <article
+                      key={request.id}
+                      className="group relative overflow-hidden rounded-[26px] border border-white/[0.07] bg-white/[0.018] shadow-[0_20px_70px_rgba(0,0,0,0.16)] backdrop-blur-xl transition-all duration-500 hover:-translate-y-0.5 hover:border-white/[0.13] hover:bg-white/[0.025]"
+                    >
 
-                        <div className="pointer-events-none absolute -right-28 -top-28 h-72 w-72 rounded-full bg-blue-500/[0.055] opacity-0 blur-[90px] transition-opacity duration-700 group-hover:opacity-100" />
+                      <div className="pointer-events-none absolute -right-28 -top-28 h-72 w-72 rounded-full bg-blue-500/[0.055] opacity-0 blur-[90px] transition-opacity duration-700 group-hover:opacity-100" />
 
-                        <div className="relative p-6 sm:p-7">
+                      <div className="relative p-6 sm:p-7">
 
-                          {/* Top */}
+                        {/* Candidate Header */}
 
-                          <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+                        <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
 
-                            <div className="flex min-w-0 items-start gap-4">
+                          <div className="flex min-w-0 items-start gap-4">
 
-                              {/* Avatar */}
+                            <div className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-blue-300/10 bg-blue-400/[0.06]">
 
-                              <div className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-blue-300/10 bg-blue-400/[0.06] shadow-[0_10px_30px_rgba(37,99,235,0.06)]">
-
-                                <span className="text-xs font-semibold text-blue-200">
-                                  {getInitials(
-                                    request.name
-                                  )}
-                                </span>
-
-                              </div>
-
-                              <div className="min-w-0">
-
-                                <h3 className="truncate text-lg font-semibold tracking-[-0.025em] text-white">
-                                  {request.name ||
-                                    "Employee"}
-                                </h3>
-
-                                <p className="mt-1 truncate text-sm text-white/35">
-                                  {request.email ||
-                                    "No email"}
-                                </p>
-
-                                <p className="mt-2 flex items-center gap-2 text-[9px] uppercase tracking-[0.15em] text-white/20">
-
-                                  <Clock3
-                                    size={
-                                      11
-                                    }
-                                  />
-
-                                  Requested{" "}
-                                  {request.createdAt
-                                    ? new Date(
-                                        request.createdAt
-                                      ).toLocaleString()
-                                    : "Unknown"}
-
-                                </p>
-
-                              </div>
+                              <span className="text-xs font-semibold text-blue-200">
+                                {getInitials(
+                                  request.name
+                                )}
+                              </span>
 
                             </div>
 
-                            {/* Status */}
+                            <div className="min-w-0">
 
-                            <div
-                              className={`inline-flex w-fit items-center gap-2 rounded-full border px-3.5 py-2 text-[9px] font-semibold uppercase tracking-[0.16em] ${status.classes}`}
-                            >
+                              <h3 className="truncate text-lg font-semibold tracking-[-0.025em] text-white">
+                                {request.name ||
+                                  "Employee"}
+                              </h3>
 
-                              <span
-                                className={`h-1.5 w-1.5 rounded-full ${status.dot}`}
-                              />
+                              <p className="mt-1 truncate text-sm text-white/35">
+                                {request.email ||
+                                  "No email"}
+                              </p>
 
-                              <StatusIcon
-                                size={
-                                  12
-                                }
-                              />
+                              <p className="mt-2 flex items-center gap-2 text-[9px] uppercase tracking-[0.15em] text-white/20">
 
-                              {
-                                status.label
-                              }
+                                <Clock3 size={11} />
+
+                                Requested{" "}
+                                {request.createdAt
+                                  ? new Date(
+                                      request.createdAt
+                                    ).toLocaleString()
+                                  : "Unknown"}
+
+                              </p>
 
                             </div>
 
                           </div>
 
-                          {/* Details */}
+                          {/* Status */}
 
-                          <div className="mt-7 grid gap-px overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.06] sm:grid-cols-3">
+                          <div
+                            className={`inline-flex w-fit items-center gap-2 rounded-full border px-3.5 py-2 text-[9px] font-semibold uppercase tracking-[0.16em] ${status.classes}`}
+                          >
 
-                            {/* Score */}
+                            <span
+                              className={`h-1.5 w-1.5 rounded-full ${status.dot}`}
+                            />
 
-                            <div className="bg-black/20 p-5">
+                            <StatusIcon size={12} />
 
-                              <div className="flex items-center justify-between">
+                            {status.label}
 
-                                <p className="text-[9px] font-semibold uppercase tracking-[0.18em] text-white/20">
-                                  AI score
-                                </p>
+                          </div>
 
-                                <Sparkles
-                                  size={
-                                    13
-                                  }
-                                  className="text-white/15"
-                                />
+                        </div>
 
-                              </div>
+                        {/* Details */}
 
-                              <p className="mt-3 text-2xl font-semibold tracking-[-0.045em] text-white">
+                        <div className="mt-7 grid gap-px overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.06] sm:grid-cols-3">
 
-                                {request.aiScore !==
-                                  null &&
-                                request.aiScore !==
-                                  undefined
-                                  ? request.aiScore
-                                  : "—"}
+                          {/* Score */}
 
-                                {request.aiScore !==
-                                  null &&
-                                request.aiScore !==
-                                  undefined && (
-                                  <span className="ml-1 text-[10px] font-normal text-white/20">
-                                    /100
-                                  </span>
-                                )}
+                          <div className="bg-black/20 p-5">
 
+                            <div className="flex items-center justify-between">
+
+                              <p className="text-[9px] font-semibold uppercase tracking-[0.18em] text-white/20">
+                                AI score
                               </p>
+
+                              <Sparkles
+                                size={13}
+                                className="text-white/15"
+                              />
 
                             </div>
 
-                            {/* Resume */}
+                            <p className="mt-3 text-2xl font-semibold tracking-[-0.045em] text-white">
 
-                            <div className="bg-black/20 p-5">
+                              {request.aiScore !==
+                                null &&
+                              request.aiScore !==
+                                undefined
+                                ? request.aiScore
+                                : "—"}
 
-                              <p className="text-[9px] font-semibold uppercase tracking-[0.18em] text-white/20">
-                                Resume
-                              </p>
-
-                              {request.resume?.url ? (
-                                <a
-                                  href={
-                                    request
-                                      .resume
-                                      .url
-                                  }
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className="mt-3 inline-flex items-center gap-2 text-sm font-medium text-blue-300 transition-colors hover:text-blue-200"
-                                >
-
-                                  <FileText
-                                    size={
-                                      14
-                                    }
-                                  />
-
-                                  View Resume
-
-                                  <ArrowUpRight
-                                    size={
-                                      13
-                                    }
-                                  />
-
-                                </a>
-                              ) : (
-                                <p className="mt-3 text-sm text-white/25">
-                                  Not uploaded
-                                </p>
+                              {request.aiScore !==
+                                null &&
+                              request.aiScore !==
+                                undefined && (
+                                <span className="ml-1 text-[10px] font-normal text-white/20">
+                                  /100
+                                </span>
                               )}
 
-                            </div>
-
-                            {/* Workflow */}
-
-                            <div className="bg-black/20 p-5">
-
-                              <p className="text-[9px] font-semibold uppercase tracking-[0.18em] text-white/20">
-                                Workflow
-                              </p>
-
-                              <p className="mt-3 text-sm font-medium text-white/55">
-
-                                {request.status ===
-                                "accepted"
-                                  ? "Ready to schedule"
-                                  : request.status ===
-                                    "rejected"
-                                  ? "Request closed"
-                                  : "Awaiting review"}
-
-                              </p>
-
-                            </div>
+                            </p>
 
                           </div>
 
-                          {/* Actions */}
+                          {/* Resume */}
 
-                          <div className="mt-6 flex flex-wrap gap-3">
+                          <div className="bg-black/20 p-5">
 
-                            {request.status ===
-                              "pending" && (
-                              <>
-                                <button
-                                  type="button"
-                                  disabled={
-                                    isUpdating
-                                  }
-                                  onClick={() =>
-                                    updateRequestStatus(
-                                      request.id,
-                                      "accepted"
-                                    )
-                                  }
-                                  className="inline-flex items-center gap-2 rounded-xl bg-emerald-500 px-4 py-2.5 text-xs font-semibold text-white shadow-[0_10px_30px_rgba(16,185,129,0.10)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-40"
-                                >
+                            <p className="text-[9px] font-semibold uppercase tracking-[0.18em] text-white/20">
+                              Resume
+                            </p>
 
-                                  {isUpdating ? (
-                                    <Loader2
-                                      size={
-                                        14
-                                      }
-                                      className="animate-spin"
-                                    />
-                                  ) : (
-                                    <Check
-                                      size={
-                                        14
-                                      }
-                                    />
-                                  )}
+                            {request.resume?.url ? (
+                              <a
+                                href={
+                                  request.resume.url
+                                }
+                                target="_blank"
+                                rel="noreferrer"
+                                className="mt-3 inline-flex items-center gap-2 text-sm font-medium text-blue-300 transition-colors hover:text-blue-200"
+                              >
 
-                                  Accept
+                                <FileText size={14} />
 
-                                </button>
+                                View Resume
 
-                                <button
-                                  type="button"
-                                  disabled={
-                                    isUpdating
-                                  }
-                                  onClick={() =>
-                                    updateRequestStatus(
-                                      request.id,
-                                      "rejected"
-                                    )
-                                  }
-                                  className="inline-flex items-center gap-2 rounded-xl border border-red-400/15 bg-red-400/[0.04] px-4 py-2.5 text-xs font-semibold text-red-300 transition-all duration-300 hover:-translate-y-0.5 hover:border-red-400/30 hover:bg-red-400/[0.08] disabled:cursor-not-allowed disabled:opacity-40"
-                                >
+                                <ArrowUpRight size={13} />
 
-                                  <X
-                                    size={
-                                      14
-                                    }
-                                  />
-
-                                  Reject
-
-                                </button>
-                              </>
+                              </a>
+                            ) : (
+                              <p className="mt-3 text-sm text-white/25">
+                                Not uploaded
+                              </p>
                             )}
 
-                            {request.status ===
-                              "accepted" && (
+                          </div>
+
+                          {/* Workflow */}
+
+                          <div className="bg-black/20 p-5">
+
+                            <p className="text-[9px] font-semibold uppercase tracking-[0.18em] text-white/20">
+                              Workflow
+                            </p>
+
+                            <p className="mt-3 text-sm font-medium text-white/55">
+
+                              {request.status ===
+                              "accepted"
+                                ? "Ready for interview"
+                                : request.status ===
+                                  "rejected"
+                                ? "Request closed"
+                                : "Awaiting review"}
+
+                            </p>
+
+                          </div>
+
+                        </div>
+
+                        {/* ================================================= */}
+                        {/* ACTIONS */}
+                        {/* ================================================= */}
+
+                        <div className="mt-6 flex flex-wrap gap-3">
+
+                          {/* Pending */}
+
+                          {request.status ===
+                            "pending" && (
+                            <>
+                              <button
+                                type="button"
+                                disabled={
+                                  isUpdating
+                                }
+                                onClick={() =>
+                                  updateRequestStatus(
+                                    request.id,
+                                    "accepted"
+                                  )
+                                }
+                                className="inline-flex items-center gap-2 rounded-xl bg-emerald-500 px-4 py-2.5 text-xs font-semibold text-white shadow-[0_10px_30px_rgba(16,185,129,0.10)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-40"
+                              >
+
+                                {isUpdating ? (
+                                  <Loader2
+                                    size={14}
+                                    className="animate-spin"
+                                  />
+                                ) : (
+                                  <Check size={14} />
+                                )}
+
+                                Accept
+
+                              </button>
+
+                              <button
+                                type="button"
+                                disabled={
+                                  isUpdating
+                                }
+                                onClick={() =>
+                                  updateRequestStatus(
+                                    request.id,
+                                    "rejected"
+                                  )
+                                }
+                                className="inline-flex items-center gap-2 rounded-xl border border-red-400/15 bg-red-400/[0.04] px-4 py-2.5 text-xs font-semibold text-red-300 transition-all duration-300 hover:-translate-y-0.5 hover:border-red-400/30 hover:bg-red-400/[0.08] disabled:cursor-not-allowed disabled:opacity-40"
+                              >
+
+                                <X size={14} />
+
+                                Reject
+
+                              </button>
+                            </>
+                          )}
+
+                          {/* ================================================= */}
+                          {/* ACCEPTED CANDIDATE */}
+                          {/* ================================================= */}
+
+                          {request.status ===
+                            "accepted" && (
+                            <>
+                              {/* START INTERVIEW */}
+
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  startInterview(
+                                    request
+                                  )
+                                }
+                                className="group/button inline-flex items-center gap-2 rounded-xl bg-blue-500 px-5 py-2.5 text-xs font-semibold text-white shadow-[0_10px_35px_rgba(37,99,235,0.18)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-blue-400 hover:shadow-[0_15px_45px_rgba(37,99,235,0.28)]"
+                              >
+
+                                <Video
+                                  size={15}
+                                />
+
+                                Start AI Interview
+
+                                <ArrowUpRight
+                                  size={13}
+                                  className="transition-transform duration-300 group-hover/button:-translate-y-0.5 group-hover/button:translate-x-0.5"
+                                />
+
+                              </button>
+
+                              {/* SCHEDULE */}
+
                               <button
                                 type="button"
                                 onClick={() =>
@@ -1217,39 +1164,28 @@ export default function AdminDashboard() {
                                     request
                                   )
                                 }
-                                className="group/button inline-flex items-center gap-2 rounded-xl bg-blue-500 px-4 py-2.5 text-xs font-semibold text-white shadow-[0_10px_35px_rgba(37,99,235,0.15)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-blue-400 hover:shadow-[0_15px_45px_rgba(37,99,235,0.25)]"
+                                className="inline-flex items-center gap-2 rounded-xl border border-blue-400/15 bg-blue-400/[0.04] px-4 py-2.5 text-xs font-semibold text-blue-300 transition-all duration-300 hover:-translate-y-0.5 hover:border-blue-400/30 hover:bg-blue-400/[0.08]"
                               >
 
                                 <CalendarDays
-                                  size={
-                                    14
-                                  }
+                                  size={14}
                                 />
 
                                 Schedule Interview
 
-                                <ArrowUpRight
-                                  size={
-                                    13
-                                  }
-                                  className="transition-transform duration-300 group-hover/button:-translate-y-0.5 group-hover/button:translate-x-0.5"
-                                />
-
                               </button>
-                            )}
-
-                          </div>
+                            </>
+                          )}
 
                         </div>
 
-                        {/* Bottom accent */}
+                      </div>
 
-                        <div className="absolute bottom-0 left-0 h-px w-0 bg-blue-400 transition-all duration-700 group-hover:w-full" />
+                      <div className="absolute bottom-0 left-0 h-px w-0 bg-blue-400 transition-all duration-700 group-hover:w-full" />
 
-                      </article>
-                    );
-                  }
-                )}
+                    </article>
+                  );
+                })}
 
               </div>
             )}
@@ -1257,7 +1193,7 @@ export default function AdminDashboard() {
         </section>
 
         {/* ================================================= */}
-        {/* SYSTEM FOOTER */}
+        {/* FOOTER */}
         {/* ================================================= */}
 
         <div className="mt-12 flex flex-col gap-4 border-t border-white/[0.06] pt-6 sm:flex-row sm:items-center sm:justify-between">
@@ -1280,9 +1216,7 @@ export default function AdminDashboard() {
 
           <div className="flex items-center gap-2 text-[9px] uppercase tracking-[0.18em] text-white/15">
 
-            <ShieldCheck
-              size={12}
-            />
+            <ShieldCheck size={12} />
 
             Secure admin session
 
@@ -1299,26 +1233,18 @@ export default function AdminDashboard() {
       {selectedRequest && (
         <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/80 p-4 backdrop-blur-xl sm:p-6">
 
-          {/* Backdrop */}
-
           <button
             type="button"
             aria-label="Close"
-            onClick={
-              closeScheduleModal
-            }
+            onClick={closeScheduleModal}
             className="absolute inset-0 cursor-default"
           />
 
-          {/* Modal */}
-
           <div className="relative z-10 w-full max-w-xl overflow-hidden rounded-[28px] border border-white/[0.10] bg-[#080c12] shadow-[0_40px_160px_rgba(0,0,0,0.70)]">
-
-            {/* Glow */}
 
             <div className="pointer-events-none absolute left-1/2 top-[-100px] h-[260px] w-[500px] -translate-x-1/2 rounded-full bg-blue-500/[0.09] blur-[100px]" />
 
-            {/* Modal header */}
+            {/* Modal Header */}
 
             <div className="relative flex items-start justify-between border-b border-white/[0.07] p-6 sm:p-7">
 
@@ -1343,27 +1269,19 @@ export default function AdminDashboard() {
                 </h2>
 
                 <p className="mt-1 text-sm text-white/30">
-                  {
-                    selectedRequest.email
-                  }
+                  {selectedRequest.email}
                 </p>
 
               </div>
 
               <button
                 type="button"
-                onClick={
-                  closeScheduleModal
-                }
-                disabled={
-                  scheduling
-                }
+                onClick={closeScheduleModal}
+                disabled={scheduling}
                 className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/[0.07] bg-white/[0.025] text-white/35 transition-all duration-300 hover:border-white/[0.14] hover:bg-white/[0.06] hover:text-white disabled:opacity-40"
               >
 
-                <X
-                  size={17}
-                />
+                <X size={17} />
 
               </button>
 
@@ -1372,9 +1290,7 @@ export default function AdminDashboard() {
             {/* Form */}
 
             <form
-              onSubmit={
-                scheduleMeeting
-              }
+              onSubmit={scheduleMeeting}
               className="relative space-y-5 p-6 sm:p-7"
             >
 
@@ -1388,13 +1304,10 @@ export default function AdminDashboard() {
 
                 <input
                   type="text"
-                  value={
-                    meetingTitle
-                  }
+                  value={meetingTitle}
                   onChange={(event) =>
                     setMeetingTitle(
-                      event.target
-                        .value
+                      event.target.value
                     )
                   }
                   required
@@ -1414,13 +1327,10 @@ export default function AdminDashboard() {
 
                 <textarea
                   rows={3}
-                  value={
-                    meetingDescription
-                  }
+                  value={meetingDescription}
                   onChange={(event) =>
                     setMeetingDescription(
-                      event.target
-                        .value
+                      event.target.value
                     )
                   }
                   placeholder="Interview instructions or notes..."
@@ -1441,13 +1351,10 @@ export default function AdminDashboard() {
 
                   <input
                     type="datetime-local"
-                    value={
-                      scheduledAt
-                    }
+                    value={scheduledAt}
                     onChange={(event) =>
                       setScheduledAt(
-                        event.target
-                          .value
+                        event.target.value
                       )
                     }
                     required
@@ -1463,13 +1370,10 @@ export default function AdminDashboard() {
                   </label>
 
                   <select
-                    value={
-                      durationMinutes
-                    }
+                    value={durationMinutes}
                     onChange={(event) =>
                       setDurationMinutes(
-                        event.target
-                          .value
+                        event.target.value
                       )
                     }
                     className="w-full rounded-xl border border-white/[0.08] bg-[#0c1118] px-4 py-3.5 text-sm text-white outline-none transition-all duration-300 focus:border-blue-400/30"
@@ -1501,7 +1405,7 @@ export default function AdminDashboard() {
 
               </div>
 
-              {/* Success / error */}
+              {/* Message */}
 
               {scheduleMessage && (
                 <div
@@ -1529,9 +1433,7 @@ export default function AdminDashboard() {
                   )}
 
                   <p className="text-xs leading-5">
-                    {
-                      scheduleMessage
-                    }
+                    {scheduleMessage}
                   </p>
 
                 </div>
@@ -1561,12 +1463,8 @@ export default function AdminDashboard() {
 
                 <button
                   type="button"
-                  onClick={
-                    closeScheduleModal
-                  }
-                  disabled={
-                    scheduling
-                  }
+                  onClick={closeScheduleModal}
+                  disabled={scheduling}
                   className="rounded-xl border border-white/[0.08] bg-white/[0.025] px-5 py-3 text-sm font-semibold text-white/45 transition-all duration-300 hover:bg-white/[0.05] hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   Cancel
@@ -1574,10 +1472,8 @@ export default function AdminDashboard() {
 
                 <button
                   type="submit"
-                  disabled={
-                    scheduling
-                  }
-                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-500 px-5 py-3 text-sm font-semibold text-white shadow-[0_10px_35px_rgba(37,99,235,0.18)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-blue-400 hover:shadow-[0_15px_45px_rgba(37,99,235,0.25)] disabled:cursor-not-allowed disabled:opacity-50"
+                  disabled={scheduling}
+                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-500 px-5 py-3 text-sm font-semibold text-white shadow-[0_10px_35px_rgba(37,99,235,0.18)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-blue-400 disabled:cursor-not-allowed disabled:opacity-50"
                 >
 
                   {scheduling ? (
@@ -1591,9 +1487,7 @@ export default function AdminDashboard() {
                     </>
                   ) : (
                     <>
-                      <CalendarDays
-                        size={15}
-                      />
+                      <CalendarDays size={15} />
 
                       Schedule Meeting
                     </>
@@ -1626,7 +1520,7 @@ function MetricCard({
   highlight = false,
 }) {
   return (
-    <div className="group relative bg-[#080b10]/90 p-6 transition-all duration-500 hover:bg-[#0b0f15]">
+    <div className="group relative bg-[#080b10] p-6">
 
       <div className="flex items-start justify-between">
 
@@ -1724,9 +1618,7 @@ function ActionCard({
   };
 
   const styles =
-    accentClasses[
-      accent
-    ] ||
+    accentClasses[accent] ||
     accentClasses.blue;
 
   return (
