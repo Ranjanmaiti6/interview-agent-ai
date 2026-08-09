@@ -65,7 +65,7 @@ function findCandidate({
       : null;
 
   // ----------------------------------------
-  // Prefer employee request
+  // Try employee request by ID
   // ----------------------------------------
 
   if (candidateId) {
@@ -87,16 +87,19 @@ function findCandidate({
           request.id,
 
         candidateName:
-          request.name,
+          request.name ||
+          request.employee_name ||
+          "Candidate",
 
         candidateEmail:
-          request.email,
+          request.email ||
+          "",
       };
     }
   }
 
   // ----------------------------------------
-  // Employee request by email
+  // Try employee request by email
   // ----------------------------------------
 
   if (normalizedEmail) {
@@ -119,10 +122,13 @@ function findCandidate({
           request.id,
 
         candidateName:
-          request.name,
+          request.name ||
+          request.employee_name ||
+          "Candidate",
 
         candidateEmail:
-          request.email,
+          request.email ||
+          normalizedEmail,
       };
     }
 
@@ -148,10 +154,12 @@ function findCandidate({
           null,
 
         candidateName:
-          user.name,
+          user.name ||
+          "Candidate",
 
         candidateEmail:
-          user.email,
+          user.email ||
+          normalizedEmail,
       };
     }
   }
@@ -167,7 +175,7 @@ function findCandidate({
       null,
 
     candidateEmail:
-      normalizedEmail,
+      normalizedEmail || "",
   };
 }
 
@@ -179,7 +187,6 @@ function saveInterviewReport({
   result,
   candidate,
   meetingId,
-  questionNumber,
 }) {
   try {
     const score =
@@ -232,12 +239,7 @@ function saveInterviewReport({
       new Date().toISOString();
 
     // ----------------------------------------
-    // Find existing report
-    //
-    // One report per meeting when meetingId
-    // exists.
-    //
-    // Otherwise one report per candidate.
+    // Find existing report by meeting
     // ----------------------------------------
 
     let existingReport = null;
@@ -253,6 +255,11 @@ function saveInterviewReport({
         `)
         .get(meetingId);
     }
+
+    // ----------------------------------------
+    // Find report by candidate if there is
+    // no meeting ID
+    // ----------------------------------------
 
     if (
       !existingReport &&
@@ -275,9 +282,9 @@ function saveInterviewReport({
         );
     }
 
-    // ----------------------------------------
-    // Update existing report
-    // ----------------------------------------
+    // ======================================
+    // UPDATE
+    // ======================================
 
     if (existingReport) {
       db.prepare(`
@@ -301,52 +308,75 @@ function saveInterviewReport({
         WHERE id = ?
       `).run(
         candidate.candidateId,
+
         candidate.employeeRequestId,
+
         candidate.candidateName,
+
         candidate.candidateEmail,
+
         meetingId || null,
+
         summary,
+
         JSON.stringify(
           strengths
         ),
+
         JSON.stringify(
           gaps
         ),
-        JSON.stringify(
-          []
-        ),
+
+        JSON.stringify([]),
+
         technical,
+
         communication,
+
         problemSolving,
+
         overall,
+
         recommendation,
+
         now,
+
         existingReport.id
       );
 
-      // Update candidate score
+      // ------------------------------------
+      // Update employee AI score
+      // ------------------------------------
+
       if (
         candidate.employeeRequestId
       ) {
-        db.prepare(`
-          UPDATE employee_requests
-          SET
-            ai_score = ?,
-            updated_at = ?
-          WHERE id = ?
-        `).run(
-          overall,
-          now,
-          candidate.employeeRequestId
-        );
+        try {
+          db.prepare(`
+            UPDATE employee_requests
+            SET
+              ai_score = ?,
+              updated_at = ?
+            WHERE id = ?
+          `).run(
+            overall,
+            now,
+            candidate.employeeRequestId
+          );
+        } catch (error) {
+          console.error(
+            "Unable to update employee AI score:",
+            error
+          );
+        }
       }
 
       return existingReport.id;
     }
 
-    // ----------------------------------------
-    // Create new report
-    // ----------------------------------------
+    // ======================================
+    // CREATE
+    // ======================================
 
     const reportId =
       `${Date.now()}-${Math.round(
@@ -423,9 +453,7 @@ function saveInterviewReport({
         ),
 
       nextSteps:
-        JSON.stringify(
-          []
-        ),
+        JSON.stringify([]),
 
       technicalScore:
         technical,
@@ -446,24 +474,31 @@ function saveInterviewReport({
       updatedAt: now,
     });
 
-    // ----------------------------------------
-    // Update candidate AI score
-    // ----------------------------------------
+    // ------------------------------------
+    // Update employee AI score
+    // ------------------------------------
 
     if (
       candidate.employeeRequestId
     ) {
-      db.prepare(`
-        UPDATE employee_requests
-        SET
-          ai_score = ?,
-          updated_at = ?
-        WHERE id = ?
-      `).run(
-        overall,
-        now,
-        candidate.employeeRequestId
-      );
+      try {
+        db.prepare(`
+          UPDATE employee_requests
+          SET
+            ai_score = ?,
+            updated_at = ?
+          WHERE id = ?
+        `).run(
+          overall,
+          now,
+          candidate.employeeRequestId
+        );
+      } catch (error) {
+        console.error(
+          "Unable to update employee AI score:",
+          error
+        );
+      }
     }
 
     console.log(
@@ -474,7 +509,6 @@ function saveInterviewReport({
           candidate.candidateId,
         meetingId:
           meetingId || null,
-        questionNumber,
       }
     );
 
@@ -490,7 +524,49 @@ function saveInterviewReport({
 }
 
 // ==========================================
-// POST /api/interview/answer
+// Mark meeting completed
+// ==========================================
+
+function markMeetingCompleted(
+  meetingId
+) {
+  if (!meetingId) {
+    return;
+  }
+
+  try {
+    db.prepare(`
+      UPDATE meetings
+      SET
+        status = 'completed',
+        updated_at = ?
+      WHERE id = ?
+    `).run(
+      new Date().toISOString(),
+      meetingId
+    );
+
+    console.log(
+      "Meeting marked completed:",
+      meetingId
+    );
+  } catch (error) {
+    /*
+     * Do not fail the interview if the
+     * meetings table uses a different schema.
+     */
+    console.warn(
+      "Unable to mark meeting completed:",
+      error.message
+    );
+  }
+}
+
+// ==========================================
+// POST /answer
+//
+// This is used while the AI interview is
+// running.
 // ==========================================
 
 router.post(
@@ -589,7 +665,7 @@ router.post(
       );
 
       // ======================================
-      // Generate evaluation + next question
+      // AI evaluation
       // ======================================
 
       const result =
@@ -613,13 +689,7 @@ router.post(
         });
 
       // ======================================
-      // SAVE REPORT
-      //
-      // This was missing from your old route.
-      //
-      // We save/update the report after every
-      // AI answer so that the report cannot
-      // remain completely empty.
+      // Save current evaluation
       // ======================================
 
       const reportId =
@@ -627,8 +697,6 @@ router.post(
           result,
           candidate,
           meetingId,
-          questionNumber:
-            parsedQuestionNumber,
         });
 
       // ======================================
@@ -685,7 +753,7 @@ router.post(
       });
     } catch (error) {
       console.error(
-        "Interview route error:",
+        "Interview answer route error:",
         error
       );
 
@@ -694,6 +762,249 @@ router.post(
 
         message:
           "Unable to process interview answer.",
+
+        error:
+          process.env.NODE_ENV ===
+          "development"
+            ? error.message
+            : undefined,
+      });
+    }
+  }
+);
+
+// ==========================================
+// POST /complete
+//
+// POST /api/interviews/complete
+//
+// Called by Interview.jsx when the interview
+// is finished.
+// ==========================================
+
+router.post(
+  "/complete",
+  async (req, res) => {
+    try {
+      const {
+        meetingId,
+        candidateId,
+        employeeEmail,
+        answers,
+        durationSeconds,
+      } = req.body;
+
+      // ======================================
+      // Validate
+      // ======================================
+
+      if (!meetingId) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Meeting ID is required.",
+        });
+      }
+
+      // ======================================
+      // Normalize answers
+      // ======================================
+
+      const finalAnswers =
+        Array.isArray(answers)
+          ? answers
+          : [];
+
+      // ======================================
+      // Find candidate
+      // ======================================
+
+      const candidate =
+        findCandidate({
+          candidateId,
+          employeeEmail,
+        });
+
+      // ======================================
+      // Calculate scores from the latest
+      // saved report if it exists.
+      // ======================================
+
+      let existingReport =
+        db
+          .prepare(`
+            SELECT *
+            FROM interview_reports
+            WHERE meeting_id = ?
+            ORDER BY created_at DESC
+            LIMIT 1
+          `)
+          .get(meetingId);
+
+      // ======================================
+      // If there is no report yet, create a
+      // basic completed report.
+      // ======================================
+
+      if (!existingReport) {
+        const fallbackResult = {
+          score: {
+            technical: 0,
+            communication: 0,
+            problemSolving: 0,
+            overall: 0,
+          },
+
+          feedback:
+            finalAnswers.length > 0
+              ? `Interview completed with ${finalAnswers.length} answered question(s).`
+              : "Interview completed without recorded answers.",
+
+          strengths: [],
+
+          gaps: [],
+
+          recommendation:
+            "Under Review",
+        };
+
+        const reportId =
+          saveInterviewReport({
+            result:
+              fallbackResult,
+
+            candidate,
+
+            meetingId,
+          });
+
+        existingReport =
+          reportId
+            ? db
+                .prepare(`
+                  SELECT *
+                  FROM interview_reports
+                  WHERE id = ?
+                  LIMIT 1
+                `)
+                .get(reportId)
+            : null;
+      }
+
+      // ======================================
+      // Update report summary using the final
+      // interview answers.
+      // ======================================
+
+      if (existingReport) {
+        const currentSummary =
+          existingReport.summary ||
+          "";
+
+        let summary =
+          currentSummary;
+
+        if (
+          finalAnswers.length > 0
+        ) {
+          summary =
+            `${currentSummary || "Interview completed."} ` +
+            `The candidate submitted ${finalAnswers.length} answer(s) during the interview.`;
+        }
+
+        const now =
+          new Date().toISOString();
+
+        db.prepare(`
+          UPDATE interview_reports
+          SET
+            candidate_id = ?,
+            employee_request_id = ?,
+            candidate_name = ?,
+            candidate_email = ?,
+            meeting_id = ?,
+            summary = ?,
+            updated_at = ?
+          WHERE id = ?
+        `).run(
+          candidate.candidateId,
+
+          candidate.employeeRequestId,
+
+          candidate.candidateName ||
+            existingReport.candidate_name,
+
+          candidate.candidateEmail ||
+            existingReport.candidate_email,
+
+          meetingId,
+
+          summary,
+
+          now,
+
+          existingReport.id
+        );
+      }
+
+      // ======================================
+      // Mark meeting completed
+      // ======================================
+
+      markMeetingCompleted(
+        meetingId
+      );
+
+      // ======================================
+      // Final response
+      // ======================================
+
+      const report =
+        existingReport
+          ? db
+              .prepare(`
+                SELECT *
+                FROM interview_reports
+                WHERE id = ?
+                LIMIT 1
+              `)
+              .get(
+                existingReport.id
+              )
+          : null;
+
+      return res.status(200).json({
+        success: true,
+
+        message:
+          "Interview completed successfully.",
+
+        meetingId,
+
+        reportId:
+          report?.id || null,
+
+        durationSeconds:
+          safeNumber(
+            durationSeconds
+          ),
+
+        answersCount:
+          finalAnswers.length,
+
+        report: report || null,
+      });
+    } catch (error) {
+      console.error(
+        "Interview completion error:",
+        error
+      );
+
+      return res.status(500).json({
+        success: false,
+
+        message:
+          "Unable to complete interview.",
 
         error:
           process.env.NODE_ENV ===

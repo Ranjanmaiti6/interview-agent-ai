@@ -4,8 +4,15 @@ const express = require("express");
 const cors = require("cors");
 const path = require("path");
 
+// ==========================================
+// Routes
+// ==========================================
+
 const interviewRoute =
   require("./routes/interview");
+
+const reportsRoute =
+  require("./routes/reports");
 
 const employeeRoute =
   require("./routes/employee");
@@ -136,6 +143,11 @@ app.use(
 );
 
 app.use(
+  "/api/reports",
+  reportsRoute
+);
+
+app.use(
   "/api/employee",
   employeeRoute
 );
@@ -167,6 +179,9 @@ app.get(
         interview:
           "/api/interview",
 
+        reports:
+          "/api/reports",
+
         employee:
           "/api/employee",
 
@@ -189,8 +204,25 @@ app.get(
   (req, res) => {
     res.json({
       success: true,
+
       message:
         "Meetings API is running.",
+    });
+  }
+);
+
+// ==========================================
+// Reports health check
+// ==========================================
+
+app.get(
+  "/api/reports/health",
+  (req, res) => {
+    res.json({
+      success: true,
+
+      message:
+        "Reports API is running.",
     });
   }
 );
@@ -268,6 +300,18 @@ app.listen(
 
     console.log(
       `Local: http://localhost:${PORT}`
+    );
+
+    console.log(
+      `Auth: http://localhost:${PORT}/api/auth`
+    );
+
+    console.log(
+      `Interview: http://localhost:${PORT}/api/interview`
+    );
+
+    console.log(
+      `Reports: http://localhost:${PORT}/api/reports`
     );
 
     console.log(
