@@ -128,6 +128,11 @@ app.use(
   meetingsRoute
 );
 
+// Reports
+app.use(
+  "/api/reports",
+  reportsRoute
+);
 // ==========================================
 // Health Check
 // ==========================================
