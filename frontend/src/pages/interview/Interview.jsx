@@ -1,5 +1,14 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import {
+  useLocation,
+  useNavigate,
+} from "react-router-dom";
+
 import {
   ArrowLeft,
   ArrowRight,
@@ -8,10 +17,8 @@ import {
   Clock3,
   Mic,
   MicOff,
-  Send,
   ShieldCheck,
   Sparkles,
-  User,
   Video,
   VideoOff,
   Volume2,
@@ -80,7 +87,7 @@ export default function Interview() {
   const location = useLocation();
 
   // ==========================================
-  // Session information
+  // Navigation / user information
   // ==========================================
 
   const navigationState =
@@ -96,13 +103,11 @@ export default function Interview() {
     }
   }, []);
 
-  const queryParams = useMemo(
-    () =>
-      new URLSearchParams(
-        location.search
-      ),
-    [location.search]
-  );
+  const queryParams = useMemo(() => {
+    return new URLSearchParams(
+      location.search
+    );
+  }, [location.search]);
 
   const meetingId =
     navigationState.meetingId ||
@@ -111,6 +116,7 @@ export default function Interview() {
 
   const candidateId =
     queryParams.get("id") ||
+    navigationState.employeeRequestId ||
     navigationState.employeeEmail ||
     user.email ||
     "";
@@ -119,6 +125,11 @@ export default function Interview() {
     navigationState.employeeName ||
     user.name ||
     "Candidate";
+
+  const candidateEmail =
+    navigationState.employeeEmail ||
+    user.email ||
+    "";
 
   const meetingTitle =
     navigationState.meetingTitle ||
@@ -130,6 +141,9 @@ export default function Interview() {
 
   const [questionIndex, setQuestionIndex] =
     useState(0);
+
+  const [currentQuestionText, setCurrentQuestionText] =
+    useState(QUESTIONS[0].question);
 
   const [answer, setAnswer] =
     useState("");
@@ -152,9 +166,6 @@ export default function Interview() {
   const [isCameraOn, setIsCameraOn] =
     useState(true);
 
-  const [isMuted, setIsMuted] =
-    useState(false);
-
   const [isSpeaking, setIsSpeaking] =
     useState(false);
 
@@ -172,6 +183,9 @@ export default function Interview() {
 
   const [transcriptSupported, setTranscriptSupported] =
     useState(true);
+
+  const [reportId, setReportId] =
+    useState("");
 
   // ==========================================
   // Refs
@@ -219,6 +233,67 @@ export default function Interview() {
   };
 
   // ==========================================
+  // Stop camera
+  // ==========================================
+
+  const stopCamera = () => {
+    if (streamRef.current) {
+      streamRef.current
+        .getTracks()
+        .forEach((track) => {
+          track.stop();
+        });
+
+      streamRef.current = null;
+    }
+
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+  };
+
+  // ==========================================
+  // Stop speech recognition
+  // ==========================================
+
+  const stopListening = () => {
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.stop();
+      } catch {
+        // Ignore
+      }
+    }
+
+    setIsListening(false);
+  };
+
+  // ==========================================
+  // Stop AI voice
+  // ==========================================
+
+  const stopSpeaking = () => {
+    if (
+      typeof window !== "undefined" &&
+      window.speechSynthesis
+    ) {
+      window.speechSynthesis.cancel();
+    }
+
+    setIsSpeaking(false);
+  };
+
+  // ==========================================
+  // Cleanup everything
+  // ==========================================
+
+  const cleanupInterviewMedia = () => {
+    stopListening();
+    stopSpeaking();
+    stopCamera();
+  };
+
+  // ==========================================
   // Camera
   // ==========================================
 
@@ -235,6 +310,7 @@ export default function Interview() {
           !navigator.mediaDevices ||
           !navigator.mediaDevices.getUserMedia
         ) {
+          setIsCameraOn(false);
           return;
         }
 
@@ -280,26 +356,12 @@ export default function Interview() {
   }, [started, finished]);
 
   // ==========================================
-  // Cleanup camera
+  // Cleanup
   // ==========================================
 
   useEffect(() => {
     return () => {
-      if (streamRef.current) {
-        streamRef.current
-          .getTracks()
-          .forEach((track) =>
-            track.stop()
-          );
-      }
-
-      if (recognitionRef.current) {
-        try {
-          recognitionRef.current.stop();
-        } catch {
-          // Ignore cleanup error
-        }
-      }
+      cleanupInterviewMedia();
     };
   }, []);
 
@@ -319,11 +381,13 @@ export default function Interview() {
 
     const timer =
       window.setInterval(() => {
-        setTimeLeft((previous) =>
-          previous > 0
-            ? previous - 1
-            : 0
-        );
+        setTimeLeft((previous) => {
+          if (previous <= 1) {
+            return 0;
+          }
+
+          return previous - 1;
+        });
       }, 1000);
 
     return () =>
@@ -425,12 +489,22 @@ export default function Interview() {
 
   const startInterview = () => {
     setStarted(true);
+    setFinished(false);
     setError("");
     setMessage("");
 
-    speakQuestion(
-      currentQuestion.question
+    const firstQuestion =
+      QUESTIONS[0].question;
+
+    setCurrentQuestionText(
+      firstQuestion
     );
+
+    window.setTimeout(() => {
+      speakQuestion(
+        firstQuestion
+      );
+    }, 200);
   };
 
   // ==========================================
@@ -440,8 +514,9 @@ export default function Interview() {
   const speakQuestion = (text) => {
     if (
       typeof window ===
-      "undefined" ||
-      !window.speechSynthesis
+        "undefined" ||
+      !window.speechSynthesis ||
+      !text
     ) {
       return;
     }
@@ -457,14 +532,17 @@ export default function Interview() {
     utterance.pitch = 1;
     utterance.volume = 0.85;
 
-    utterance.onstart = () =>
+    utterance.onstart = () => {
       setIsSpeaking(true);
+    };
 
-    utterance.onend = () =>
+    utterance.onend = () => {
       setIsSpeaking(false);
+    };
 
-    utterance.onerror = () =>
+    utterance.onerror = () => {
       setIsSpeaking(false);
+    };
 
     window.speechSynthesis.speak(
       utterance
@@ -472,7 +550,7 @@ export default function Interview() {
   };
 
   // ==========================================
-  // Toggle speech
+  // Toggle speech recognition
   // ==========================================
 
   const toggleListening = () => {
@@ -488,24 +566,26 @@ export default function Interview() {
     }
 
     if (isListening) {
-      try {
-        recognitionRef.current.stop();
-      } catch {
-        // Ignore
-      }
-
-      setIsListening(false);
+      stopListening();
       return;
     }
 
     try {
       recognitionRef.current.start();
+
       setIsListening(true);
       setMessage("");
+      setError("");
     } catch (speechError) {
       console.warn(
         "Speech start error:",
         speechError
+      );
+
+      setIsListening(false);
+
+      setMessage(
+        "Unable to start the microphone. Please try again."
       );
     }
   };
@@ -523,172 +603,57 @@ export default function Interview() {
     if (streamRef.current) {
       streamRef.current
         .getVideoTracks()
-        .forEach(
-          (track) =>
-            (track.enabled =
-              nextValue)
-        );
+        .forEach((track) => {
+          track.enabled =
+            nextValue;
+        });
     }
   };
 
   // ==========================================
-  // Submit current answer
+  // Submit answer
   // ==========================================
 
-const submitAnswer = async () => {
-  const cleanAnswer = answer.trim();
+  const submitAnswer = async () => {
+    const cleanAnswer =
+      answer.trim();
 
-  if (!cleanAnswer) {
-    setError(
-      "Please provide an answer before continuing."
-    );
-    return;
-  }
-
-  if (submitting) {
-    return;
-  }
-
-  setSubmitting(true);
-  setError("");
-  setMessage("");
-
-  const answerItem = {
-    questionId: currentQuestion.id,
-    category: currentQuestion.category,
-    question: currentQuestion.question,
-    answer: cleanAnswer,
-  };
-
-  const updatedAnswers = [
-    ...answers,
-    answerItem,
-  ];
-
-  try {
-    const token =
-      localStorage.getItem("token");
-
-    if (!token) {
-      navigate("/login");
-      return;
-    }
-
-    // ========================================
-    // SEND ANSWER TO BACKEND
-    // ========================================
-
-    const response = await fetch(
-      `${API_URL}/api/interview/answer`,
-      {
-        method: "POST",
-
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-
-        body: JSON.stringify({
-          answer: cleanAnswer,
-
-          questionNumber:
-            currentQuestion.id,
-
-          candidateId:
-            candidateId || null,
-
-          meetingId:
-            meetingId || null,
-
-          employeeEmail:
-            user.email || null,
-        }),
-      }
-    );
-
-    const data = await response.json();
-
-    if (!response.ok || !data.success) {
-      throw new Error(
-        data.message ||
-          "Unable to submit interview answer."
-      );
-    }
-
-    // ========================================
-    // SAVE ANSWER LOCALLY
-    // ========================================
-
-    setAnswers(updatedAnswers);
-    setAnswer("");
-
-    // ========================================
-    // FINAL QUESTION
-    // ========================================
-
-    if (
-      questionIndex >=
-      QUESTIONS.length - 1
-    ) {
-      setMessage(
-        "Interview completed. Generating your report..."
-      );
-
-      await finishInterview(
-        updatedAnswers
+    if (!cleanAnswer) {
+      setError(
+        "Please provide an answer before continuing."
       );
 
       return;
     }
 
-    // ========================================
-    // NEXT QUESTION
-    // ========================================
+    if (submitting) {
+      return;
+    }
 
-    const nextIndex =
-      questionIndex + 1;
-
-    setQuestionIndex(nextIndex);
-
-    // ========================================
-    // Use AI-generated next question when
-    // available.
-    // Otherwise use the predefined question.
-    // ========================================
-
-    const nextQuestion =
-      data.nextQuestion ||
-      QUESTIONS[nextIndex].question;
-
-    window.setTimeout(() => {
-      speakQuestion(nextQuestion);
-    }, 250);
-
-  } catch (submitError) {
-    console.error(
-      "Submit interview answer error:",
-      submitError
-    );
-
-    setError(
-      submitError.message ||
-        "Unable to submit your answer. Please try again."
-    );
-  } finally {
-    setSubmitting(false);
-  }
-};
-
-  // ==========================================
-  // Finish interview
-  // ==========================================
-
-  const finishInterview = async (
-    finalAnswers
-  ) => {
     setSubmitting(true);
     setError("");
     setMessage("");
+
+    stopListening();
+
+    const answerItem = {
+      questionId:
+        currentQuestion.id,
+
+      category:
+        currentQuestion.category,
+
+      question:
+        currentQuestionText,
+
+      answer:
+        cleanAnswer,
+    };
+
+    const updatedAnswers = [
+      ...answers,
+      answerItem,
+    ];
 
     try {
       const token =
@@ -701,75 +666,162 @@ const submitAnswer = async () => {
         return;
       }
 
-      /*
-       * The endpoint is intentionally attempted
-       * only when a meeting ID exists.
-       *
-       * If your backend does not yet have this
-       * endpoint, the UI still completes locally.
-       */
+      // ======================================
+      // SEND ANSWER TO BACKEND
+      // ======================================
 
-      if (meetingId) {
-        try {
-          const response =
-            await fetch(
-              `${API_URL}/api/interviews/complete`,
-              {
-                method: "POST",
-                headers: {
-                  "Content-Type":
-                    "application/json",
-                  Authorization:
-                    `Bearer ${token}`,
-                },
-                body: JSON.stringify({
-                  meetingId,
-                  candidateId,
-                  answers:
-                    finalAnswers,
-                  durationSeconds:
-                    45 * 60 - timeLeft,
-                }),
-              }
-            );
+      const response =
+        await fetch(
+          `${API_URL}/api/interview/answer`,
+          {
+            method: "POST",
 
-          if (!response.ok) {
-            console.warn(
-              "Interview completion endpoint returned:",
-              response.status
-            );
+            headers: {
+              "Content-Type":
+                "application/json",
+
+              Authorization:
+                `Bearer ${token}`,
+
+              Accept:
+                "application/json",
+            },
+
+            body: JSON.stringify({
+              answer:
+                cleanAnswer,
+
+              questionNumber:
+                currentQuestion.id,
+
+              candidateId:
+                candidateId ||
+                null,
+
+              meetingId:
+                meetingId ||
+                null,
+
+              employeeEmail:
+                candidateEmail ||
+                null,
+            }),
           }
-        } catch (apiError) {
-          console.warn(
-            "Interview completion API unavailable:",
-            apiError
-          );
-        }
-      }
+        );
 
-      setFinished(true);
+      let data = {};
+
+      try {
+        data =
+          await response.json();
+      } catch {
+        data = {};
+      }
 
       if (
-        window.speechSynthesis
+        response.status ===
+        401
       ) {
-        window.speechSynthesis.cancel();
+        localStorage.removeItem(
+          "token"
+        );
+
+        localStorage.removeItem(
+          "user"
+        );
+
+        navigate("/login");
+        return;
       }
 
-      if (streamRef.current) {
-        streamRef.current
-          .getTracks()
-          .forEach((track) =>
-            track.stop()
-          );
+      if (
+        !response.ok ||
+        !data.success
+      ) {
+        throw new Error(
+          data.message ||
+            `Unable to submit interview answer. HTTP ${response.status}`
+        );
       }
+
+      // ======================================
+      // Save answer
+      // ======================================
+
+      setAnswers(
+        updatedAnswers
+      );
+
+      setAnswer("");
+
+      // ======================================
+      // Save report ID
+      // ======================================
+
+      if (data.reportId) {
+        setReportId(
+          String(data.reportId)
+        );
+      }
+
+      // ======================================
+      // Final question
+      // ======================================
+
+      if (
+        questionIndex >=
+        QUESTIONS.length - 1
+      ) {
+        setMessage(
+          "Interview completed. Your report has been saved."
+        );
+
+        cleanupInterviewMedia();
+
+        setFinished(true);
+
+        return;
+      }
+
+      // ======================================
+      // Next question
+      // ======================================
+
+      const nextIndex =
+        questionIndex + 1;
+
+      const backendNextQuestion =
+        typeof data.nextQuestion ===
+        "string"
+          ? data.nextQuestion.trim()
+          : "";
+
+      const nextQuestion =
+        backendNextQuestion ||
+        QUESTIONS[nextIndex].question;
+
+      setQuestionIndex(
+        nextIndex
+      );
+
+      setCurrentQuestionText(
+        nextQuestion
+      );
+
+      window.setTimeout(() => {
+        speakQuestion(
+          nextQuestion
+        );
+      }, 250);
     } catch (submitError) {
       console.error(
-        "Finish interview error:",
+        "Submit interview answer error:",
         submitError
       );
 
       setError(
-        "The interview was completed, but the result could not be synchronized."
+        submitError.message ||
+          "Unable to submit your answer. Please try again."
       );
     } finally {
       setSubmitting(false);
@@ -777,22 +829,77 @@ const submitAnswer = async () => {
   };
 
   // ==========================================
+  // Finish interview early
+  //
+  // IMPORTANT:
+  // We do NOT call:
+  // /api/interviews/complete
+  //
+  // Your current backend doesn't have that
+  // endpoint.
+  //
+  // Reports are already saved by:
+  // /api/interview/answer
+  // ==========================================
+
+  const finishInterview = (
+    finalAnswers
+  ) => {
+    cleanupInterviewMedia();
+
+    setAnswers(
+      finalAnswers || []
+    );
+
+    setFinished(true);
+    setShowEndModal(false);
+    setError("");
+    setMessage("");
+  };
+
+  // ==========================================
   // End early
   // ==========================================
 
-  const endInterviewEarly =
-    () => {
-      setShowEndModal(false);
+  const endInterviewEarly = () => {
+    if (submitting) {
+      return;
+    }
 
-      if (answers.length === 0) {
-        setFinished(true);
-        return;
-      }
+    setShowEndModal(false);
 
-      finishInterview(
-        answers
-      );
-    };
+    if (answers.length === 0) {
+      cleanupInterviewMedia();
+
+      setFinished(true);
+
+      return;
+    }
+
+    finishInterview(
+      answers
+    );
+  };
+
+  // ==========================================
+  // View report
+  // ==========================================
+
+  const openReport = () => {
+    /*
+     * Your current App.jsx has:
+     *
+     * /report
+     *
+     * and your Report component loads:
+     *
+     * /api/reports/latest
+     *
+     * so /report is the safest route here.
+     */
+
+    navigate("/report");
+  };
 
   // ==========================================
   // Finished screen
@@ -805,7 +912,13 @@ const submitAnswer = async () => {
           candidateName
         }
         answers={answers}
-        navigate={navigate}
+        reportId={reportId}
+        onReport={
+          openReport
+        }
+        navigate={
+          navigate
+        }
       />
     );
   }
@@ -827,7 +940,9 @@ const submitAnswer = async () => {
           startInterview
         }
         onBack={() =>
-          navigate("/meetings")
+          navigate(
+            "/meetings"
+          )
         }
       />
     );
@@ -927,14 +1042,25 @@ const submitAnswer = async () => {
               <span className="font-mono text-xs font-semibold text-white/65">
                 {String(
                   questionIndex + 1
-                ).padStart(2, "0")}
+                ).padStart(
+                  2,
+                  "0"
+                )}
+
                 {" "}
+
                 <span className="text-white/20">
                   /
-                </span>{" "}
+                </span>
+
+                {" "}
+
                 {String(
                   QUESTIONS.length
-                ).padStart(2, "0")}
+                ).padStart(
+                  2,
+                  "0"
+                )}
               </span>
             </div>
 
@@ -1025,7 +1151,7 @@ const submitAnswer = async () => {
 
                 <h1 className="mt-8 max-w-4xl text-3xl font-semibold leading-[1.08] tracking-[-0.045em] text-white sm:text-4xl lg:text-5xl">
                   {
-                    currentQuestion.question
+                    currentQuestionText
                   }
                 </h1>
 
@@ -1034,7 +1160,7 @@ const submitAnswer = async () => {
                     type="button"
                     onClick={() =>
                       speakQuestion(
-                        currentQuestion.question
+                        currentQuestionText
                       )
                     }
                     className="inline-flex items-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.025] px-4 py-2.5 text-xs font-semibold text-white/45 transition-all duration-300 hover:border-blue-300/15 hover:bg-blue-400/[0.05] hover:text-blue-200"
@@ -1074,6 +1200,7 @@ const submitAnswer = async () => {
                     <div className="flex items-center gap-2 text-[9px] font-semibold uppercase tracking-[0.16em] text-red-300/70">
                       <span className="relative flex h-2 w-2">
                         <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-50" />
+
                         <span className="relative h-2 w-2 rounded-full bg-red-400" />
                       </span>
 
@@ -1110,6 +1237,8 @@ const submitAnswer = async () => {
 
                 <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex items-center gap-2">
+                    {/* Microphone */}
+
                     <button
                       type="button"
                       onClick={
@@ -1137,6 +1266,8 @@ const submitAnswer = async () => {
                       )}
                     </button>
 
+                    {/* Camera */}
+
                     <button
                       type="button"
                       onClick={
@@ -1163,37 +1294,9 @@ const submitAnswer = async () => {
                         />
                       )}
                     </button>
-
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setIsMuted(
-                          (previous) =>
-                            !previous
-                        )
-                      }
-                      className={`flex h-11 w-11 items-center justify-center rounded-xl border transition-all duration-300 ${
-                        isMuted
-                          ? "border-red-400/15 bg-red-400/[0.05] text-red-300"
-                          : "border-white/[0.08] bg-white/[0.025] text-white/45 hover:border-blue-300/20 hover:bg-blue-400/[0.05] hover:text-blue-200"
-                      }`}
-                      title={
-                        isMuted
-                          ? "Unmute"
-                          : "Mute"
-                      }
-                    >
-                      {isMuted ? (
-                        <VolumeX
-                          size={17}
-                        />
-                      ) : (
-                        <Volume2
-                          size={17}
-                        />
-                      )}
-                    </button>
                   </div>
+
+                  {/* Submit */}
 
                   <button
                     type="button"
@@ -1205,11 +1308,16 @@ const submitAnswer = async () => {
                     }
                     className="group inline-flex items-center justify-center gap-2 rounded-xl bg-blue-500 px-5 py-3 text-xs font-semibold text-white shadow-[0_10px_35px_rgba(37,99,235,0.16)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-blue-400 hover:shadow-[0_15px_45px_rgba(37,99,235,0.25)] disabled:cursor-not-allowed disabled:opacity-40"
                   >
-                    {questionIndex ===
-                    QUESTIONS.length -
-                      1 ? (
+                    {submitting ? (
+                      <>
+                        Processing...
+                      </>
+                    ) : questionIndex ===
+                      QUESTIONS.length -
+                        1 ? (
                       <>
                         Finish Interview
+
                         <CheckCircle2
                           size={15}
                         />
@@ -1217,6 +1325,7 @@ const submitAnswer = async () => {
                     ) : (
                       <>
                         Submit Answer
+
                         <ArrowRight
                           size={15}
                           className="transition-transform duration-300 group-hover:translate-x-0.5"
@@ -1244,7 +1353,7 @@ const submitAnswer = async () => {
                     autoPlay
                     muted
                     playsInline
-                    className="h-full w-full object-cover scale-x-[-1]"
+                    className="h-full w-full scale-x-[-1] object-cover"
                   />
                 ) : (
                   <div className="flex h-full items-center justify-center">
@@ -1262,8 +1371,6 @@ const submitAnswer = async () => {
                     </div>
                   </div>
                 )}
-
-                {/* Camera overlay */}
 
                 <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-4">
                   <div className="flex items-center justify-between">
@@ -1302,6 +1409,7 @@ const submitAnswer = async () => {
                     {Math.round(
                       progress
                     )}
+
                     <span className="text-sm text-white/20">
                       %
                     </span>
@@ -1398,7 +1506,9 @@ const submitAnswer = async () => {
           <div
             className="absolute inset-0"
             onClick={() =>
-              setShowEndModal(false)
+              setShowEndModal(
+                false
+              )
             }
           />
 
@@ -1418,9 +1528,9 @@ const submitAnswer = async () => {
               </h2>
 
               <p className="mt-3 text-sm leading-6 text-white/35">
-                Your current progress will be
-                submitted. You may not be able to
-                resume this interview afterward.
+                Your completed answers are already
+                saved. Ending now will stop the current
+                interview session.
               </p>
 
               <div className="mt-7 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
@@ -1446,9 +1556,7 @@ const submitAnswer = async () => {
                   }
                   className="inline-flex items-center justify-center gap-2 rounded-xl bg-red-500/90 px-5 py-3 text-sm font-semibold text-white transition hover:bg-red-500 disabled:opacity-50"
                 >
-                  {submitting
-                    ? "Submitting..."
-                    : "End Interview"}
+                  End Interview
                 </button>
               </div>
             </div>
@@ -1509,8 +1617,6 @@ function IntroScreen({
 
       <main className="relative z-10 mx-auto flex min-h-[calc(100vh-73px)] max-w-6xl items-center px-5 py-12 sm:px-6 lg:px-8">
         <div className="grid w-full gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
-          {/* Hero */}
-
           <div>
             <div className="inline-flex items-center gap-2 rounded-full border border-blue-300/10 bg-blue-400/[0.04] px-3 py-1.5">
               <Sparkles
@@ -1559,8 +1665,6 @@ function IntroScreen({
               />
             </div>
           </div>
-
-          {/* Start card */}
 
           <div className="relative overflow-hidden rounded-[30px] border border-white/[0.08] bg-white/[0.02] p-7 shadow-[0_35px_120px_rgba(0,0,0,0.35)] backdrop-blur-xl sm:p-9">
             <div className="pointer-events-none absolute -right-20 -top-20 h-60 w-60 rounded-full bg-blue-500/[0.07] blur-[90px]" />
@@ -1631,6 +1735,8 @@ function IntroScreen({
 function FinishedScreen({
   candidateName,
   answers,
+  reportId,
+  onReport,
   navigate,
 }) {
   return (
@@ -1657,9 +1763,8 @@ function FinishedScreen({
         </h1>
 
         <p className="mt-4 text-sm leading-6 text-white/35">
-          Your interview responses have been recorded.
-          The evaluation workflow can now process your
-          session.
+          Your interview responses have been recorded
+          and your evaluation report has been saved.
         </p>
 
         <div className="mt-7 grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.06]">
@@ -1684,16 +1789,35 @@ function FinishedScreen({
           </div>
         </div>
 
-        <button
-          type="button"
-          onClick={() =>
-            navigate("/employee")
-          }
-          className="mt-7 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-500 px-5 py-3.5 text-sm font-semibold text-white transition-all duration-300 hover:-translate-y-0.5 hover:bg-blue-400"
-        >
-          Return to Dashboard
-          <ArrowRight size={16} />
-        </button>
+        {reportId && (
+          <p className="mt-4 text-[9px] font-mono uppercase tracking-[0.14em] text-white/15">
+            Report saved
+          </p>
+        )}
+
+        <div className="mt-7 grid gap-3 sm:grid-cols-2">
+          <button
+            type="button"
+            onClick={onReport}
+            className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-500 px-5 py-3.5 text-sm font-semibold text-white transition-all duration-300 hover:-translate-y-0.5 hover:bg-blue-400"
+          >
+            View Report
+            <ArrowRight size={16} />
+          </button>
+
+          <button
+            type="button"
+            onClick={() =>
+              navigate(
+                "/employee"
+              )
+            }
+            className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.025] px-5 py-3.5 text-sm font-semibold text-white/50 transition hover:bg-white/[0.05] hover:text-white"
+          >
+            Dashboard
+            <ArrowRight size={16} />
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -1725,7 +1849,9 @@ function Feature({
 // Check item
 // ==========================================
 
-function CheckItem({ text }) {
+function CheckItem({
+  text,
+}) {
   return (
     <div className="flex items-center gap-3 rounded-xl border border-white/[0.05] bg-white/[0.018] px-4 py-3">
       <CheckCircle2
@@ -1771,7 +1897,8 @@ function AmbientBackground() {
         style={{
           backgroundImage:
             "radial-gradient(circle at 1px 1px, rgba(255,255,255,0.8) 1px, transparent 0)",
-          backgroundSize: "34px 34px",
+          backgroundSize:
+            "34px 34px",
         }}
       />
     </div>
