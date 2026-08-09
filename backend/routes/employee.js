@@ -677,4 +677,145 @@ router.get(
   }
 );
 
+// ==========================================
+// Get candidates
+// ==========================================
+// Used by the Candidate Intelligence page.
+// ==========================================
+
+router.get(
+  "/candidates",
+  authenticateToken,
+  requireRole("admin"),
+  (req, res) => {
+    try {
+      const rows = db.prepare(`
+        SELECT
+          id,
+          name,
+          email,
+          status,
+          ai_score,
+          resume_original_name,
+          resume_filename,
+          resume_path,
+          resume_url,
+          resume_size,
+          resume_uploaded_at,
+          created_at,
+          updated_at
+        FROM employee_requests
+        ORDER BY created_at DESC
+      `).all();
+
+      const candidates = rows.map((row) => ({
+        id: row.id,
+
+        name: row.name,
+
+        email: row.email,
+
+        status: row.status,
+
+        aiScore: row.ai_score,
+
+        resume: row.resume_filename
+          ? {
+              originalName: row.resume_original_name,
+              filename: row.resume_filename,
+              path: row.resume_path,
+              url: row.resume_url,
+              size: row.resume_size,
+              uploadedAt: row.resume_uploaded_at,
+            }
+          : null,
+
+        createdAt: row.created_at,
+
+        updatedAt: row.updated_at,
+      }));
+
+      return res.status(200).json({
+        success: true,
+
+        candidates,
+
+        count: candidates.length,
+      });
+
+    } catch (error) {
+      console.error(
+        "Candidate loading error:",
+        error
+      );
+
+      return res.status(500).json({
+        success: false,
+
+        message:
+          "Unable to load candidates.",
+
+        candidates: [],
+      });
+    }
+  }
+);
+
+
+// ==========================================
+// Get employee's own request
+// ==========================================
+
+router.get(
+  "/my-request",
+  authenticateToken,
+  requireRole("employee"),
+  (req, res) => {
+    try {
+      const email =
+        req.user?.email?.trim().toLowerCase();
+
+      if (!email) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Authenticated employee email is missing.",
+        });
+      }
+
+      const row = db.prepare(`
+        SELECT *
+        FROM employee_requests
+        WHERE email = ?
+        ORDER BY created_at DESC
+        LIMIT 1
+      `).get(email);
+
+      if (!row) {
+        return res.status(200).json({
+          success: true,
+          request: null,
+        });
+      }
+
+      return res.status(200).json({
+        success: true,
+        request: formatRequest(row),
+      });
+
+    } catch (error) {
+      console.error(
+        "My request error:",
+        error
+      );
+
+      return res.status(500).json({
+        success: false,
+        message:
+          "Unable to load your interview request.",
+      });
+    }
+  }
+);
+
 module.exports = router;
