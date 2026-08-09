@@ -8,6 +8,7 @@ const interviewRoute = require("./routes/interview");
 const employeeRoute = require("./routes/employee");
 const meetingsRoute = require("./routes/meetings");
 const authRoute = require("./routes/auth");
+const reportsRoute = require("./routes/reports");
 
 const app = express();
 
