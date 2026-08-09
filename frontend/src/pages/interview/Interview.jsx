@@ -1156,7 +1156,7 @@ export default function Interview() {
                     autoPlay
                     muted
                     playsInline
-                    className="h-full w-full object-cover"
+                    className="h-full w-full object-cover scale-x-[-1]"
                   />
                 ) : (
                   <div className="flex h-full items-center justify-center">
