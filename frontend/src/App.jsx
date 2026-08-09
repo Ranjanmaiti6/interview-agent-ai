@@ -90,10 +90,21 @@ function App() {
           element={<Interview />}
         />
 
-        <Route
-          path="/report"
-          element={<Report />}
-        />
+<Route
+
+  path="/report"
+
+  element={<Report />}
+
+/>
+
+<Route
+
+  path="/report/:id"
+
+  element={<Report />}
+
+/>
 
         <Route
           path="/candidate/:id"
