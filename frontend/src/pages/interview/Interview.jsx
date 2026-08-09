@@ -535,61 +535,149 @@ export default function Interview() {
   // Submit current answer
   // ==========================================
 
-  const submitAnswer = () => {
-    const cleanAnswer =
-      answer.trim();
+const submitAnswer = async () => {
+  const cleanAnswer = answer.trim();
 
-    if (!cleanAnswer) {
-      setError(
-        "Please provide an answer before continuing."
-      );
+  if (!cleanAnswer) {
+    setError(
+      "Please provide an answer before continuing."
+    );
+    return;
+  }
 
+  if (submitting) {
+    return;
+  }
+
+  setSubmitting(true);
+  setError("");
+  setMessage("");
+
+  const answerItem = {
+    questionId: currentQuestion.id,
+    category: currentQuestion.category,
+    question: currentQuestion.question,
+    answer: cleanAnswer,
+  };
+
+  const updatedAnswers = [
+    ...answers,
+    answerItem,
+  ];
+
+  try {
+    const token =
+      localStorage.getItem("token");
+
+    if (!token) {
+      navigate("/login");
       return;
     }
 
-    const updatedAnswers = [
-      ...answers,
+    // ========================================
+    // SEND ANSWER TO BACKEND
+    // ========================================
+
+    const response = await fetch(
+      `${API_URL}/api/interview/answer`,
       {
-        questionId:
-          currentQuestion.id,
-        category:
-          currentQuestion.category,
-        question:
-          currentQuestion.question,
-        answer: cleanAnswer,
-      },
-    ];
+        method: "POST",
+
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+
+        body: JSON.stringify({
+          answer: cleanAnswer,
+
+          questionNumber:
+            currentQuestion.id,
+
+          candidateId:
+            candidateId || null,
+
+          meetingId:
+            meetingId || null,
+
+          employeeEmail:
+            user.email || null,
+        }),
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok || !data.success) {
+      throw new Error(
+        data.message ||
+          "Unable to submit interview answer."
+      );
+    }
+
+    // ========================================
+    // SAVE ANSWER LOCALLY
+    // ========================================
 
     setAnswers(updatedAnswers);
     setAnswer("");
-    setError("");
-    setMessage("");
+
+    // ========================================
+    // FINAL QUESTION
+    // ========================================
 
     if (
-      questionIndex <
+      questionIndex >=
       QUESTIONS.length - 1
     ) {
-      const nextIndex =
-        questionIndex + 1;
-
-      setQuestionIndex(
-        nextIndex
+      setMessage(
+        "Interview completed. Generating your report..."
       );
 
-      window.setTimeout(() => {
-        speakQuestion(
-          QUESTIONS[nextIndex]
-            .question
-        );
-      }, 250);
+      await finishInterview(
+        updatedAnswers
+      );
 
       return;
     }
 
-    finishInterview(
-      updatedAnswers
+    // ========================================
+    // NEXT QUESTION
+    // ========================================
+
+    const nextIndex =
+      questionIndex + 1;
+
+    setQuestionIndex(nextIndex);
+
+    // ========================================
+    // Use AI-generated next question when
+    // available.
+    // Otherwise use the predefined question.
+    // ========================================
+
+    const nextQuestion =
+      data.nextQuestion ||
+      QUESTIONS[nextIndex].question;
+
+    window.setTimeout(() => {
+      speakQuestion(nextQuestion);
+    }, 250);
+
+  } catch (submitError) {
+    console.error(
+      "Submit interview answer error:",
+      submitError
     );
-  };
+
+    setError(
+      submitError.message ||
+        "Unable to submit your answer. Please try again."
+    );
+  } finally {
+    setSubmitting(false);
+  }
+};
 
   // ==========================================
   // Finish interview

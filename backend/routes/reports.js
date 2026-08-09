@@ -4,9 +4,8 @@ const db = require("../database");
 
 const router = express.Router();
 
-
 // ==========================================
-// Helper
+// Helpers
 // ==========================================
 
 function parseArray(value) {
@@ -19,12 +18,16 @@ function parseArray(value) {
   }
 
   try {
-    return JSON.parse(value);
-  } catch (error) {
+    const parsed =
+      JSON.parse(value);
+
+    return Array.isArray(parsed)
+      ? parsed
+      : [];
+  } catch {
     return [];
   }
 }
-
 
 function formatReport(row) {
   if (!row) {
@@ -53,42 +56,66 @@ function formatReport(row) {
       row.summary || "",
 
     strengths:
-      parseArray(row.strengths),
+      parseArray(
+        row.strengths
+      ),
 
     gaps:
-      parseArray(row.gaps),
+      parseArray(
+        row.gaps
+      ),
 
     next:
-      parseArray(row.next_steps),
+      parseArray(
+        row.next_steps
+      ),
 
     nextSteps:
-      parseArray(row.next_steps),
+      parseArray(
+        row.next_steps
+      ),
 
     score: {
       technical:
-        Number(row.technical_score || 0),
+        Number(
+          row.technical_score || 0
+        ),
 
       communication:
-        Number(row.communication_score || 0),
+        Number(
+          row.communication_score || 0
+        ),
 
       problemSolving:
-        Number(row.problem_solving_score || 0),
+        Number(
+          row.problem_solving_score || 0
+        ),
 
       overall:
-        Number(row.overall_score || 0),
+        Number(
+          row.overall_score || 0
+        ),
     },
 
     technicalScore:
-      Number(row.technical_score || 0),
+      Number(
+        row.technical_score || 0
+      ),
 
     communicationScore:
-      Number(row.communication_score || 0),
+      Number(
+        row.communication_score || 0
+      ),
 
     problemSolvingScore:
-      Number(row.problem_solving_score || 0),
+      Number(
+        row.problem_solving_score || 0
+      ),
 
     overallScore:
-      Number(row.overall_score || 0),
+      Number(
+        row.overall_score || 0
+      ),
 
     recommendation:
       row.recommendation || "",
@@ -101,32 +128,91 @@ function formatReport(row) {
   };
 }
 
-
 // ==========================================
-// GET /api/reports/latest
+// GET REPORT BY MEETING
+//
+// GET /api/reports/meeting/:meetingId
 // ==========================================
 
 router.get(
-  "/latest",
+  "/meeting/:meetingId",
   (req, res) => {
     try {
-      const row = db.prepare(`
-        SELECT *
-        FROM interview_reports
-        ORDER BY created_at DESC
-        LIMIT 1
-      `).get();
+      const {
+        meetingId,
+      } = req.params;
+
+      if (
+        !meetingId ||
+        meetingId === "undefined"
+      ) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Meeting ID is required.",
+          report: null,
+        });
+      }
+
+      const row =
+        db.prepare(`
+          SELECT *
+          FROM interview_reports
+          WHERE meeting_id = ?
+          ORDER BY created_at DESC
+          LIMIT 1
+        `).get(meetingId);
 
       return res.status(200).json({
         success: true,
 
         report:
           formatReport(row),
-
-        data:
-          formatReport(row),
       });
+    } catch (error) {
+      console.error(
+        "Load meeting report error:",
+        error
+      );
 
+      return res.status(500).json({
+        success: false,
+
+        message:
+          "Unable to load meeting report.",
+
+        report: null,
+      });
+    }
+  }
+);
+
+// ==========================================
+// GET LATEST REPORT
+// ==========================================
+
+router.get(
+  "/latest",
+  (req, res) => {
+    try {
+      const row =
+        db.prepare(`
+          SELECT *
+          FROM interview_reports
+          ORDER BY created_at DESC
+          LIMIT 1
+        `).get();
+
+      const report =
+        formatReport(row);
+
+      return res.status(200).json({
+        success: true,
+
+        report,
+
+        data: report,
+      });
     } catch (error) {
       console.error(
         "Load latest report error:",
@@ -145,20 +231,20 @@ router.get(
   }
 );
 
-
 // ==========================================
-// GET /api/reports
+// GET ALL REPORTS
 // ==========================================
 
 router.get(
   "/",
   (req, res) => {
     try {
-      const rows = db.prepare(`
-        SELECT *
-        FROM interview_reports
-        ORDER BY created_at DESC
-      `).all();
+      const rows =
+        db.prepare(`
+          SELECT *
+          FROM interview_reports
+          ORDER BY created_at DESC
+        `).all();
 
       const reports =
         rows.map(formatReport);
@@ -171,7 +257,6 @@ router.get(
         count:
           reports.length,
       });
-
     } catch (error) {
       console.error(
         "Load reports error:",
@@ -190,21 +275,23 @@ router.get(
   }
 );
 
-
 // ==========================================
-// GET /api/reports/:id
+// GET REPORT BY ID
 // ==========================================
 
 router.get(
   "/:id",
   (req, res) => {
     try {
-      const row = db.prepare(`
-        SELECT *
-        FROM interview_reports
-        WHERE id = ?
-        LIMIT 1
-      `).get(req.params.id);
+      const row =
+        db.prepare(`
+          SELECT *
+          FROM interview_reports
+          WHERE id = ?
+          LIMIT 1
+        `).get(
+          req.params.id
+        );
 
       if (!row) {
         return res.status(404).json({
@@ -223,7 +310,6 @@ router.get(
         report:
           formatReport(row),
       });
-
     } catch (error) {
       console.error(
         "Load report error:",
@@ -240,9 +326,11 @@ router.get(
   }
 );
 
-
 // ==========================================
-// POST /api/reports
+// POST REPORT
+//
+// Kept for compatibility with your existing
+// frontend or other services.
 // ==========================================
 
 router.post(
@@ -267,14 +355,6 @@ router.post(
         overallScore,
         recommendation,
       } = req.body;
-
-      const id =
-        `${Date.now()}-${Math.round(
-          Math.random() * 1e9
-        )}`;
-
-      const createdAt =
-        new Date().toISOString();
 
       const technical =
         Number(
@@ -326,6 +406,98 @@ router.post(
           : Array.isArray(next)
             ? next
             : [];
+
+      const now =
+        new Date().toISOString();
+
+      // --------------------------------------
+      // If a meeting already has a report,
+      // update it instead of creating endless
+      // duplicate reports.
+      // --------------------------------------
+
+      let existing = null;
+
+      if (meetingId) {
+        existing =
+          db.prepare(`
+            SELECT *
+            FROM interview_reports
+            WHERE meeting_id = ?
+            ORDER BY created_at DESC
+            LIMIT 1
+          `).get(meetingId);
+      }
+
+      if (existing) {
+        db.prepare(`
+          UPDATE interview_reports
+          SET
+            candidate_id = ?,
+            employee_request_id = ?,
+            candidate_name = ?,
+            candidate_email = ?,
+            summary = ?,
+            strengths = ?,
+            gaps = ?,
+            next_steps = ?,
+            technical_score = ?,
+            communication_score = ?,
+            problem_solving_score = ?,
+            overall_score = ?,
+            recommendation = ?,
+            updated_at = ?
+          WHERE id = ?
+        `).run(
+          candidateId || null,
+          employeeRequestId || null,
+          candidateName || null,
+          candidateEmail || null,
+          summary || "",
+          JSON.stringify(
+            strengthsArray
+          ),
+          JSON.stringify(
+            gapsArray
+          ),
+          JSON.stringify(
+            nextArray
+          ),
+          technical,
+          communication,
+          problemSolving,
+          calculatedOverall,
+          recommendation || "",
+          now,
+          existing.id
+        );
+
+        const row =
+          db.prepare(`
+            SELECT *
+            FROM interview_reports
+            WHERE id = ?
+          `).get(existing.id);
+
+        return res.status(200).json({
+          success: true,
+
+          message:
+            "Interview report updated successfully.",
+
+          report:
+            formatReport(row),
+        });
+      }
+
+      // --------------------------------------
+      // Create
+      // --------------------------------------
+
+      const id =
+        `${Date.now()}-${Math.round(
+          Math.random() * 1e9
+        )}`;
 
       db.prepare(`
         INSERT INTO interview_reports (
@@ -417,15 +589,14 @@ router.post(
         recommendation:
           recommendation || "",
 
-        createdAt,
+        createdAt: now,
 
-        updatedAt:
-          createdAt,
+        updatedAt: now,
       });
 
-      // ======================================
-      // Also update employee request AI score
-      // ======================================
+      // --------------------------------------
+      // Update candidate AI score
+      // --------------------------------------
 
       if (employeeRequestId) {
         try {
@@ -437,13 +608,13 @@ router.post(
             WHERE id = ?
           `).run(
             calculatedOverall,
-            createdAt,
+            now,
             employeeRequestId
           );
-        } catch (updateError) {
+        } catch (error) {
           console.error(
             "Unable to update employee AI score:",
-            updateError
+            error
           );
         }
       }
@@ -453,7 +624,6 @@ router.post(
           SELECT *
           FROM interview_reports
           WHERE id = ?
-          LIMIT 1
         `).get(id);
 
       return res.status(201).json({
@@ -465,7 +635,6 @@ router.post(
         report:
           formatReport(row),
       });
-
     } catch (error) {
       console.error(
         "Create report error:",
@@ -487,6 +656,5 @@ router.post(
     }
   }
 );
-
 
 module.exports = router;

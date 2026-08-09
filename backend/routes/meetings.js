@@ -33,6 +33,8 @@ db.exec(`
 
     status TEXT NOT NULL DEFAULT 'scheduled',
 
+    meeting_type TEXT NOT NULL DEFAULT 'human',
+
     meeting_url TEXT DEFAULT NULL,
 
     created_by TEXT DEFAULT NULL,
@@ -42,6 +44,63 @@ db.exec(`
     updated_at TEXT DEFAULT NULL
   )
 `);
+
+// ==========================================
+// Database migration
+// ==========================================
+//
+// Existing database files were created before
+// meeting_type existed.
+//
+// Add the column if it does not already exist.
+// ==========================================
+
+try {
+  const columns = db
+    .prepare(`PRAGMA table_info(meetings)`)
+    .all();
+
+  const hasMeetingType = columns.some(
+    (column) => column.name === "meeting_type"
+  );
+
+  if (!hasMeetingType) {
+    db.exec(`
+      ALTER TABLE meetings
+      ADD COLUMN meeting_type TEXT NOT NULL DEFAULT 'human'
+    `);
+
+    console.log(
+      "Migration: meeting_type added to meetings."
+    );
+  }
+} catch (migrationError) {
+  console.error(
+    "Meeting type migration error:",
+    migrationError
+  );
+}
+
+// ==========================================
+// Normalize meeting type
+// ==========================================
+
+function normalizeMeetingType(value) {
+  const type = String(
+    value || "human"
+  )
+    .trim()
+    .toLowerCase();
+
+  if (
+    type === "ai" ||
+    type === "ai_interview"
+  ) {
+    return "ai";
+  }
+
+  return "human";
+}
 
 // ==========================================
 // GET ALL MEETINGS
@@ -69,7 +128,10 @@ router.get(
         meetings,
       });
     } catch (error) {
-      console.error("Get meetings error:", error);
+      console.error(
+        "Get meetings error:",
+        error
+      );
 
       return res.status(500).json({
         success: false,
@@ -92,14 +154,17 @@ router.get(
   requireRole("employee"),
   (req, res) => {
     try {
-      const email = String(req.user?.email || "")
+      const email = String(
+        req.user?.email || ""
+      )
         .trim()
         .toLowerCase();
 
       if (!email) {
         return res.status(400).json({
           success: false,
-          message: "Employee email is missing.",
+          message:
+            "Employee email is missing.",
         });
       }
 
@@ -124,7 +189,8 @@ router.get(
 
       return res.status(500).json({
         success: false,
-        message: "Unable to load your meetings.",
+        message:
+          "Unable to load your meetings.",
       });
     }
   }
@@ -152,13 +218,18 @@ router.post(
         scheduledAt,
         durationMinutes,
         meetingUrl,
+        meetingType,
       } = req.body;
 
       // --------------------------------------
       // Validate required fields
       // --------------------------------------
 
-      if (!employeeEmail || !title || !scheduledAt) {
+      if (
+        !employeeEmail ||
+        !title ||
+        !scheduledAt
+      ) {
         return res.status(400).json({
           success: false,
           message:
@@ -166,11 +237,15 @@ router.post(
         });
       }
 
-      const cleanEmail = String(employeeEmail)
+      const cleanEmail = String(
+        employeeEmail
+      )
         .trim()
         .toLowerCase();
 
-      const cleanTitle = String(title).trim();
+      const cleanTitle = String(
+        title
+      ).trim();
 
       const cleanName = employeeName
         ? String(employeeName).trim()
@@ -179,14 +254,16 @@ router.post(
       if (!cleanEmail) {
         return res.status(400).json({
           success: false,
-          message: "Employee email is required.",
+          message:
+            "Employee email is required.",
         });
       }
 
       if (!cleanTitle) {
         return res.status(400).json({
           success: false,
-          message: "Meeting title is required.",
+          message:
+            "Meeting title is required.",
         });
       }
 
@@ -194,12 +271,18 @@ router.post(
       // Validate date
       // --------------------------------------
 
-      const scheduledDate = new Date(scheduledAt);
+      const scheduledDate =
+        new Date(scheduledAt);
 
-      if (Number.isNaN(scheduledDate.getTime())) {
+      if (
+        Number.isNaN(
+          scheduledDate.getTime()
+        )
+      ) {
         return res.status(400).json({
           success: false,
-          message: "Invalid scheduled date.",
+          message:
+            "Invalid scheduled date.",
         });
       }
 
@@ -207,23 +290,50 @@ router.post(
       // Duration
       // --------------------------------------
 
-      const parsedDuration = Number(durationMinutes);
+      const parsedDuration =
+        Number(durationMinutes);
 
       const duration =
-        Number.isFinite(parsedDuration) &&
+        Number.isFinite(
+          parsedDuration
+        ) &&
         parsedDuration > 0
           ? parsedDuration
           : 30;
 
       // --------------------------------------
+      // Meeting type
+      // --------------------------------------
+
+      const cleanMeetingType =
+        normalizeMeetingType(
+          meetingType
+        );
+
+      // --------------------------------------
       // ID
       // --------------------------------------
 
-      const id = `${Date.now()}-${Math.round(
-        Math.random() * 100000
-      )}`;
+      const id =
+        `${Date.now()}-${Math.round(
+          Math.random() * 100000
+        )}`;
 
-      const createdAt = new Date().toISOString();
+      const createdAt =
+        new Date().toISOString();
+
+      // --------------------------------------
+      // Human meetings should not
+      // accidentally become AI interviews.
+      //
+      // If meetingType is human, we keep it
+      // explicitly human.
+      // --------------------------------------
+
+      const cleanMeetingUrl =
+        meetingUrl
+          ? String(meetingUrl).trim()
+          : null;
 
       // --------------------------------------
       // Insert
@@ -240,9 +350,11 @@ router.post(
           scheduled_at,
           duration_minutes,
           status,
+          meeting_type,
           meeting_url,
           created_by,
-          created_at
+          created_at,
+          updated_at
         )
         VALUES (
           @id,
@@ -254,9 +366,11 @@ router.post(
           @scheduledAt,
           @durationMinutes,
           'scheduled',
+          @meetingType,
           @meetingUrl,
           @createdBy,
-          @createdAt
+          @createdAt,
+          NULL
         )
       `).run({
         id,
@@ -284,10 +398,11 @@ router.post(
         durationMinutes:
           duration,
 
+        meetingType:
+          cleanMeetingType,
+
         meetingUrl:
-          meetingUrl
-            ? String(meetingUrl).trim()
-            : null,
+          cleanMeetingUrl,
 
         createdBy:
           req.user?.email || null,
@@ -309,7 +424,8 @@ router.post(
 
       return res.status(201).json({
         success: true,
-        message: "Meeting created successfully.",
+        message:
+          "Meeting created successfully.",
         meeting,
       });
     } catch (error) {
@@ -320,7 +436,8 @@ router.post(
 
       return res.status(500).json({
         success: false,
-        message: "Unable to create meeting.",
+        message:
+          "Unable to create meeting.",
       });
     }
   }
@@ -341,10 +458,14 @@ router.get(
     try {
       const { id } = req.params;
 
-      if (!id || id === "undefined") {
+      if (
+        !id ||
+        id === "undefined"
+      ) {
         return res.status(400).json({
           success: false,
-          message: "Meeting ID is required.",
+          message:
+            "Meeting ID is required.",
         });
       }
 
@@ -359,15 +480,19 @@ router.get(
       if (!meeting) {
         return res.status(404).json({
           success: false,
-          message: "Meeting not found.",
+          message:
+            "Meeting not found.",
         });
       }
 
       // --------------------------------------
-      // Admin can see any meeting
+      // Admin
       // --------------------------------------
 
-      if (req.user?.role === "admin") {
+      if (
+        req.user?.role ===
+        "admin"
+      ) {
         return res.json({
           success: true,
           meeting,
@@ -375,25 +500,32 @@ router.get(
       }
 
       // --------------------------------------
-      // Employee can see own meeting
+      // Employee
       // --------------------------------------
 
-      if (req.user?.role === "employee") {
-        const loggedInEmail = String(
-          req.user?.email || ""
-        )
-          .trim()
-          .toLowerCase();
+      if (
+        req.user?.role ===
+        "employee"
+      ) {
+        const loggedInEmail =
+          String(
+            req.user?.email || ""
+          )
+            .trim()
+            .toLowerCase();
 
-        const meetingEmail = String(
-          meeting.employee_email || ""
-        )
-          .trim()
-          .toLowerCase();
+        const meetingEmail =
+          String(
+            meeting.employee_email ||
+              ""
+          )
+            .trim()
+            .toLowerCase();
 
         if (
           !loggedInEmail ||
-          loggedInEmail !== meetingEmail
+          loggedInEmail !==
+            meetingEmail
         ) {
           return res.status(403).json({
             success: false,
@@ -410,7 +542,8 @@ router.get(
 
       return res.status(403).json({
         success: false,
-        message: "Access denied.",
+        message:
+          "Access denied.",
       });
     } catch (error) {
       console.error(
@@ -420,7 +553,8 @@ router.get(
 
       return res.status(500).json({
         success: false,
-        message: "Unable to load meeting.",
+        message:
+          "Unable to load meeting.",
       });
     }
   }
@@ -439,12 +573,17 @@ router.put(
   requireRole("admin"),
   (req, res) => {
     try {
-      const { id } = req.params;
+      const { id } =
+        req.params;
 
-      if (!id || id === "undefined") {
+      if (
+        !id ||
+        id === "undefined"
+      ) {
         return res.status(400).json({
           success: false,
-          message: "Meeting ID is required.",
+          message:
+            "Meeting ID is required.",
         });
       }
 
@@ -459,7 +598,8 @@ router.put(
       if (!existing) {
         return res.status(404).json({
           success: false,
-          message: "Meeting not found.",
+          message:
+            "Meeting not found.",
         });
       }
 
@@ -473,6 +613,7 @@ router.put(
         durationMinutes,
         status,
         meetingUrl,
+        meetingType,
       } = req.body;
 
       // --------------------------------------
@@ -489,13 +630,20 @@ router.put(
         status !== undefined &&
         status !== null &&
         String(status).trim()
-          ? String(status).trim().toLowerCase()
+          ? String(status)
+              .trim()
+              .toLowerCase()
           : existing.status;
 
-      if (!allowedStatuses.includes(nextStatus)) {
+      if (
+        !allowedStatuses.includes(
+          nextStatus
+        )
+      ) {
         return res.status(400).json({
           success: false,
-          message: "Invalid meeting status.",
+          message:
+            "Invalid meeting status.",
         });
       }
 
@@ -506,17 +654,27 @@ router.put(
       let nextScheduledAt =
         existing.scheduled_at;
 
-      if (scheduledAt !== undefined) {
-        const date = new Date(scheduledAt);
+      if (
+        scheduledAt !==
+        undefined
+      ) {
+        const date =
+          new Date(scheduledAt);
 
-        if (Number.isNaN(date.getTime())) {
+        if (
+          Number.isNaN(
+            date.getTime()
+          )
+        ) {
           return res.status(400).json({
             success: false,
-            message: "Invalid scheduled date.",
+            message:
+              "Invalid scheduled date.",
           });
         }
 
-        nextScheduledAt = date.toISOString();
+        nextScheduledAt =
+          date.toISOString();
       }
 
       // --------------------------------------
@@ -524,7 +682,8 @@ router.put(
       // --------------------------------------
 
       const nextEmail =
-        employeeEmail !== undefined
+        employeeEmail !==
+        undefined
           ? String(employeeEmail)
               .trim()
               .toLowerCase()
@@ -533,7 +692,8 @@ router.put(
       if (!nextEmail) {
         return res.status(400).json({
           success: false,
-          message: "Employee email is required.",
+          message:
+            "Employee email is required.",
         });
       }
 
@@ -542,8 +702,11 @@ router.put(
       // --------------------------------------
 
       const nextName =
-        employeeName !== undefined
-          ? String(employeeName).trim()
+        employeeName !==
+        undefined
+          ? String(
+              employeeName
+            ).trim()
           : existing.employee_name;
 
       // --------------------------------------
@@ -558,7 +721,8 @@ router.put(
       if (!nextTitle) {
         return res.status(400).json({
           success: false,
-          message: "Meeting title is required.",
+          message:
+            "Meeting title is required.",
         });
       }
 
@@ -567,9 +731,12 @@ router.put(
       // --------------------------------------
 
       const nextDescription =
-        description !== undefined
+        description !==
+        undefined
           ? description
-            ? String(description).trim()
+            ? String(
+                description
+              ).trim()
             : null
           : existing.description;
 
@@ -581,8 +748,11 @@ router.put(
         Number(durationMinutes);
 
       const nextDuration =
-        durationMinutes !== undefined &&
-        Number.isFinite(parsedDuration) &&
+        durationMinutes !==
+          undefined &&
+        Number.isFinite(
+          parsedDuration
+        ) &&
         parsedDuration > 0
           ? parsedDuration
           : existing.duration_minutes;
@@ -592,19 +762,38 @@ router.put(
       // --------------------------------------
 
       const nextMeetingUrl =
-        meetingUrl !== undefined
+        meetingUrl !==
+        undefined
           ? meetingUrl
-            ? String(meetingUrl).trim()
+            ? String(
+                meetingUrl
+              ).trim()
             : null
           : existing.meeting_url;
+
+      // --------------------------------------
+      // Meeting type
+      // --------------------------------------
+
+      const nextMeetingType =
+        meetingType !==
+        undefined
+          ? normalizeMeetingType(
+              meetingType
+            )
+          : normalizeMeetingType(
+              existing.meeting_type
+            );
 
       // --------------------------------------
       // Employee request ID
       // --------------------------------------
 
       const nextEmployeeRequestId =
-        employeeRequestId !== undefined
-          ? employeeRequestId || null
+        employeeRequestId !==
+        undefined
+          ? employeeRequestId ||
+            null
           : existing.employee_request_id;
 
       const updatedAt =
@@ -625,6 +814,7 @@ router.put(
           scheduled_at = ?,
           duration_minutes = ?,
           status = ?,
+          meeting_type = ?,
           meeting_url = ?,
           updated_at = ?
         WHERE id = ?
@@ -637,6 +827,7 @@ router.put(
         nextScheduledAt,
         nextDuration,
         nextStatus,
+        nextMeetingType,
         nextMeetingUrl,
         updatedAt,
         id
@@ -652,7 +843,8 @@ router.put(
 
       return res.json({
         success: true,
-        message: "Meeting updated successfully.",
+        message:
+          "Meeting updated successfully.",
         meeting,
       });
     } catch (error) {
@@ -663,7 +855,8 @@ router.put(
 
       return res.status(500).json({
         success: false,
-        message: "Unable to update meeting.",
+        message:
+          "Unable to update meeting.",
       });
     }
   }
@@ -682,12 +875,17 @@ router.delete(
   requireRole("admin"),
   (req, res) => {
     try {
-      const { id } = req.params;
+      const { id } =
+        req.params;
 
-      if (!id || id === "undefined") {
+      if (
+        !id ||
+        id === "undefined"
+      ) {
         return res.status(400).json({
           success: false,
-          message: "Meeting ID is required.",
+          message:
+            "Meeting ID is required.",
         });
       }
 
@@ -698,16 +896,20 @@ router.delete(
         `)
         .run(id);
 
-      if (result.changes === 0) {
+      if (
+        result.changes === 0
+      ) {
         return res.status(404).json({
           success: false,
-          message: "Meeting not found.",
+          message:
+            "Meeting not found.",
         });
       }
 
       return res.json({
         success: true,
-        message: "Meeting deleted successfully.",
+        message:
+          "Meeting deleted successfully.",
       });
     } catch (error) {
       console.error(
@@ -717,7 +919,8 @@ router.delete(
 
       return res.status(500).json({
         success: false,
-        message: "Unable to delete meeting.",
+        message:
+          "Unable to delete meeting.",
       });
     }
   }
