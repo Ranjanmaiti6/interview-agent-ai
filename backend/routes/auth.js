@@ -30,34 +30,284 @@ function createToken(user) {
 }
 
 // ==========================================
-// Ensure default admin exists
+// Ensure demo admin exists
 // ==========================================
 
 function ensureAdminUser() {
   try {
+    const email = "admin@example.com";
+    const password = "admin123";
+
     const existingAdmin = db
       .prepare(`
-        SELECT id
+        SELECT *
         FROM users
         WHERE email = ?
         LIMIT 1
       `)
-      .get("admin@example.com");
+      .get(email);
 
-    if (existingAdmin) {
+    // ----------------------------------------
+    // Create admin if missing
+    // ----------------------------------------
+
+    if (!existingAdmin) {
+      const hashedPassword =
+        bcrypt.hashSync(password, 10);
+
+      db.prepare(`
+        INSERT INTO users (
+          id,
+          name,
+          email,
+          password,
+          role,
+          created_at,
+          updated_at
+        )
+        VALUES (
+          @id,
+          @name,
+          @email,
+          @password,
+          @role,
+          @createdAt,
+          @updatedAt
+        )
+      `).run({
+        id: "admin-001",
+        name: "Admin",
+        email,
+        password: hashedPassword,
+        role: "admin",
+        createdAt:
+          new Date().toISOString(),
+        updatedAt: null,
+      });
+
+      console.log(
+        "Default admin account created."
+      );
+
       return;
     }
 
-    const adminPassword =
-      bcrypt.hashSync("admin123", 10);
+    // ----------------------------------------
+    // Repair demo admin password if necessary
+    // ----------------------------------------
+
+    const passwordValid =
+      bcrypt.compareSync(
+        password,
+        existingAdmin.password
+      );
+
+    if (!passwordValid) {
+      const hashedPassword =
+        bcrypt.hashSync(password, 10);
+
+      db.prepare(`
+        UPDATE users
+        SET
+          password = @password,
+          role = 'admin',
+          name = 'Admin',
+          updated_at = @updatedAt
+        WHERE email = @email
+      `).run({
+        email,
+        password: hashedPassword,
+        updatedAt:
+          new Date().toISOString(),
+      });
+
+      console.log(
+        "Default admin password repaired."
+      );
+    }
+  } catch (error) {
+    console.error(
+      "Unable to ensure default admin:",
+      error
+    );
+  }
+}
+
+// ==========================================
+// Ensure demo employee exists
+// ==========================================
+
+function ensureEmployeeUser() {
+  try {
+    const email =
+      "employee@example.com";
+
+    const password =
+      "employee123";
+
+    const existingEmployee = db
+      .prepare(`
+        SELECT *
+        FROM users
+        WHERE email = ?
+        LIMIT 1
+      `)
+      .get(email);
+
+    // ----------------------------------------
+    // Create employee if missing
+    // ----------------------------------------
+
+    if (!existingEmployee) {
+      const hashedPassword =
+        bcrypt.hashSync(password, 10);
+
+      const id =
+        "employee-001";
+
+      const createdAt =
+        new Date().toISOString();
+
+      db.prepare(`
+        INSERT INTO users (
+          id,
+          name,
+          email,
+          password,
+          role,
+          created_at,
+          updated_at
+        )
+        VALUES (
+          @id,
+          @name,
+          @email,
+          @password,
+          @role,
+          @createdAt,
+          @updatedAt
+        )
+      `).run({
+        id,
+        name: "Employee",
+        email,
+        password: hashedPassword,
+        role: "employee",
+        createdAt,
+        updatedAt: null,
+      });
+
+      console.log(
+        "Default employee account created."
+      );
+
+      ensureEmployeeCandidate({
+        id,
+        name: "Employee",
+        email,
+        createdAt,
+      });
+
+      return;
+    }
+
+    // ----------------------------------------
+    // Repair demo employee password if needed
+    // ----------------------------------------
+
+    const passwordValid =
+      bcrypt.compareSync(
+        password,
+        existingEmployee.password
+      );
+
+    if (!passwordValid) {
+      const hashedPassword =
+        bcrypt.hashSync(password, 10);
+
+      db.prepare(`
+        UPDATE users
+        SET
+          password = @password,
+          role = 'employee',
+          name = 'Employee',
+          updated_at = @updatedAt
+        WHERE email = @email
+      `).run({
+        email,
+        password: hashedPassword,
+        updatedAt:
+          new Date().toISOString(),
+      });
+
+      console.log(
+        "Default employee password repaired."
+      );
+    }
+
+    // ----------------------------------------
+    // Make sure candidate exists
+    // ----------------------------------------
+
+    ensureEmployeeCandidate({
+      id: existingEmployee.id,
+      name:
+        existingEmployee.name ||
+        "Employee",
+      email:
+        existingEmployee.email,
+      createdAt:
+        existingEmployee.created_at ||
+        new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error(
+      "Unable to ensure default employee:",
+      error
+    );
+  }
+}
+
+// ==========================================
+// Ensure employee candidate exists
+// ==========================================
+
+function ensureEmployeeCandidate({
+  id,
+  name,
+  email,
+  createdAt,
+}) {
+  try {
+    const existingCandidate =
+      db
+        .prepare(`
+          SELECT id
+          FROM employee_requests
+          WHERE email = ?
+          LIMIT 1
+        `)
+        .get(email);
+
+    if (existingCandidate) {
+      return;
+    }
 
     db.prepare(`
-      INSERT INTO users (
+      INSERT INTO employee_requests (
         id,
         name,
         email,
-        password,
-        role,
+        status,
+        ai_score,
+
+        resume_original_name,
+        resume_filename,
+        resume_path,
+        resume_url,
+        resume_size,
+        resume_uploaded_at,
+
         created_at,
         updated_at
       )
@@ -65,33 +315,56 @@ function ensureAdminUser() {
         @id,
         @name,
         @email,
-        @password,
-        @role,
+        @status,
+        @aiScore,
+
+        @resumeOriginalName,
+        @resumeFilename,
+        @resumePath,
+        @resumeUrl,
+        @resumeSize,
+        @resumeUploadedAt,
+
         @createdAt,
         @updatedAt
       )
     `).run({
-      id: "admin-001",
-      name: "Admin",
-      email: "admin@example.com",
-      password: adminPassword,
-      role: "admin",
-      createdAt: new Date().toISOString(),
+      id: `candidate-${id}`,
+      name,
+      email,
+
+      status: "pending",
+
+      aiScore: null,
+
+      resumeOriginalName: null,
+      resumeFilename: null,
+      resumePath: null,
+      resumeUrl: null,
+      resumeSize: null,
+      resumeUploadedAt: null,
+
+      createdAt,
       updatedAt: null,
     });
 
     console.log(
-      "Default admin account created."
+      "Default employee candidate created."
     );
   } catch (error) {
     console.error(
-      "Unable to create default admin:",
+      "Unable to ensure employee candidate:",
       error
     );
   }
 }
 
+// ==========================================
+// Initialize demo accounts
+// ==========================================
+
 ensureAdminUser();
+ensureEmployeeUser();
 
 // ==========================================
 // SIGNUP
@@ -209,13 +482,6 @@ router.post("/signup", async (req, res) => {
     // ======================================
     // Automatically create candidate
     // ======================================
-    //
-    // Employee signup now immediately
-    // appears in the admin Candidate section.
-    //
-    // Resume is intentionally NULL because
-    // signup does not upload a resume.
-    // ======================================
 
     const existingCandidate = db
       .prepare(`
@@ -321,15 +587,11 @@ router.post("/signup", async (req, res) => {
 
     return res.status(201).json({
       success: true,
-
       message:
         "Account created successfully.",
-
       token,
-
       user,
     });
-
   } catch (error) {
     console.error(
       "Signup error:",
@@ -433,12 +695,9 @@ router.post("/login", async (req, res) => {
 
     return res.json({
       success: true,
-
       token,
-
       user: publicUser,
     });
-
   } catch (error) {
     console.error(
       "Login error:",
