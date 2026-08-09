@@ -453,6 +453,60 @@ router.get(
     }
   }
 );
+// ==========================================
+// Get all candidates
+// ==========================================
+// ADMIN ONLY
+// ==========================================
+
+router.get(
+  "/candidates",
+  authenticateToken,
+  requireRole("admin"),
+  (req, res) => {
+    try {
+      const rows = db
+        .prepare(`
+          SELECT
+            id,
+            name,
+            email,
+            created_at
+          FROM users
+          WHERE role = 'employee'
+          ORDER BY created_at DESC
+        `)
+        .all();
+
+      const candidates = rows.map((row) => ({
+        id: row.id,
+        name: row.name,
+        email: row.email,
+        skills: "AI Interview Candidate",
+        progress: "New candidate",
+        completed: 0,
+        total: 31,
+        status: "New candidate",
+        createdAt: row.created_at,
+      }));
+
+      return res.json({
+        success: true,
+        candidates,
+      });
+    } catch (error) {
+      console.error(
+        "Get candidates error:",
+        error
+      );
+
+      return res.status(500).json({
+        success: false,
+        message: "Unable to load candidates.",
+      });
+    }
+  }
+);
 
 // ==========================================
 // Accept / Reject request

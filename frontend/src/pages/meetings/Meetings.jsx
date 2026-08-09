@@ -4,6 +4,7 @@ import {
   useMemo,
   useState,
 } from "react";
+
 import { useNavigate } from "react-router-dom";
 
 import {
@@ -1488,24 +1489,19 @@ function MeetingStat({
   icon: Icon,
 }) {
   return (
-    <div className="group relative bg-[#080b10]/95 p-6 transition-colors duration-500 hover:bg-[#0b0f15]">
-
+    <div className="group relative bg-[#06080c] p-5 sm:p-6">
       <div className="flex items-start justify-between">
-
         <span className="text-[9px] font-semibold uppercase tracking-[0.22em] text-white/20">
           {label}
         </span>
 
         <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/[0.05] bg-white/[0.02]">
-
           <Icon
             size={15}
             strokeWidth={1.4}
             className="text-white/20 transition-colors duration-500 group-hover:text-blue-300/70"
           />
-
         </div>
-
       </div>
 
       <p className="mt-7 text-4xl font-semibold tracking-[-0.06em] text-white">
@@ -1517,7 +1513,6 @@ function MeetingStat({
       </p>
 
       <div className="absolute bottom-0 left-0 h-px w-0 bg-blue-500 transition-all duration-700 group-hover:w-full" />
-
     </div>
   );
 }

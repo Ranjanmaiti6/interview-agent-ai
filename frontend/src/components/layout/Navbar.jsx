@@ -3,7 +3,6 @@ import {
   Menu,
   X,
   BrainCircuit,
-  ArrowUpRight,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -70,40 +69,19 @@ export default function Navbar() {
   return (
     <>
       <nav
-        className={`
-          fixed
-          left-0
-          right-0
-          top-0
-          z-50
-          px-3
-          sm:px-5
-          transition-all
-          duration-500
-          ${scrolled ? "pt-3" : "pt-5"}
-        `}
+        className={`fixed left-0 right-0 top-0 z-50 px-3 sm:px-5 transition-all duration-500 ${
+          scrolled ? "pt-3" : "pt-5"
+        }`}
       >
         <div
-          className={`
-            relative
-            flex
-            h-[66px]
-            items-center
-            justify-between
-            overflow-hidden
-            border
-            px-3
-            sm:px-5
-            transition-all
-            duration-500
-            ${
-              scrolled
-                ? "rounded-2xl border-white/[0.11] bg-[#07090d]/90 shadow-[0_20px_70px_rgba(0,0,0,0.45)] backdrop-blur-2xl"
-                : "rounded-2xl border-white/[0.07] bg-[#07090d]/55 backdrop-blur-xl"
-            }
-          `}
+          className={`relative flex h-[66px] items-center justify-between overflow-hidden border px-3 sm:px-5 transition-all duration-500 ${
+            scrolled
+              ? "rounded-2xl border-white/[0.11] bg-[#07090d]/90 shadow-[0_20px_70px_rgba(0,0,0,0.45)] backdrop-blur-2xl"
+              : "rounded-2xl border-white/[0.07] bg-[#07090d]/55 backdrop-blur-xl"
+          }`}
         >
           {/* Ambient navbar light */}
+
           <div
             className="
               pointer-events-none
@@ -229,6 +207,8 @@ export default function Navbar() {
                 p-1
               "
             >
+              {/* Landing page links */}
+
               {navLinks.map((item) => (
                 <a
                   key={item.name}
@@ -269,6 +249,8 @@ export default function Navbar() {
                 </a>
               ))}
 
+              {/* Meetings */}
+
               <Link
                 to="/meetings"
                 className="
@@ -304,6 +286,8 @@ export default function Navbar() {
                   "
                 />
               </Link>
+
+              {/* Results */}
 
               <Link
                 to="/report"
@@ -344,115 +328,55 @@ export default function Navbar() {
           </div>
 
           {/* ========================================= */}
-{/* Desktop Actions */}
-{/* ========================================= */}
+          {/* Desktop Actions */}
+          {/* ========================================= */}
 
-<div className="hidden items-center gap-2 md:flex">
+          <div className="hidden items-center gap-2 md:flex">
+            {/* Login */}
 
-  {/* Login */}
+            <Link
+              to="/login?role=employee"
+              className="
+                rounded-lg
+                px-3
+                py-2.5
+                text-[12px]
+                font-medium
+                tracking-wide
+                text-white/45
+                transition-colors
+                duration-300
+                hover:text-white
+              "
+            >
+              Login
+            </Link>
 
-  <Link
-    to="/login?role=employee"
-    className="
-      rounded-lg
-      px-3
-      py-2.5
-      text-[12px]
-      font-medium
-      tracking-wide
-      text-white/45
-      transition-colors
-      duration-300
-      hover:text-white
-    "
-  >
-    Login
-  </Link>
+            {/* Sign Up */}
 
-  {/* Sign Up */}
-
-  <Link
-    to="/signup"
-    className="
-      rounded-lg
-      border
-      border-white/[0.08]
-      bg-white/[0.025]
-      px-3.5
-      py-2.5
-      text-[12px]
-      font-semibold
-      tracking-wide
-      text-white/65
-      transition-all
-      duration-300
-      hover:border-blue-400/20
-      hover:bg-blue-500/[0.06]
-      hover:text-white
-    "
-  >
-    Sign Up
-  </Link>
-
-  {/* Start Interview */}
-
-  <Link
-    to="/candidate"
-    className="
-      group
-      relative
-      inline-flex
-      items-center
-      gap-2
-      overflow-hidden
-      rounded-xl
-      border
-      border-blue-300/20
-      bg-blue-500
-      px-4
-      py-2.5
-      text-[12px]
-      font-semibold
-      text-white
-      shadow-[0_8px_30px_rgba(37,99,235,0.18)]
-      transition-all
-      duration-300
-      hover:-translate-y-0.5
-      hover:bg-blue-400
-      hover:shadow-[0_12px_42px_rgba(37,99,235,0.30)]
-    "
-  >
-    <span className="relative z-10">
-      Start Interview
-    </span>
-
-    <ArrowUpRight
-      size={14}
-      className="
-        relative
-        z-10
-        transition-transform
-        duration-300
-        group-hover:-translate-y-0.5
-        group-hover:translate-x-0.5
-      "
-    />
-
-    <span
-      className="
-        absolute
-        inset-0
-        -translate-x-full
-        skew-x-[-20deg]
-        bg-white/[0.12]
-        transition-transform
-        duration-500
-        group-hover:translate-x-full
-      "
-    />
-  </Link>
-
-</div>
+            <Link
+              to="/signup"
+              className="
+                rounded-xl
+                border
+                border-blue-300/20
+                bg-blue-500
+                px-4
+                py-2.5
+                text-[12px]
+                font-semibold
+                text-white
+                shadow-[0_8px_30px_rgba(37,99,235,0.18)]
+                transition-all
+                duration-300
+                hover:-translate-y-0.5
+                hover:bg-blue-400
+                hover:shadow-[0_12px_42px_rgba(37,99,235,0.30)]
+              "
+            >
+              Sign Up
+            </Link>
+          </div>
 
           {/* ========================================= */}
           {/* Mobile Button */}
@@ -480,13 +404,18 @@ export default function Navbar() {
               hover:bg-white/[0.07]
               md:hidden
             "
-            aria-label={isOpen ? "Close menu" : "Open menu"}
+            aria-label={
+              isOpen ? "Close menu" : "Open menu"
+            }
             aria-expanded={isOpen}
           >
             {isOpen ? (
               <X size={20} strokeWidth={1.5} />
             ) : (
-              <Menu size={20} strokeWidth={1.5} />
+              <Menu
+                size={20}
+                strokeWidth={1.5}
+              />
             )}
           </button>
         </div>
@@ -503,7 +432,7 @@ export default function Navbar() {
             md:hidden
             ${
               isOpen
-                ? "mt-2 max-h-[650px] opacity-100"
+                ? "mt-2 max-h-[600px] opacity-100"
                 : "mt-0 max-h-0 opacity-0"
             }
           `}
@@ -534,7 +463,7 @@ export default function Navbar() {
               </span>
             </div>
 
-            {/* Mobile Anchor Links */}
+            {/* Mobile anchor links */}
 
             {navLinks.map((item) => (
               <a
@@ -605,7 +534,7 @@ export default function Navbar() {
 
             <div className="my-2 h-px bg-white/[0.07]" />
 
-            {/* Mobile Login */}
+            {/* Login */}
 
             <Link
               to="/login?role=employee"
@@ -626,66 +555,20 @@ export default function Navbar() {
             >
               Login
             </Link>
-            <Link
-  to="/signup"
-  onClick={closeMenu}
-  className="
-    flex
-    items-center
-    rounded-xl
-    px-4
-    py-3.5
-    text-sm
-    text-white/55
-    transition-all
-    duration-300
-    hover:bg-white/[0.045]
-    hover:text-white
-  "
->
-  Sign Up
-</Link>
 
-            {/* Mobile Sign Up */}
+            {/* Sign Up */}
 
             <Link
               to="/signup"
               onClick={closeMenu}
               className="
-                mt-1
-                flex
-                items-center
-                rounded-xl
-                border
-                border-white/[0.08]
-                bg-white/[0.025]
-                px-4
-                py-3.5
-                text-sm
-                text-white/70
-                transition-all
-                duration-300
-                hover:border-blue-400/30
-                hover:bg-blue-500/[0.08]
-                hover:text-white
-              "
-            >
-              Sign Up
-            </Link>
-
-            {/* Mobile Start Interview */}
-
-            <Link
-              to="/candidate"
-              onClick={closeMenu}
-              className="
-                group
                 mt-2
                 flex
                 items-center
                 justify-center
-                gap-2
                 rounded-xl
+                border
+                border-blue-300/20
                 bg-blue-500
                 px-4
                 py-3.5
@@ -698,17 +581,7 @@ export default function Navbar() {
                 hover:bg-blue-400
               "
             >
-              Start Interview
-
-              <ArrowUpRight
-                size={16}
-                className="
-                  transition-transform
-                  duration-300
-                  group-hover:-translate-y-0.5
-                  group-hover:translate-x-0.5
-                "
-              />
+              Sign Up
             </Link>
           </div>
         </div>

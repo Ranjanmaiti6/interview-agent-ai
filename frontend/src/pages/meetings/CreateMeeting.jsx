@@ -9,53 +9,39 @@ import {
   Video,
 } from "lucide-react";
 
-const API_URL =
-  import.meta.env.VITE_API_URL || "http://localhost:5001";
+const API_URL = (
+  import.meta.env.VITE_API_URL ||
+  "http://localhost:5001"
+).replace(/\/$/, "");
 
 export default function CreateMeeting() {
   const navigate = useNavigate();
 
   const [requests, setRequests] = useState([]);
-  const [loadingRequests, setLoadingRequests] =
-    useState(true);
+  const [loadingRequests, setLoadingRequests] = useState(true);
 
-  const [title, setTitle] =
-    useState("AI Interview");
+  const [title, setTitle] = useState("AI Interview");
+  const [employeeEmail, setEmployeeEmail] = useState("");
+  const [employeeRequestId, setEmployeeRequestId] = useState("");
+  const [employeeName, setEmployeeName] = useState("");
+  const [scheduledAt, setScheduledAt] = useState("");
+  const [durationMinutes, setDurationMinutes] = useState("30");
+  const [meetingUrl, setMeetingUrl] = useState("");
 
-  const [employeeEmail, setEmployeeEmail] =
-    useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
-  const [employeeRequestId, setEmployeeRequestId] =
-    useState("");
-
-  const [employeeName, setEmployeeName] =
-    useState("");
-
-  const [scheduledAt, setScheduledAt] =
-    useState("");
-
-  const [durationMinutes, setDurationMinutes] =
-    useState("30");
-
-  const [meetingUrl, setMeetingUrl] =
-    useState("");
-
-  const [loading, setLoading] =
-    useState(false);
-
-  const [error, setError] =
-    useState("");
-
-  const [success, setSuccess] =
-    useState("");
+  // ==========================================
+  // LOAD ACCEPTED EMPLOYEES
+  // ==========================================
 
   const loadRequests = async () => {
     try {
       setLoadingRequests(true);
       setError("");
 
-      const token =
-        localStorage.getItem("token");
+      const token = localStorage.getItem("token");
 
       if (!token) {
         navigate("/login");
@@ -81,30 +67,33 @@ export default function CreateMeeting() {
         data = {};
       }
 
+      if (response.status === 401) {
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        navigate("/login");
+        return;
+      }
+
       if (!response.ok) {
         throw new Error(
-          data.message ||
-            "Unable to load employees."
+          data.message || "Unable to load employees."
         );
       }
 
-      const accepted = (
-        data.requests || []
-      ).filter(
-        (request) =>
-          request.status === "accepted"
-      );
+      const accepted = Array.isArray(data.requests)
+        ? data.requests.filter(
+            (request) =>
+              String(request.status || "").toLowerCase() ===
+              "accepted"
+          )
+        : [];
 
       setRequests(accepted);
     } catch (err) {
-      console.error(
-        "Load employees error:",
-        err
-      );
+      console.error("Load employees error:", err);
 
       setError(
-        err.message ||
-          "Unable to load employees."
+        err.message || "Unable to load employees."
       );
     } finally {
       setLoadingRequests(false);
@@ -115,17 +104,20 @@ export default function CreateMeeting() {
     loadRequests();
   }, []);
 
+  // ==========================================
+  // EMPLOYEE CHANGE
+  // ==========================================
+
   const handleEmployeeChange = (event) => {
-    const selectedEmail =
-      event.target.value;
+    const selectedEmail = event.target.value;
 
     setEmployeeEmail(selectedEmail);
 
-    const selectedRequest =
-      requests.find(
-        (request) =>
-          request.email === selectedEmail
-      );
+    const selectedRequest = requests.find(
+      (request) =>
+        String(request.email || "").toLowerCase() ===
+        selectedEmail.toLowerCase()
+    );
 
     if (selectedRequest) {
       setEmployeeRequestId(
@@ -134,6 +126,7 @@ export default function CreateMeeting() {
 
       setEmployeeName(
         selectedRequest.name ||
+          selectedRequest.employee_name ||
           "Employee"
       );
     } else {
@@ -142,6 +135,10 @@ export default function CreateMeeting() {
     }
   };
 
+  // ==========================================
+  // SUBMIT
+  // ==========================================
+
   const handleSubmit = async (event) => {
     event.preventDefault();
 
@@ -149,16 +146,12 @@ export default function CreateMeeting() {
     setSuccess("");
 
     if (!title.trim()) {
-      setError(
-        "Please enter a meeting title."
-      );
+      setError("Please enter a meeting title.");
       return;
     }
 
     if (!employeeEmail) {
-      setError(
-        "Please select an employee."
-      );
+      setError("Please select an employee.");
       return;
     }
 
@@ -169,17 +162,10 @@ export default function CreateMeeting() {
       return;
     }
 
-    const selectedDate =
-      new Date(scheduledAt);
+    const selectedDate = new Date(scheduledAt);
 
-    if (
-      Number.isNaN(
-        selectedDate.getTime()
-      )
-    ) {
-      setError(
-        "Please select a valid date and time."
-      );
+    if (Number.isNaN(selectedDate.getTime())) {
+      setError("Please select a valid date and time.");
       return;
     }
 
@@ -187,17 +173,21 @@ export default function CreateMeeting() {
       meetingUrl.trim() &&
       !isValidUrl(meetingUrl.trim())
     ) {
-      setError(
-        "Please enter a valid meeting URL."
-      );
+      setError("Please enter a valid meeting URL.");
       return;
     }
 
-    setLoading(true);
+    const duration = Number(durationMinutes);
+
+    if (!Number.isFinite(duration) || duration <= 0) {
+      setError("Please select a valid duration.");
+      return;
+    }
 
     try {
-      const token =
-        localStorage.getItem("token");
+      setLoading(true);
+
+      const token = localStorage.getItem("token");
 
       if (!token) {
         navigate("/login");
@@ -209,36 +199,31 @@ export default function CreateMeeting() {
         {
           method: "POST",
           headers: {
-            "Content-Type":
-              "application/json",
-            Authorization:
-              `Bearer ${token}`,
-            Accept:
-              "application/json",
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+            Accept: "application/json",
           },
           body: JSON.stringify({
             employeeRequestId:
               employeeRequestId || null,
 
             employeeName:
-              employeeName ||
-              "Employee",
+              employeeName || "Employee",
 
-            employeeEmail,
+            employeeEmail:
+              employeeEmail.trim().toLowerCase(),
 
             title: title.trim(),
 
             description: null,
 
-            scheduledAt,
+            scheduledAt:
+              selectedDate.toISOString(),
 
-            durationMinutes:
-              Number(durationMinutes) ||
-              30,
+            durationMinutes: duration,
 
             meetingUrl:
-              meetingUrl.trim() ||
-              null,
+              meetingUrl.trim() || null,
           }),
         }
       );
@@ -249,6 +234,13 @@ export default function CreateMeeting() {
         data = await response.json();
       } catch {
         data = {};
+      }
+
+      if (response.status === 401) {
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        navigate("/login");
+        return;
       }
 
       if (!response.ok) {
@@ -284,19 +276,33 @@ export default function CreateMeeting() {
     }
   };
 
-  return (
-    <div className="min-h-screen bg-[#05070a] text-white">
-      {/* Header */}
-      <header className="border-b border-white/[0.06] bg-[#090b0f]/90 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-5">
-          <div>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.25em] text-purple-400">
-              Admin
-            </p>
+  // ==========================================
+  // RENDER
+  // ==========================================
 
-            <h1 className="mt-1 text-xl font-semibold">
-              Create Meeting
-            </h1>
+  return (
+    <div className="min-h-screen bg-[#06080c] text-white">
+      {/* Header */}
+
+      <header className="border-b border-white/[0.06] bg-[#06080c]/90 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4 sm:px-6 lg:px-8">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-purple-400/10 bg-purple-400/[0.05]">
+              <Video
+                size={18}
+                className="text-purple-300"
+              />
+            </div>
+
+            <div>
+              <p className="text-[9px] font-semibold uppercase tracking-[0.28em] text-purple-400/70">
+                Admin
+              </p>
+
+              <h1 className="mt-1 text-xl font-semibold">
+                Create Meeting
+              </h1>
+            </div>
           </div>
 
           <button
@@ -372,6 +378,7 @@ export default function CreateMeeting() {
 
           <div className="space-y-7 p-6 sm:p-8">
             {/* Title */}
+
             <Field
               icon={Video}
               label="Meeting Title"
@@ -389,6 +396,7 @@ export default function CreateMeeting() {
             </Field>
 
             {/* Employee */}
+
             <Field
               icon={User}
               label="Employee"
@@ -399,15 +407,13 @@ export default function CreateMeeting() {
                 </div>
               ) : requests.length === 0 ? (
                 <div className="rounded-xl border border-yellow-400/15 bg-yellow-400/[0.05] p-4 text-sm text-yellow-300">
-                  No accepted employee requests
-                  are available.
+                  No accepted employee requests are
+                  available.
                 </div>
               ) : (
                 <select
                   value={employeeEmail}
-                  onChange={
-                    handleEmployeeChange
-                  }
+                  onChange={handleEmployeeChange}
                   required
                   className={inputClass}
                 >
@@ -415,22 +421,23 @@ export default function CreateMeeting() {
                     Select employee
                   </option>
 
-                  {requests.map(
-                    (request) => (
-                      <option
-                        key={request.id}
-                        value={request.email}
-                      >
-                        {request.name} —{" "}
-                        {request.email}
-                      </option>
-                    )
-                  )}
+                  {requests.map((request) => (
+                    <option
+                      key={request.id}
+                      value={request.email}
+                    >
+                      {request.name ||
+                        request.employee_name ||
+                        "Employee"}{" "}
+                      — {request.email}
+                    </option>
+                  ))}
                 </select>
               )}
             </Field>
 
             {/* Date */}
+
             <Field
               icon={CalendarDays}
               label="Interview Date & Time"
@@ -449,6 +456,7 @@ export default function CreateMeeting() {
             </Field>
 
             {/* Duration */}
+
             <Field
               icon={Clock3}
               label="Duration"
@@ -485,6 +493,7 @@ export default function CreateMeeting() {
             </Field>
 
             {/* URL */}
+
             <Field
               icon={Link2}
               label={
@@ -509,12 +518,13 @@ export default function CreateMeeting() {
               />
 
               <p className="mt-2 text-xs text-white/20">
-                Leave empty to use the internal
-                AI interview flow.
+                Leave empty to use the internal AI
+                interview flow.
               </p>
             </Field>
 
             {/* Buttons */}
+
             <div className="flex flex-col-reverse gap-3 border-t border-white/[0.06] pt-7 sm:flex-row sm:justify-end">
               <button
                 type="button"
@@ -547,8 +557,9 @@ export default function CreateMeeting() {
   );
 }
 
-const inputClass =
-  "w-full rounded-xl border border-white/[0.08] bg-white/[0.035] px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/20 focus:border-purple-400/40 focus:bg-white/[0.05]";
+// ==========================================
+// FIELD
+// ==========================================
 
 function Field({
   icon: Icon,
@@ -557,19 +568,30 @@ function Field({
 }) {
   return (
     <div>
-      <label className="mb-2 flex items-center gap-2 text-sm font-semibold text-white/70">
+      <label className="mb-2.5 flex items-center gap-2 text-xs font-semibold text-white/55">
         <Icon
-          size={15}
+          size={14}
           className="text-purple-300/70"
         />
 
-        {label}
+        <span>{label}</span>
       </label>
 
       {children}
     </div>
   );
 }
+
+// ==========================================
+// INPUT CLASS
+// ==========================================
+
+const inputClass =
+  "w-full rounded-xl border border-white/[0.08] bg-white/[0.035] px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/20 focus:border-purple-400/40 focus:bg-white/[0.05]";
+
+// ==========================================
+// URL VALIDATION
+// ==========================================
 
 function isValidUrl(value) {
   try {
