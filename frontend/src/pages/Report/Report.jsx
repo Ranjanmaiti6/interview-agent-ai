@@ -17,7 +17,6 @@ import {
   Target,
   TrendingUp,
   User,
-  XCircle,
 } from "lucide-react";
 
 const API_URL = (
@@ -30,7 +29,7 @@ export default function Report() {
   const { id } = useParams();
 
   // ==========================================
-  // User
+  // USER
   // ==========================================
 
   const user = useMemo(() => {
@@ -43,111 +42,38 @@ export default function Report() {
     }
   }, []);
 
-  const isAdmin = user.role === "admin";
+  const isAdmin =
+    String(user.role || "").toLowerCase() ===
+    "admin";
 
   // ==========================================
-  // State
+  // STATE
   // ==========================================
 
   const [report, setReport] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState("");
+
+  const [loading, setLoading] =
+    useState(true);
+
+  const [refreshing, setRefreshing] =
+    useState(false);
+
+  const [error, setError] =
+    useState("");
+
   const [expandedQuestion, setExpandedQuestion] =
     useState(null);
 
   // ==========================================
-  // Token
+  // TOKEN
   // ==========================================
 
-  const getToken = () =>
-    localStorage.getItem("token");
+  const getToken = () => {
+    return localStorage.getItem("token");
+  };
 
   // ==========================================
-  // Demo fallback
-  // ==========================================
-
-  const createFallbackReport = useCallback(() => {
-    return {
-      id: id || "demo-report",
-      candidateName:
-        user.name || "Candidate",
-      candidateEmail:
-        user.email || "",
-      position: "Technical Interview",
-      overallScore: 82,
-      technicalScore: 85,
-      communicationScore: 79,
-      problemSolvingScore: 84,
-      experienceScore: 81,
-      recommendation: "Recommended",
-      status: "completed",
-      durationMinutes: 38,
-      completedAt:
-        new Date().toISOString(),
-      summary:
-        "The candidate demonstrated strong technical reasoning, practical problem-solving ability, and a solid understanding of software engineering fundamentals.",
-      strengths: [
-        "Strong technical reasoning",
-        "Clear problem-solving approach",
-        "Good understanding of engineering fundamentals",
-        "Able to explain implementation decisions",
-      ],
-      weaknesses: [
-        "Some answers could be more concise",
-        "Architecture explanations could include more trade-off analysis",
-      ],
-      questions: [
-        {
-          id: 1,
-          category: "Technical",
-          question:
-            "Describe a challenging technical problem you have solved.",
-          answer:
-            "The candidate explained the problem, identified the root cause, and described a structured implementation approach.",
-          score: 86,
-          feedback:
-            "Strong answer with a clear technical process.",
-        },
-        {
-          id: 2,
-          category: "Problem Solving",
-          question:
-            "How do you approach debugging a production issue?",
-          answer:
-            "The candidate described reproducing the issue, checking logs and metrics, isolating the failure, and validating the fix.",
-          score: 88,
-          feedback:
-            "Demonstrates a systematic debugging methodology.",
-        },
-        {
-          id: 3,
-          category: "Architecture",
-          question:
-            "How would you design a scalable web application?",
-          answer:
-            "The candidate discussed APIs, databases, caching, horizontal scaling, monitoring, and deployment.",
-          score: 80,
-          feedback:
-            "Good foundation, but additional trade-off discussion would strengthen the answer.",
-        },
-        {
-          id: 4,
-          category: "Behavioral",
-          question:
-            "Describe a technical disagreement with your team.",
-          answer:
-            "The candidate described comparing alternatives, discussing constraints, and aligning on the solution with the team.",
-          score: 78,
-          feedback:
-            "Good collaborative approach with room for more concrete examples.",
-        },
-      ],
-    };
-  }, [id, user.email, user.name]);
-
-  // ==========================================
-  // Load report
+  // LOAD REAL REPORT
   // ==========================================
 
   const loadReport = useCallback(
@@ -168,24 +94,35 @@ export default function Report() {
           return;
         }
 
-        let endpoint = "";
+        /*
+         * If the URL is:
+         *
+         * /report/123
+         *
+         * we request:
+         *
+         * /api/reports/123
+         *
+         * Otherwise:
+         *
+         * /api/reports/latest
+         */
 
-        if (id) {
-          endpoint = `/api/reports/${encodeURIComponent(
-            id
-          )}`;
-        } else {
-          endpoint = "/api/reports/latest";
-        }
+        const endpoint = id
+          ? `/api/reports/${encodeURIComponent(id)}`
+          : "/api/reports/latest";
 
         const response = await fetch(
           `${API_URL}${endpoint}`,
           {
             method: "GET",
+
             headers: {
               Authorization:
                 `Bearer ${token}`,
-              Accept: "application/json",
+
+              Accept:
+                "application/json",
             },
           }
         );
@@ -193,80 +130,118 @@ export default function Report() {
         let data = {};
 
         try {
-          data = await response.json();
+          data =
+            await response.json();
         } catch {
           data = {};
         }
 
-        if (response.status === 401) {
-          localStorage.removeItem("token");
-          localStorage.removeItem("user");
+        // ======================================
+        // AUTH ERROR
+        // ======================================
+
+        if (
+          response.status === 401
+        ) {
+          localStorage.removeItem(
+            "token"
+          );
+
+          localStorage.removeItem(
+            "user"
+          );
+
           navigate("/login");
+
           return;
         }
+
+        // ======================================
+        // SERVER ERROR
+        // ======================================
 
         if (!response.ok) {
           throw new Error(
             data.message ||
+              data.error ||
               `Unable to load report. HTTP ${response.status}`
           );
         }
 
+        // ======================================
+        // EXTRACT REPORT
+        // ======================================
+
         const incomingReport =
           data.report ||
           data.result ||
+          data.data ||
           data;
 
         if (
           !incomingReport ||
           typeof incomingReport !==
-            "object"
+            "object" ||
+          Array.isArray(
+            incomingReport
+          )
         ) {
           throw new Error(
-            "No report data was returned."
+            "No valid interview report was returned by the server."
           );
         }
 
-        setReport(
+        // ======================================
+        // NORMALIZE
+        // ======================================
+
+        const normalized =
           normalizeReport(
             incomingReport
-          )
-        );
-      } catch (requestError) {
+          );
+
+        setReport(normalized);
+      } catch (err) {
         console.error(
           "Load report error:",
-          requestError
+          err
         );
 
         /*
-         * Keep the report page usable while the
-         * backend report endpoint is being added.
+         * IMPORTANT:
+         *
+         * We DO NOT create a fake report here.
+         *
+         * The old code displayed demo data when
+         * the API failed. That made it look like
+         * the interview was evaluated when it
+         * actually wasn't.
          */
-        setReport(
-          createFallbackReport()
-        );
+
+        setReport(null);
 
         setError(
-          "Live report data is not available yet. Showing the report preview."
+          err.message ||
+            "Unable to load interview report."
         );
       } finally {
         setLoading(false);
         setRefreshing(false);
       }
     },
-    [
-      id,
-      navigate,
-      createFallbackReport,
-    ]
+    [id, navigate]
   );
+
+  // ==========================================
+  // INITIAL LOAD
+  // ==========================================
 
   useEffect(() => {
     loadReport();
   }, [loadReport]);
 
   // ==========================================
-  // Score
+  // SCORE
   // ==========================================
 
   const overallScore =
@@ -280,7 +255,7 @@ export default function Report() {
     );
 
   // ==========================================
-  // Dashboard
+  // DASHBOARD
   // ==========================================
 
   const goBack = () => {
@@ -292,13 +267,14 @@ export default function Report() {
   };
 
   // ==========================================
-  // Render loading
+  // LOADING
   // ==========================================
 
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#05070a] text-white">
         <div className="text-center">
+
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-blue-300/10 bg-blue-500/[0.06]">
             <Loader2
               size={24}
@@ -307,20 +283,26 @@ export default function Report() {
           </div>
 
           <h1 className="mt-5 text-xl font-semibold">
-            Preparing report...
+            Loading interview report...
           </h1>
 
           <p className="mt-2 text-sm text-white/30">
-            Analyzing interview results.
+            Fetching the latest evaluation results.
           </p>
+
         </div>
       </div>
     );
   }
 
+  // ==========================================
+  // NO REPORT / ERROR
+  // ==========================================
+
   if (!report) {
     return (
       <EmptyReport
+        error={error}
         onBack={goBack}
         onRefresh={() =>
           loadReport()
@@ -329,19 +311,27 @@ export default function Report() {
     );
   }
 
+  // ==========================================
+  // MAIN
+  // ==========================================
+
   return (
     <div className="relative min-h-screen overflow-hidden bg-[#05070a] text-white">
+
       <AmbientBackground />
 
       <div className="pointer-events-none absolute left-0 right-0 top-0 h-px bg-gradient-to-r from-transparent via-blue-400/30 to-transparent" />
 
-      {/* ========================================
-          Header
-      ======================================== */}
+      {/* ======================================
+          HEADER
+      ====================================== */}
 
       <header className="relative z-20 border-b border-white/[0.06] bg-[#07090d]/80 backdrop-blur-2xl">
+
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5 lg:px-8">
+
           <div className="flex items-center gap-4">
+
             <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-blue-300/10 bg-blue-500/[0.06]">
               <BrainCircuit
                 size={21}
@@ -351,6 +341,7 @@ export default function Report() {
             </div>
 
             <div>
+
               <p className="text-[9px] font-semibold uppercase tracking-[0.25em] text-blue-400">
                 AI Evaluation
               </p>
@@ -358,7 +349,9 @@ export default function Report() {
               <h1 className="mt-0.5 text-lg font-semibold">
                 Interview Report
               </h1>
+
             </div>
+
           </div>
 
           <button
@@ -367,28 +360,36 @@ export default function Report() {
             className="group inline-flex items-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.025] px-4 py-2.5 text-xs font-semibold text-white/50 transition-all duration-300 hover:border-white/[0.15] hover:bg-white/[0.05] hover:text-white"
           >
             <ArrowLeft size={14} />
+
             Dashboard
           </button>
+
         </div>
+
       </header>
 
-      {/* ========================================
-          Main
-      ======================================== */}
+      {/* ======================================
+          MAIN
+      ====================================== */}
 
       <main className="relative z-10 mx-auto max-w-7xl px-6 py-10 lg:px-8 lg:py-14">
-        {/* ======================================
-            Heading
-        ====================================== */}
+
+        {/* ====================================
+            HEADING
+        ==================================== */}
 
         <div className="flex flex-col gap-7 border-b border-white/[0.07] pb-10 lg:flex-row lg:items-end lg:justify-between">
+
           <div>
+
             <div className="flex items-center gap-3">
+
               <span className="h-px w-10 bg-blue-500" />
 
               <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-blue-400">
                 Evaluation Results
               </span>
+
             </div>
 
             <h2 className="mt-6 text-5xl font-semibold tracking-[-0.055em] sm:text-6xl">
@@ -400,9 +401,10 @@ export default function Report() {
 
             <p className="mt-5 max-w-2xl text-sm leading-7 text-white/35">
               AI-assisted evaluation of the candidate's
-              technical performance, communication, and
-              problem-solving ability.
+              technical performance, communication,
+              and problem-solving ability.
             </p>
+
           </div>
 
           <button
@@ -415,6 +417,7 @@ export default function Report() {
             disabled={refreshing}
             className="group inline-flex w-fit items-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.025] px-4 py-2.5 text-xs font-semibold text-white/45 transition-all duration-300 hover:border-white/[0.15] hover:bg-white/[0.05] hover:text-white disabled:opacity-50"
           >
+
             <RefreshCw
               size={14}
               className={
@@ -425,41 +428,37 @@ export default function Report() {
             />
 
             Refresh
+
           </button>
+
         </div>
 
-        {/* Preview warning */}
-
-        {error && (
-          <div className="mt-6 flex items-start gap-3 rounded-2xl border border-amber-400/10 bg-amber-400/[0.035] p-4 text-xs text-amber-300/70">
-            <Sparkles
-              size={16}
-              className="mt-0.5 shrink-0"
-            />
-
-            <span>{error}</span>
-          </div>
-        )}
-
-        {/* ======================================
-            Candidate card
-        ====================================== */}
+        {/* ====================================
+            CANDIDATE
+        ==================================== */}
 
         <section className="mt-8 overflow-hidden rounded-[28px] border border-white/[0.07] bg-white/[0.018]">
+
           <div className="relative p-6 sm:p-8">
+
             <div className="pointer-events-none absolute -right-32 -top-32 h-72 w-72 rounded-full bg-blue-500/[0.045] blur-[100px]" />
 
             <div className="relative flex flex-col gap-7 lg:flex-row lg:items-center lg:justify-between">
+
               <div className="flex items-center gap-5">
+
                 <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border border-blue-300/10 bg-blue-500/[0.06]">
+
                   <span className="text-lg font-semibold text-blue-200">
                     {getInitials(
                       report.candidateName
                     )}
                   </span>
+
                 </div>
 
                 <div>
+
                   <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-white/20">
                     Candidate
                   </p>
@@ -473,10 +472,13 @@ export default function Report() {
                       {report.candidateEmail}
                     </p>
                   )}
+
                 </div>
+
               </div>
 
               <div className="flex flex-wrap gap-3">
+
                 <StatusBadge
                   recommendation={
                     report.recommendation
@@ -484,28 +486,37 @@ export default function Report() {
                 />
 
                 <div className="inline-flex items-center gap-2 rounded-full border border-white/[0.07] bg-white/[0.025] px-3.5 py-2 text-[9px] font-semibold uppercase tracking-[0.16em] text-white/35">
+
                   <Clock3 size={12} />
 
                   {report.durationMinutes ||
                     0}{" "}
                   min
+
                 </div>
+
               </div>
+
             </div>
+
           </div>
+
         </section>
 
-        {/* ======================================
-            Score overview
-        ====================================== */}
+        {/* ====================================
+            SCORES
+        ==================================== */}
 
         <section className="mt-6 grid gap-6 lg:grid-cols-[330px_1fr]">
-          {/* Overall score */}
+
+          {/* Overall */}
 
           <div className="relative overflow-hidden rounded-[28px] border border-white/[0.07] bg-white/[0.018] p-7">
+
             <div className="pointer-events-none absolute left-1/2 top-[-100px] h-56 w-72 -translate-x-1/2 rounded-full bg-blue-500/[0.055] blur-[90px]" />
 
             <div className="relative text-center">
+
               <p className="text-[9px] font-semibold uppercase tracking-[0.23em] text-white/20">
                 Overall score
               </p>
@@ -516,21 +527,26 @@ export default function Report() {
               />
 
               <div className="mt-5">
+
                 <p className="text-sm font-semibold text-white/65">
                   {scoreLabel}
                 </p>
 
                 <p className="mt-2 text-xs leading-5 text-white/25">
-                  Overall AI evaluation based on the
+                  Overall evaluation based on the
                   completed interview.
                 </p>
+
               </div>
+
             </div>
+
           </div>
 
-          {/* Score categories */}
+          {/* Category scores */}
 
           <div className="grid gap-px overflow-hidden rounded-[28px] border border-white/[0.07] bg-white/[0.07] sm:grid-cols-2">
+
             <ScoreCard
               label="Technical"
               score={
@@ -562,14 +578,17 @@ export default function Report() {
               }
               icon={TrendingUp}
             />
+
           </div>
+
         </section>
 
-        {/* ======================================
-            Summary
-        ====================================== */}
+        {/* ====================================
+            SUMMARY
+        ==================================== */}
 
         <section className="mt-6 rounded-[28px] border border-white/[0.07] bg-white/[0.018] p-7 sm:p-8">
+
           <SectionHeading
             icon={Sparkles}
             eyebrow="AI Summary"
@@ -579,13 +598,15 @@ export default function Report() {
           <p className="mt-6 max-w-5xl text-sm leading-7 text-white/40">
             {report.summary}
           </p>
+
         </section>
 
-        {/* ======================================
-            Strengths / weaknesses
-        ====================================== */}
+        {/* ====================================
+            STRENGTHS / WEAKNESSES
+        ==================================== */}
 
         <section className="mt-6 grid gap-6 lg:grid-cols-2">
+
           <InsightCard
             title="Key strengths"
             icon={CheckCircle2}
@@ -603,21 +624,27 @@ export default function Report() {
             }
             type="negative"
           />
+
         </section>
 
-        {/* ======================================
-            Question analysis
-        ====================================== */}
+        {/* ====================================
+            QUESTIONS
+        ==================================== */}
 
         <section className="mt-14">
+
           <div className="flex flex-col gap-5 border-b border-white/[0.07] pb-6 sm:flex-row sm:items-end sm:justify-between">
+
             <div>
+
               <div className="flex items-center gap-3">
+
                 <span className="h-px w-10 bg-blue-500" />
 
                 <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-blue-400">
                   Detailed Evaluation
                 </span>
+
               </div>
 
               <h2 className="mt-5 text-3xl font-semibold tracking-[-0.04em] sm:text-4xl">
@@ -625,67 +652,90 @@ export default function Report() {
               </h2>
 
               <p className="mt-3 text-sm leading-6 text-white/30">
-                Review the candidate's answers and AI-generated
-                feedback for each interview question.
+                Review the candidate's answers and
+                AI-generated feedback.
               </p>
+
             </div>
 
             <div className="inline-flex w-fit items-center gap-2 rounded-full border border-white/[0.07] bg-white/[0.025] px-3 py-2 text-[9px] font-semibold uppercase tracking-[0.16em] text-white/30">
+
               <FileText size={12} />
 
               {report.questions.length} questions
+
             </div>
+
           </div>
 
           <div className="mt-6 space-y-3">
-            {report.questions.map(
-              (question, index) => {
-                const expanded =
-                  expandedQuestion ===
-                  question.id;
 
-                return (
-                  <QuestionResult
-                    key={
-                      question.id ||
-                      index
-                    }
-                    question={
-                      question
-                    }
-                    index={index}
-                    expanded={
-                      expanded
-                    }
-                    onToggle={() =>
-                      setExpandedQuestion(
+            {report.questions.length ===
+            0 ? (
+              <div className="rounded-2xl border border-white/[0.07] bg-white/[0.018] p-6 text-sm text-white/30">
+                No question-level evaluation is available.
+              </div>
+            ) : (
+              report.questions.map(
+                (
+                  question,
+                  index
+                ) => {
+                  const expanded =
+                    expandedQuestion ===
+                    question.id;
+
+                  return (
+                    <QuestionResult
+                      key={
+                        question.id ||
+                        index
+                      }
+                      question={
+                        question
+                      }
+                      index={index}
+                      expanded={
                         expanded
-                          ? null
-                          : question.id
-                      )
-                    }
-                  />
-                );
-              }
+                      }
+                      onToggle={() =>
+                        setExpandedQuestion(
+                          expanded
+                            ? null
+                            : question.id
+                        )
+                      }
+                    />
+                  );
+                }
+              )
             )}
+
           </div>
+
         </section>
 
-        {/* ======================================
-            Final recommendation
-        ====================================== */}
+        {/* ====================================
+            RECOMMENDATION
+        ==================================== */}
 
         <section className="mt-10 overflow-hidden rounded-[28px] border border-blue-400/10 bg-blue-400/[0.025] p-7 sm:p-8">
+
           <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+
             <div className="flex items-start gap-4">
+
               <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-blue-300/10 bg-blue-500/[0.06]">
+
                 <Award
                   size={21}
                   className="text-blue-300"
                 />
+
               </div>
 
               <div>
+
                 <p className="text-[9px] font-semibold uppercase tracking-[0.22em] text-blue-300/55">
                   Final recommendation
                 </p>
@@ -695,11 +745,12 @@ export default function Report() {
                 </h3>
 
                 <p className="mt-2 max-w-2xl text-xs leading-6 text-white/30">
-                  This recommendation is based on the overall
-                  interview evaluation and individual competency
-                  scores.
+                  This recommendation is based on the
+                  interview evaluation and competency scores.
                 </p>
+
               </div>
+
             </div>
 
             <button
@@ -713,15 +764,19 @@ export default function Report() {
                 size={14}
                 className="transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
               />
+
             </button>
+
           </div>
+
         </section>
 
-        {/* ======================================
-            Security
-        ====================================== */}
+        {/* ====================================
+            SECURITY
+        ==================================== */}
 
         <div className="mt-8 flex items-center gap-3 rounded-2xl border border-white/[0.06] bg-white/[0.018] p-5">
+
           <ShieldCheck
             size={17}
             className="text-emerald-300/60"
@@ -731,19 +786,23 @@ export default function Report() {
             Report access is protected by the authenticated
             interview workflow.
           </p>
+
         </div>
+
       </main>
+
     </div>
   );
 }
 
 // ==========================================
-// Normalize backend report
+// NORMALIZE REPORT
 // ==========================================
 
 function normalizeReport(data) {
   const source =
-    data.report || data;
+    data?.report ||
+    data;
 
   const score = (
     value,
@@ -779,56 +838,59 @@ function normalizeReport(data) {
     id:
       source.id ||
       source.reportId ||
+      source.report_id ||
       "report",
 
     candidateName:
       source.candidateName ||
-      source.employee_name ||
+      source.candidate_name ||
       source.employeeName ||
+      source.employee_name ||
       "Candidate",
 
     candidateEmail:
       source.candidateEmail ||
-      source.employee_email ||
+      source.candidate_email ||
       source.employeeEmail ||
+      source.employee_email ||
       "",
 
     position:
       source.position ||
+      source.jobTitle ||
+      source.job_title ||
       "Technical Interview",
 
     overallScore: score(
       source.overallScore ??
-        source.overall_score,
-      0
+        source.overall_score ??
+        source.score
     ),
 
     technicalScore: score(
       source.technicalScore ??
-        source.technical_score,
-      0
+        source.technical_score
     ),
 
     communicationScore: score(
       source.communicationScore ??
-        source.communication_score,
-      0
+        source.communication_score
     ),
 
     problemSolvingScore: score(
       source.problemSolvingScore ??
-        source.problem_solving_score,
-      0
+        source.problem_solving_score
     ),
 
     experienceScore: score(
       source.experienceScore ??
-        source.experience_score,
-      0
+        source.experience_score
     ),
 
     recommendation:
       source.recommendation ||
+      source.finalRecommendation ||
+      source.final_recommendation ||
       "Under Review",
 
     status:
@@ -838,17 +900,21 @@ function normalizeReport(data) {
     durationMinutes:
       Number(
         source.durationMinutes ??
-          source.duration_minutes
+          source.duration_minutes ??
+          source.duration
       ) || 0,
 
     completedAt:
       source.completedAt ||
       source.completed_at ||
+      source.createdAt ||
+      source.created_at ||
       null,
 
     summary:
       source.summary ||
       source.overallSummary ||
+      source.overall_summary ||
       "No summary was provided.",
 
     strengths:
@@ -867,31 +933,38 @@ function normalizeReport(data) {
           id:
             item.id ||
             item.questionId ||
+            item.question_id ||
             index + 1,
 
           category:
             item.category ||
+            item.type ||
             "Interview",
 
           question:
             item.question ||
             item.questionText ||
+            item.question_text ||
             `Question ${index + 1}`,
 
           answer:
             item.answer ||
             item.response ||
+            item.candidateAnswer ||
+            item.candidate_answer ||
             "No answer recorded.",
 
           score: score(
             item.score ??
-              item.questionScore,
-            0
+              item.questionScore ??
+              item.question_score
           ),
 
           feedback:
             item.feedback ||
             item.evaluation ||
+            item.aiFeedback ||
+            item.ai_feedback ||
             "No detailed feedback was provided.",
         })
       ),
@@ -899,7 +972,7 @@ function normalizeReport(data) {
 }
 
 // ==========================================
-// String array helper
+// STRING ARRAY
 // ==========================================
 
 function normalizeStringArray(
@@ -908,19 +981,29 @@ function normalizeStringArray(
   if (Array.isArray(value)) {
     return value
       .map((item) =>
-        String(item)
+        typeof item === "object"
+          ? item.text ||
+            item.description ||
+            item.value ||
+            JSON.stringify(item)
+          : String(item)
       )
       .filter(Boolean);
   }
 
-  if (typeof value === "string") {
+  if (
+    typeof value ===
+    "string"
+  ) {
     return value
       .split("\n")
       .map((item) =>
-        item.replace(
-          /^[-•]\s*/,
-          ""
-        ).trim()
+        item
+          .replace(
+            /^[-•*]\s*/,
+            ""
+          )
+          .trim()
       )
       .filter(Boolean);
   }
@@ -929,7 +1012,7 @@ function normalizeStringArray(
 }
 
 // ==========================================
-// Score label
+// SCORE LABEL
 // ==========================================
 
 function getScoreLabel(score) {
@@ -953,27 +1036,32 @@ function getScoreLabel(score) {
 }
 
 // ==========================================
-// Initials
+// INITIALS
 // ==========================================
 
 function getInitials(name) {
-  return String(name || "C")
-    .split(" ")
-    .map((part) => part[0])
+  return String(
+    name || "C"
+  )
+    .trim()
+    .split(/\s+/)
+    .map(
+      (part) => part[0]
+    )
     .join("")
     .slice(0, 2)
     .toUpperCase();
 }
 
 // ==========================================
-// Score ring
+// SCORE RING
 // ==========================================
 
 function ScoreRing({
   score,
-  label,
 }) {
   const radius = 76;
+
   const circumference =
     2 * Math.PI * radius;
 
@@ -984,10 +1072,12 @@ function ScoreRing({
 
   return (
     <div className="relative mx-auto mt-6 h-52 w-52">
+
       <svg
         viewBox="0 0 180 180"
         className="h-full w-full -rotate-90"
       >
+
         <circle
           cx="90"
           cy="90"
@@ -1014,9 +1104,11 @@ function ScoreRing({
           }
           className="text-blue-400 transition-all duration-1000"
         />
+
       </svg>
 
       <div className="absolute inset-0 flex flex-col items-center justify-center">
+
         <span className="text-6xl font-semibold tracking-[-0.06em]">
           {score}
         </span>
@@ -1024,13 +1116,15 @@ function ScoreRing({
         <span className="mt-1 text-[9px] font-semibold uppercase tracking-[0.2em] text-white/20">
           / 100
         </span>
+
       </div>
+
     </div>
   );
 }
 
 // ==========================================
-// Score card
+// SCORE CARD
 // ==========================================
 
 function ScoreCard({
@@ -1043,8 +1137,11 @@ function ScoreCard({
 
   return (
     <div className="group bg-[#080b10]/90 p-6 transition-all duration-500 hover:bg-[#0b0f15]">
+
       <div className="flex items-start justify-between">
+
         <div>
+
           <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-white/20">
             {label}
           </p>
@@ -1052,6 +1149,7 @@ function ScoreCard({
           <p className="mt-6 text-4xl font-semibold tracking-[-0.05em]">
             {value}
           </p>
+
         </div>
 
         <Icon
@@ -1059,26 +1157,30 @@ function ScoreCard({
           strokeWidth={1.4}
           className="text-white/15 transition-colors group-hover:text-blue-300/60"
         />
+
       </div>
 
       <div className="mt-5 h-1 overflow-hidden rounded-full bg-white/[0.05]">
+
         <div
           className="h-full rounded-full bg-blue-400 transition-all duration-700"
           style={{
             width: `${value}%`,
           }}
         />
+
       </div>
 
       <p className="mt-3 text-[10px] text-white/20">
         {getScoreLabel(value)}
       </p>
+
     </div>
   );
 }
 
 // ==========================================
-// Status badge
+// STATUS
 // ==========================================
 
 function StatusBadge({
@@ -1105,19 +1207,23 @@ function StatusBadge({
           : "border-amber-400/15 bg-amber-400/[0.05] text-amber-300"
       }`}
     >
+
       {positive ? (
-        <CheckCircle2 size={12} />
+        <CheckCircle2
+          size={12}
+        />
       ) : (
         <Target size={12} />
       )}
 
       {recommendation}
+
     </span>
   );
 }
 
 // ==========================================
-// Section heading
+// SECTION HEADING
 // ==========================================
 
 function SectionHeading({
@@ -1127,14 +1233,18 @@ function SectionHeading({
 }) {
   return (
     <div className="flex items-center gap-4">
+
       <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-blue-300/10 bg-blue-500/[0.06]">
+
         <Icon
           size={17}
           className="text-blue-300"
         />
+
       </div>
 
       <div>
+
         <p className="text-[9px] font-semibold uppercase tracking-[0.22em] text-blue-300/55">
           {eyebrow}
         </p>
@@ -1142,13 +1252,15 @@ function SectionHeading({
         <h3 className="mt-1 text-xl font-semibold tracking-[-0.03em]">
           {title}
         </h3>
+
       </div>
+
     </div>
   );
 }
 
 // ==========================================
-// Insight card
+// INSIGHT CARD
 // ==========================================
 
 function InsightCard({
@@ -1168,7 +1280,9 @@ function InsightCard({
           : "border-amber-400/10 bg-amber-400/[0.018]"
       }`}
     >
+
       <div className="flex items-center gap-3">
+
         <div
           className={`flex h-10 w-10 items-center justify-center rounded-xl border ${
             positive
@@ -1176,6 +1290,7 @@ function InsightCard({
               : "border-amber-400/10 bg-amber-400/[0.04]"
           }`}
         >
+
           <Icon
             size={17}
             className={
@@ -1184,21 +1299,28 @@ function InsightCard({
                 : "text-amber-300/75"
             }
           />
+
         </div>
 
         <h3 className="text-xl font-semibold tracking-[-0.03em]">
           {title}
         </h3>
+
       </div>
 
       <div className="mt-6 space-y-3">
+
         {items.length > 0 ? (
           items.map(
-            (item, index) => (
+            (
+              item,
+              index
+            ) => (
               <div
                 key={index}
                 className="flex gap-3 rounded-xl border border-white/[0.05] bg-black/10 p-4"
               >
+
                 <span
                   className={`mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ${
                     positive
@@ -1210,6 +1332,7 @@ function InsightCard({
                 <p className="text-xs leading-6 text-white/40">
                   {item}
                 </p>
+
               </div>
             )
           )
@@ -1218,13 +1341,15 @@ function InsightCard({
             No observations available.
           </p>
         )}
+
       </div>
+
     </div>
   );
 }
 
 // ==========================================
-// Question result
+// QUESTION
 // ==========================================
 
 function QuestionResult({
@@ -1234,37 +1359,45 @@ function QuestionResult({
   onToggle,
 }) {
   const score =
-    Number(question.score) || 0;
+    Number(
+      question.score
+    ) || 0;
 
   return (
     <article className="overflow-hidden rounded-[22px] border border-white/[0.07] bg-white/[0.018] transition-all duration-300 hover:border-white/[0.12]">
+
       <button
         type="button"
         onClick={onToggle}
         className="flex w-full items-center gap-4 p-5 text-left sm:p-6"
       >
+
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/[0.07] bg-white/[0.025]">
+
           <span className="text-[10px] font-semibold text-white/35">
             {String(
               index + 1
             ).padStart(2, "0")}
           </span>
+
         </div>
 
         <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-[8px] font-semibold uppercase tracking-[0.17em] text-blue-300/50">
-              {question.category}
-            </span>
-          </div>
+
+          <span className="text-[8px] font-semibold uppercase tracking-[0.17em] text-blue-300/50">
+            {question.category}
+          </span>
 
           <h4 className="mt-2 line-clamp-2 text-sm font-semibold leading-6 text-white/75">
             {question.question}
           </h4>
+
         </div>
 
         <div className="flex shrink-0 items-center gap-4">
+
           <div className="hidden text-right sm:block">
+
             <p className="text-2xl font-semibold tracking-[-0.04em]">
               {score}
             </p>
@@ -1272,6 +1405,7 @@ function QuestionResult({
             <p className="text-[8px] uppercase tracking-[0.15em] text-white/20">
               score
             </p>
+
           </div>
 
           {expanded ? (
@@ -1285,31 +1419,42 @@ function QuestionResult({
               className="text-white/25"
             />
           )}
+
         </div>
+
       </button>
 
       {expanded && (
         <div className="border-t border-white/[0.06] bg-black/10 p-5 sm:p-6">
+
           <div className="grid gap-5 lg:grid-cols-2">
+
             <div>
+
               <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-white/20">
                 Candidate answer
               </p>
 
               <div className="mt-3 rounded-2xl border border-white/[0.06] bg-white/[0.018] p-5">
+
                 <p className="text-sm leading-7 text-white/40">
                   {question.answer}
                 </p>
+
               </div>
+
             </div>
 
             <div>
+
               <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-white/20">
                 AI feedback
               </p>
 
               <div className="mt-3 rounded-2xl border border-blue-400/10 bg-blue-400/[0.025] p-5">
+
                 <div className="flex items-start gap-3">
+
                   <Sparkles
                     size={15}
                     className="mt-1 shrink-0 text-blue-300/60"
@@ -1318,12 +1463,17 @@ function QuestionResult({
                   <p className="text-sm leading-7 text-white/40">
                     {question.feedback}
                   </p>
+
                 </div>
+
               </div>
+
             </div>
+
           </div>
 
           <div className="mt-5 flex items-center justify-between rounded-xl border border-white/[0.05] bg-white/[0.015] px-4 py-3">
+
             <span className="text-[9px] font-semibold uppercase tracking-[0.17em] text-white/20">
               Question score
             </span>
@@ -1331,40 +1481,50 @@ function QuestionResult({
             <span className="text-sm font-semibold text-blue-300">
               {score}/100
             </span>
+
           </div>
+
         </div>
       )}
+
     </article>
   );
 }
 
 // ==========================================
-// Empty report
+// EMPTY REPORT
 // ==========================================
 
 function EmptyReport({
+  error,
   onBack,
   onRefresh,
 }) {
   return (
     <div className="flex min-h-screen items-center justify-center bg-[#05070a] px-6 text-white">
+
       <div className="w-full max-w-md rounded-[28px] border border-white/[0.07] bg-white/[0.018] p-8 text-center">
+
         <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-white/[0.07] bg-white/[0.025]">
+
           <FileText
             size={24}
             className="text-white/25"
           />
+
         </div>
 
         <h1 className="mt-5 text-2xl font-semibold">
-          No report available
+          Report unavailable
         </h1>
 
         <p className="mt-3 text-sm leading-6 text-white/30">
-          The interview report has not been generated yet.
+          {error ||
+            "The interview report has not been generated yet."}
         </p>
 
         <div className="mt-7 flex gap-3">
+
           <button
             type="button"
             onClick={onBack}
@@ -1380,19 +1540,23 @@ function EmptyReport({
           >
             Refresh
           </button>
+
         </div>
+
       </div>
+
     </div>
   );
 }
 
 // ==========================================
-// Background
+// BACKGROUND
 // ==========================================
 
 function AmbientBackground() {
   return (
     <div className="pointer-events-none fixed inset-0">
+
       <div className="absolute left-[5%] top-[-15%] h-[540px] w-[540px] rounded-full bg-blue-500/[0.04] blur-[160px]" />
 
       <div className="absolute right-[-10%] top-[20%] h-[500px] w-[500px] rounded-full bg-purple-500/[0.025] blur-[150px]" />
@@ -1404,9 +1568,11 @@ function AmbientBackground() {
         style={{
           backgroundImage:
             "radial-gradient(circle at 1px 1px, rgba(255,255,255,0.8) 1px, transparent 0)",
-          backgroundSize: "34px 34px",
+          backgroundSize:
+            "34px 34px",
         }}
       />
+
     </div>
   );
 }
