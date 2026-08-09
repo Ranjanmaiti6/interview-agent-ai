@@ -1,5 +1,4 @@
 const express = require("express");
-
 const db = require("../database");
 
 const router = express.Router();
@@ -18,8 +17,7 @@ function parseArray(value) {
   }
 
   try {
-    const parsed =
-      JSON.parse(value);
+    const parsed = JSON.parse(value);
 
     return Array.isArray(parsed)
       ? parsed
@@ -29,102 +27,221 @@ function parseArray(value) {
   }
 }
 
+function safeNumber(value, fallback = 0) {
+  const number = Number(value);
+
+  if (!Number.isFinite(number)) {
+    return fallback;
+  }
+
+  return Math.max(
+    0,
+    Math.min(100, number)
+  );
+}
+
+function formatQuestions(value) {
+  const questions = parseArray(value);
+
+  return questions.map((item, index) => ({
+    id:
+      item.id ||
+      item.questionId ||
+      index + 1,
+
+    questionId:
+      item.questionId ||
+      item.id ||
+      index + 1,
+
+    category:
+      item.category ||
+      "Interview",
+
+    question:
+      item.question ||
+      item.questionText ||
+      `Question ${index + 1}`,
+
+    answer:
+      item.answer ||
+      item.response ||
+      "No answer recorded.",
+
+    score: safeNumber(
+      item.score ??
+        item.questionScore ??
+        0
+    ),
+
+    feedback:
+      item.feedback ||
+      item.evaluation ||
+      "No detailed feedback was provided.",
+  }));
+}
+
+// ==========================================
+// Format database report
+// ==========================================
+
 function formatReport(row) {
   if (!row) {
     return null;
   }
 
+  const strengths = parseArray(
+    row.strengths
+  );
+
+  const gaps = parseArray(
+    row.gaps
+  );
+
+  const nextSteps = parseArray(
+    row.next_steps
+  );
+
+  const questions = formatQuestions(
+    row.questions
+  );
+
   return {
     id: row.id,
 
     candidateId:
-      row.candidate_id,
+      row.candidate_id || null,
 
     employeeRequestId:
-      row.employee_request_id,
+      row.employee_request_id || null,
 
     candidateName:
-      row.candidate_name,
+      row.candidate_name ||
+      "Candidate",
 
     candidateEmail:
-      row.candidate_email,
+      row.candidate_email ||
+      "",
 
     meetingId:
-      row.meeting_id,
+      row.meeting_id || null,
+
+    position:
+      row.position ||
+      "Technical Interview",
 
     summary:
       row.summary || "",
 
-    strengths:
-      parseArray(
-        row.strengths
-      ),
+    // --------------------------------------
+    // Strengths
+    // --------------------------------------
 
-    gaps:
-      parseArray(
-        row.gaps
-      ),
+    strengths,
 
-    next:
-      parseArray(
-        row.next_steps
-      ),
+    // --------------------------------------
+    // Gaps / weaknesses
+    // --------------------------------------
 
-    nextSteps:
-      parseArray(
-        row.next_steps
-      ),
+    gaps,
+
+    weaknesses: gaps,
+
+    // --------------------------------------
+    // Next steps
+    // --------------------------------------
+
+    next: nextSteps,
+
+    nextSteps,
+
+    // --------------------------------------
+    // Score object
+    // --------------------------------------
 
     score: {
-      technical:
-        Number(
-          row.technical_score || 0
-        ),
+      technical: safeNumber(
+        row.technical_score
+      ),
 
-      communication:
-        Number(
-          row.communication_score || 0
-        ),
+      communication: safeNumber(
+        row.communication_score
+      ),
 
-      problemSolving:
-        Number(
-          row.problem_solving_score || 0
-        ),
+      problemSolving: safeNumber(
+        row.problem_solving_score
+      ),
 
-      overall:
-        Number(
-          row.overall_score || 0
-        ),
+      experience: safeNumber(
+        row.experience_score
+      ),
+
+      overall: safeNumber(
+        row.overall_score
+      ),
     },
 
-    technicalScore:
-      Number(
-        row.technical_score || 0
-      ),
+    // --------------------------------------
+    // Individual scores
+    // --------------------------------------
 
-    communicationScore:
-      Number(
-        row.communication_score || 0
-      ),
+    technicalScore: safeNumber(
+      row.technical_score
+    ),
 
-    problemSolvingScore:
-      Number(
-        row.problem_solving_score || 0
-      ),
+    communicationScore: safeNumber(
+      row.communication_score
+    ),
 
-    overallScore:
-      Number(
-        row.overall_score || 0
-      ),
+    problemSolvingScore: safeNumber(
+      row.problem_solving_score
+    ),
+
+    experienceScore: safeNumber(
+      row.experience_score
+    ),
+
+    overallScore: safeNumber(
+      row.overall_score
+    ),
+
+    // --------------------------------------
+    // Recommendation
+    // --------------------------------------
 
     recommendation:
-      row.recommendation || "",
+      row.recommendation ||
+      "Under Review",
+
+    status:
+      row.status ||
+      "completed",
+
+    durationMinutes:
+      Number(
+        row.duration_minutes || 0
+      ),
+
+    completedAt:
+      row.completed_at ||
+      row.updated_at ||
+      row.created_at ||
+      null,
 
     createdAt:
-      row.created_at,
+      row.created_at || null,
 
     updatedAt:
-      row.updated_at,
+      row.updated_at || null,
+
+    // --------------------------------------
+    // Per-question analysis
+    //
+    // This will work if the database has a
+    // `questions` column containing JSON.
+    // --------------------------------------
+
+    questions,
   };
 }
 
@@ -138,13 +255,13 @@ router.get(
   "/meeting/:meetingId",
   (req, res) => {
     try {
-      const {
-        meetingId,
-      } = req.params;
+      const meetingId =
+        req.params.meetingId;
 
       if (
         !meetingId ||
-        meetingId === "undefined"
+        meetingId === "undefined" ||
+        meetingId === "null"
       ) {
         return res.status(400).json({
           success: false,
@@ -163,11 +280,21 @@ router.get(
           LIMIT 1
         `).get(meetingId);
 
+      if (!row) {
+        return res.status(404).json({
+          success: false,
+          message:
+            "No report exists for this meeting.",
+          report: null,
+        });
+      }
+
+      const report =
+        formatReport(row);
+
       return res.status(200).json({
         success: true,
-
-        report:
-          formatReport(row),
+        report,
       });
     } catch (error) {
       console.error(
@@ -177,10 +304,8 @@ router.get(
 
       return res.status(500).json({
         success: false,
-
         message:
           "Unable to load meeting report.",
-
         report: null,
       });
     }
@@ -189,6 +314,8 @@ router.get(
 
 // ==========================================
 // GET LATEST REPORT
+//
+// GET /api/reports/latest
 // ==========================================
 
 router.get(
@@ -203,14 +330,21 @@ router.get(
           LIMIT 1
         `).get();
 
+      if (!row) {
+        return res.status(404).json({
+          success: false,
+          message:
+            "No interview report exists yet.",
+          report: null,
+        });
+      }
+
       const report =
         formatReport(row);
 
       return res.status(200).json({
         success: true,
-
         report,
-
         data: report,
       });
     } catch (error) {
@@ -221,10 +355,8 @@ router.get(
 
       return res.status(500).json({
         success: false,
-
         message:
           "Unable to load latest report.",
-
         report: null,
       });
     }
@@ -233,6 +365,8 @@ router.get(
 
 // ==========================================
 // GET ALL REPORTS
+//
+// GET /api/reports
 // ==========================================
 
 router.get(
@@ -251,11 +385,8 @@ router.get(
 
       return res.status(200).json({
         success: true,
-
         reports,
-
-        count:
-          reports.length,
+        count: reports.length,
       });
     } catch (error) {
       console.error(
@@ -265,10 +396,8 @@ router.get(
 
       return res.status(500).json({
         success: false,
-
         message:
           "Unable to load reports.",
-
         reports: [],
       });
     }
@@ -277,38 +406,53 @@ router.get(
 
 // ==========================================
 // GET REPORT BY ID
+//
+// GET /api/reports/:id
 // ==========================================
 
 router.get(
   "/:id",
   (req, res) => {
     try {
+      const reportId =
+        req.params.id;
+
+      if (
+        !reportId ||
+        reportId === "undefined" ||
+        reportId === "null"
+      ) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Report ID is required.",
+          report: null,
+        });
+      }
+
       const row =
         db.prepare(`
           SELECT *
           FROM interview_reports
           WHERE id = ?
           LIMIT 1
-        `).get(
-          req.params.id
-        );
+        `).get(reportId);
 
       if (!row) {
         return res.status(404).json({
           success: false,
-
           message:
             "Report not found.",
-
           report: null,
         });
       }
 
+      const report =
+        formatReport(row);
+
       return res.status(200).json({
         success: true,
-
-        report:
-          formatReport(row),
+        report,
       });
     } catch (error) {
       console.error(
@@ -318,9 +462,9 @@ router.get(
 
       return res.status(500).json({
         success: false,
-
         message:
           "Unable to load report.",
+        report: null,
       });
     }
   }
@@ -329,8 +473,7 @@ router.get(
 // ==========================================
 // POST REPORT
 //
-// Kept for compatibility with your existing
-// frontend or other services.
+// POST /api/reports
 // ==========================================
 
 router.post(
@@ -343,52 +486,107 @@ router.post(
         candidateName,
         candidateEmail,
         meetingId,
+
+        position,
+
         summary,
+
         strengths,
         gaps,
+        weaknesses,
+
         next,
         nextSteps,
+
+        questions,
+
         score,
+
         technicalScore,
         communicationScore,
         problemSolvingScore,
+        experienceScore,
         overallScore,
+
         recommendation,
+
+        status,
+
+        durationMinutes,
       } = req.body;
 
+      // ======================================
+      // Scores
+      // ======================================
+
       const technical =
-        Number(
+        safeNumber(
           technicalScore ??
-          score?.technical ??
-          0
+            score?.technical ??
+            0
         );
 
       const communication =
-        Number(
+        safeNumber(
           communicationScore ??
-          score?.communication ??
-          0
+            score?.communication ??
+            0
         );
 
       const problemSolving =
-        Number(
+        safeNumber(
           problemSolvingScore ??
-          score?.problemSolving ??
-          0
+            score?.problemSolving ??
+            0
         );
 
-      const calculatedOverall =
-        Number(
-          overallScore ??
-          score?.overall ??
-          (
-            (
-              technical +
-              communication +
-              problemSolving
-            ) / 3
-          ).toFixed(2)
+      const experience =
+        safeNumber(
+          experienceScore ??
+            score?.experience ??
+            0
         );
+
+      let calculatedOverall =
+        overallScore ??
+        score?.overall;
+
+      if (
+        calculatedOverall ===
+          undefined ||
+        calculatedOverall ===
+          null ||
+        calculatedOverall === ""
+      ) {
+        const scoreValues = [
+          technical,
+          communication,
+          problemSolving,
+        ];
+
+        if (experience > 0) {
+          scoreValues.push(
+            experience
+          );
+        }
+
+        calculatedOverall =
+          scoreValues.reduce(
+            (total, value) =>
+              total + value,
+            0
+          ) /
+          scoreValues.length;
+      }
+
+      calculatedOverall =
+        safeNumber(
+          calculatedOverall
+        );
+
+      // ======================================
+      // Arrays
+      // ======================================
 
       const strengthsArray =
         Array.isArray(strengths)
@@ -396,7 +594,11 @@ router.post(
           : [];
 
       const gapsArray =
-        Array.isArray(gaps)
+        Array.isArray(
+          weaknesses
+        )
+          ? weaknesses
+          : Array.isArray(gaps)
           ? gaps
           : [];
 
@@ -404,17 +606,24 @@ router.post(
         Array.isArray(nextSteps)
           ? nextSteps
           : Array.isArray(next)
-            ? next
-            : [];
+          ? next
+          : [];
+
+      const questionsArray =
+        Array.isArray(questions)
+          ? questions
+          : [];
+
+      // ======================================
+      // Time
+      // ======================================
 
       const now =
         new Date().toISOString();
 
-      // --------------------------------------
-      // If a meeting already has a report,
-      // update it instead of creating endless
-      // duplicate reports.
-      // --------------------------------------
+      // ======================================
+      // Existing report?
+      // ======================================
 
       let existing = null;
 
@@ -429,7 +638,20 @@ router.post(
           `).get(meetingId);
       }
 
+      // ======================================
+      // UPDATE EXISTING REPORT
+      // ======================================
+
       if (existing) {
+        /*
+         * IMPORTANT:
+         *
+         * This UPDATE intentionally does not
+         * update the optional `questions`
+         * column because older databases may
+         * not have that column yet.
+         */
+
         db.prepare(`
           UPDATE interview_reports
           SET
@@ -450,27 +672,72 @@ router.post(
           WHERE id = ?
         `).run(
           candidateId || null,
-          employeeRequestId || null,
-          candidateName || null,
-          candidateEmail || null,
+
+          employeeRequestId ||
+            null,
+
+          candidateName ||
+            null,
+
+          candidateEmail ||
+            null,
+
           summary || "",
+
           JSON.stringify(
             strengthsArray
           ),
+
           JSON.stringify(
             gapsArray
           ),
+
           JSON.stringify(
             nextArray
           ),
+
           technical,
+
           communication,
+
           problemSolving,
+
           calculatedOverall,
-          recommendation || "",
+
+          recommendation ||
+            "Under Review",
+
           now,
+
           existing.id
         );
+
+        // ------------------------------------
+        // Update employee AI score
+        // ------------------------------------
+
+        if (
+          employeeRequestId
+        ) {
+          try {
+            db.prepare(`
+              UPDATE employee_requests
+              SET
+                ai_score = ?,
+                updated_at = ?
+              WHERE id = ?
+            `).run(
+              calculatedOverall,
+              now,
+              employeeRequestId
+            );
+          } catch (scoreError) {
+            console.error(
+              "Unable to update employee AI score:",
+              scoreError
+            );
+          }
+        }
 
         const row =
           db.prepare(`
@@ -490,14 +757,22 @@ router.post(
         });
       }
 
-      // --------------------------------------
-      // Create
-      // --------------------------------------
+      // ======================================
+      // CREATE NEW REPORT
+      // ======================================
 
-      const id =
+      const reportId =
         `${Date.now()}-${Math.round(
           Math.random() * 1e9
         )}`;
+
+      /*
+       * This INSERT matches the columns already
+       * present in your original backend.
+       *
+       * Therefore it will not break an existing
+       * interview_reports table.
+       */
 
       db.prepare(`
         INSERT INTO interview_reports (
@@ -539,25 +814,30 @@ router.post(
           @updatedAt
         )
       `).run({
-        id,
+        id: reportId,
 
         candidateId:
           candidateId || null,
 
         employeeRequestId:
-          employeeRequestId || null,
+          employeeRequestId ||
+          null,
 
         candidateName:
-          candidateName || null,
+          candidateName ||
+          null,
 
         candidateEmail:
-          candidateEmail || null,
+          candidateEmail ||
+          null,
 
         meetingId:
-          meetingId || null,
+          meetingId ||
+          null,
 
         summary:
-          summary || "",
+          summary ||
+          "",
 
         strengths:
           JSON.stringify(
@@ -587,18 +867,21 @@ router.post(
           calculatedOverall,
 
         recommendation:
-          recommendation || "",
+          recommendation ||
+          "Under Review",
 
         createdAt: now,
 
         updatedAt: now,
       });
 
-      // --------------------------------------
-      // Update candidate AI score
-      // --------------------------------------
+      // ======================================
+      // UPDATE EMPLOYEE AI SCORE
+      // ======================================
 
-      if (employeeRequestId) {
+      if (
+        employeeRequestId
+      ) {
         try {
           db.prepare(`
             UPDATE employee_requests
@@ -611,20 +894,24 @@ router.post(
             now,
             employeeRequestId
           );
-        } catch (error) {
+        } catch (scoreError) {
           console.error(
             "Unable to update employee AI score:",
-            error
+            scoreError
           );
         }
       }
+
+      // ======================================
+      // LOAD CREATED REPORT
+      // ======================================
 
       const row =
         db.prepare(`
           SELECT *
           FROM interview_reports
           WHERE id = ?
-        `).get(id);
+        `).get(reportId);
 
       return res.status(201).json({
         success: true,
